@@ -35,3 +35,18 @@ Brief §2.1 and community data: PS2 needs roughly Snapdragon 845-class CPU, and 
 - M5 is implemented as described. The gate and the core download are built and tested on the S21 (Snapdragon 888) as a stand-in. **The owner must validate on a Shield-class TV device before calling PS2 supported.**
 - The PS2 controller skin (DualShock 2) already exists in `@couch/skins`.
 - Users supply BIOS files in `roms/bios/` (Android: `Documents/roms/bios/`). We never download or ship BIOS.
+
+## Implementation notes (M5, 2026-10-16)
+
+Measured on Galaxy S21 (Snapdragon 888, measured tier 5) with the Android host:
+
+- Gate: `Settings → PS2 (experimental)` is off by default. PS2 games appear only when the flag is on **and** the device tier is 5.
+- `play_libretro_android.so` downloads and loads. **It needs "All files access"**: it aborts with
+  `filesystem_error: Permission denied: '/sdcard/Play Data Files'` otherwise. Couch asks for that permission
+  anyway, for USB/Documents ROM folders.
+- With the permission granted, Play! boots its PS2 VM and then crashes (SIGSEGV in `PS2VM Thread`) on our only
+  freely downloadable test program, a homebrew ELF, with no BIOS present. **We cannot validate further without a
+  user-supplied PS2 BIOS and a Shield-class TV.** Status stays *experimental*.
+- A crashing core takes the whole app down: the LAN server and the phones' connections go with it. The next start
+  detects the unclean exit and tells the user which core crashed (M6). Running cores in a separate process
+  (as Lemuroid does) is the long-term fix: tracked in `docs/MILESTONES.md`.

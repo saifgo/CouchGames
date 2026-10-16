@@ -102,6 +102,14 @@ const MANIFEST = [
     source: 'https://github.com/amdray/bounce_zero',
   },
   {
+    system: 'ps2',
+    file: '500_Card_Game_PS2_501B.elf',
+    title: '500 Card Game (PS2 homebrew ELF)',
+    url: 'https://github.com/khant735/500-Card-Game-PS2/releases/download/v501B/500_Card_Game_PS2_501B.ELF',
+    license: 'free homebrew download, no licence stated (local testing only)',
+    source: 'https://github.com/khant735/500-Card-Game-PS2',
+  },
+  {
     system: 'psx',
     file: 'celeste.cue',
     title: 'Celeste Classic PSX',
