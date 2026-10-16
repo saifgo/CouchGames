@@ -19,7 +19,7 @@ All client URLs come from `location.origin` (`https` → `wss`), so no domain is
 2. In Coolify: **New Resource → Public/Private Repository → Build Pack: Docker Compose**
    (it picks up `docker-compose.yml`). The **Dockerfile** build pack also works: set the port to `8787`
    and add the two volumes below by hand.
-3. On the `couch` service, set your domain with the port, e.g. `https://couch.example.com:8787`
+3. On the `couch` service, set **Domains** to your domain with the port, e.g. `https://couch.example.com:8787`
    (Coolify routes 443 → container 8787 and issues the Let's Encrypt cert). WebSockets pass through
    Traefik with no extra config.
 4. Deploy. The first build takes a few minutes because it downloads ~165 MB of cores and ~55 MB of
@@ -58,7 +58,7 @@ points at the container's internal IP.
 | `COI` | `1` | COOP/COEP headers → `crossOriginIsolated`, needed by threaded cores (PSP). Requires HTTPS or localhost |
 | `STUN` | `1` | Hand out a public STUN server so WebRTC can go peer-to-peer across NATs |
 | `METADATA` | `1` | `0` disables No-Intro name lookups (they download DAT files) |
-| `TELEMETRY_URL` | unset | Forward opt-in latency summaries |
+| `TELEMETRY_URL` | unset | Forward opt-in latency summaries (add `TELEMETRY_URL: ${TELEMETRY_URL}` under `environment:` in the compose file) |
 | `RELAY_DELAY_MS` | `0` | Artificial relay delay (testing only) |
 
 | Build arg | Default | |

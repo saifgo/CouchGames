@@ -1,6 +1,6 @@
 # Couch server for Coolify ("Docker Compose" build pack) or plain `docker compose up -d`.
-# Coolify: SERVICE_FQDN_COUCH_8787 routes your domain (HTTPS + WebSockets) to port 8787.
-# Set the domain on the service in the Coolify UI. See docs/DEPLOY.md.
+# Coolify: give the service a domain with the port, e.g. https://couch.example.com:8787.
+# Coolify adds HTTPS and passes WebSockets through. See docs/DEPLOY.md.
 services:
   couch:
     build:
@@ -9,13 +9,12 @@ services:
         WITH_CORES: "1"
         WITH_TEST_ROMS: "1"
     restart: unless-stopped
+    # Map form: Coolify rewrites this block and chokes on value-less list entries.
     environment:
-      - SERVICE_FQDN_COUCH_8787
-      - PORT=8787
-      - COI=1
-      - STUN=1
-      - METADATA=${METADATA:-1}
-      - TELEMETRY_URL=${TELEMETRY_URL:-}
+      PORT: "8787"
+      COI: "1"
+      STUN: "1"
+      METADATA: ${METADATA:-1}
     expose:
       - "8787"
     volumes:
