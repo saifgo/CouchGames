@@ -49,6 +49,11 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - Emulator cores download from the libretro buildbot the first time you play each system.
 - Systems are shown according to the device's measured performance tier (Settings → Performance tier).
 
+### 3. Hosted on a server (Docker / Coolify, public HTTPS mode)
+
+`docker compose up -d --build` runs everything in one container. Behind HTTPS, phones can join over the
+internet and PSP works on any TV browser. See [`docs/DEPLOY.md`](docs/DEPLOY.md).
+
 ## Repository
 
 | Path | What |

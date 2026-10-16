@@ -8,7 +8,7 @@
  */
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import sevenBin from '7zip-bin';
 import { dirname, join } from 'node:path';
@@ -17,6 +17,8 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const out = join(root, 'test-roms');
 const force = process.argv.includes('--force');
+// pnpm can drop the execute bit on the bundled 7-Zip binary (Linux/Docker).
+if (process.platform !== 'win32') chmodSync(sevenBin.path7za, 0o755);
 
 /** @type {{system:string,file:string,url:string,title:string,license:string,source:string,zipEntry?:string}[]} */
 const MANIFEST = [

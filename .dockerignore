@@ -1,0 +1,19 @@
+# Keep the build context small and never bake user ROMs/BIOS into the image.
+.git
+**/node_modules
+**/dist
+**/.turbo
+.cache
+roms
+test-roms
+apps/host-web/cores
+apps/host-web/public/roms-index.json
+apps/host-android-tv
+test-results
+e2e/test-results
+playwright-report
+coverage
+packages/latency-lab/results
+*.log
+Dockerfile
+docker-compose*.yml

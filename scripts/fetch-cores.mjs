@@ -13,7 +13,7 @@
  *   node scripts/fetch-cores.mjs [--only=snes9x,mupen64plus_next] [--force]
  */
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -44,6 +44,8 @@ const EJS_CORES = [
 
 const want = (c) => !only || only.includes(c);
 const sevenZip = sevenBin.path7za;
+// pnpm can drop the execute bit on the bundled binary (Linux/Docker).
+if (process.platform !== 'win32') chmodSync(sevenZip, 0o755);
 
 function extract(archive, dest) {
   execFileSync(sevenZip, ['x', '-y', `-o${dest}`, archive], { stdio: 'ignore' });
@@ -157,6 +159,7 @@ try {
   rmSync(tmp, { recursive: true, force: true });
 }
 
+mkdirSync(outRoot, { recursive: true });
 writeFileSync(
   join(outRoot, 'SOURCES.md'),
   `# Downloaded cores (not committed)\n\n- retroarch/: arianrhodsandlot/retroarch-emscripten-build ${RETROARCH_VERSION} (jsDelivr)\n- ejs/, ejs-thread/: @emulatorjs/core-* ${EJS_VERSION} (npm)\n\nLicenses: see *_LICENSE.txt next to each core and docs/LICENSES.md.\n`,

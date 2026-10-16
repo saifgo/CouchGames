@@ -1,0 +1,82 @@
+# Deploying Couch (Docker / Coolify): public HTTPS mode
+
+One container serves everything on port 8787:
+
+| Path | What |
+|---|---|
+| `/` | TV web host (open this on the TV/laptop browser) |
+| `/c/` | Phone controller (the QR code points here) |
+| `/ws` | Signaling + WebSocket input relay |
+| `/api/*`, `/roms/*`, `/test-roms/*`, `/bios/*` | ROM library |
+| `/cores/*` | libretro WebAssembly cores (downloaded at image build time) |
+
+The server speaks plain HTTP. HTTPS comes from the reverse proxy (Coolify's Traefik, Caddy, nginx…).
+All client URLs come from `location.origin` (`https` → `wss`), so no domain is configured in the app.
+
+## Coolify
+
+1. Push this repo to a Git remote Coolify can reach (GitHub/GitLab/Gitea, private is fine).
+2. In Coolify: **New Resource → Public/Private Repository → Build Pack: Docker Compose**
+   (it picks up `docker-compose.yml`). The **Dockerfile** build pack also works: set the port to `8787`
+   and add the two volumes below by hand.
+3. On the `couch` service, set your domain with the port, e.g. `https://couch.example.com:8787`
+   (Coolify routes 443 → container 8787 and issues the Let's Encrypt cert). WebSockets pass through
+   Traefik with no extra config.
+4. Deploy. The first build takes a few minutes because it downloads ~165 MB of cores and ~55 MB of
+   homebrew ROMs. The healthcheck is `GET /api/health`.
+5. Add your games to the `couch-roms` volume (see below), then open `https://couch.example.com` on the TV.
+
+### Getting ROMs into the container
+
+ROMs and BIOS are never baked into the image. Layout inside the volume: `<system>/<file>`, BIOS in `bios/`.
+
+```sh
+# on the Coolify server
+docker ps --filter name=couch                    # find the container name
+docker cp ./snes/. <container>:/app/roms/snes/   # or copy straight into the volume's _data dir
+```
+
+Or swap the named volume for a bind mount in `docker-compose.yml` (`- /srv/couch/roms:/app/roms:ro`)
+and drop files into that folder over SFTP. The library rescans automatically (5 s cache), or press
+*Refresh library* on the TV. You can also drag files onto the TV page, which keeps them in that browser only.
+
+## Plain Docker
+
+```sh
+docker compose up -d --build              # or:
+docker build -t couch . && docker run -d -p 8787:8787 -v couch-roms:/app/roms -v couch-cache:/app/.cache couch
+```
+
+Open the TV page through the machine's LAN IP or domain, not `localhost`. On `localhost`, the QR code
+points at the container's internal IP.
+
+## Settings
+
+| Env | Default (image) | Meaning |
+|---|---|---|
+| `PORT` | `8787` | Listen port |
+| `COI` | `1` | COOP/COEP headers → `crossOriginIsolated`, needed by threaded cores (PSP). Requires HTTPS or localhost |
+| `STUN` | `1` | Hand out a public STUN server so WebRTC can go peer-to-peer across NATs |
+| `METADATA` | `1` | `0` disables No-Intro name lookups (they download DAT files) |
+| `TELEMETRY_URL` | unset | Forward opt-in latency summaries |
+| `RELAY_DELAY_MS` | `0` | Artificial relay delay (testing only) |
+
+| Build arg | Default | |
+|---|---|---|
+| `WITH_CORES` | `1` | Download web cores (needed to play) |
+| `WITH_TEST_ROMS` | `1` | Download the free homebrew demo games. Set `0` for a library with only your own games |
+
+## What changes compared with LAN mode
+
+- **Latency.** Input goes phone → WebRTC peer-to-peer → TV whenever ICE succeeds, which is usual on the
+  same Wi-Fi and often across the internet thanks to STUN. When it fails (symmetric NAT, strict
+  mobile carriers), input falls back to the WebSocket relay **through your server**, so latency includes
+  the round trip to the server. There is no TURN server. If relay play feels laggy, host the
+  container close to the players, or add a TURN server (coturn) and extend `iceServers` in
+  `apps/signaling/src/main.ts`.
+- **The library is public.** Anyone who knows the URL can list and download what's in `roms/`.
+  Keep it to games you're allowed to share, or put the site behind Coolify's basic-auth middleware
+  or an IP allowlist. The phone controller only needs `/c/` and `/ws`.
+- **`/api/crash` and `/api/telemetry` accept unauthenticated POSTs** (64 KB each) and append them to
+  `/app/.cache/logs`. That's fine for a personal instance. Rate-limit those paths at the proxy if the URL is widely shared.
+- The Android TV app is unaffected. It remains a self-contained LAN host.
