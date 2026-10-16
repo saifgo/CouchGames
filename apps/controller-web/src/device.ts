@@ -26,10 +26,48 @@ export async function keepAwake(): Promise<void> {
     if (nav.wakeLock && !wakeLock) {
       wakeLock = await nav.wakeLock.request('screen');
       (wakeLock as unknown as EventTarget).addEventListener?.('release', () => (wakeLock = null));
+      return;
     }
   } catch {
     /* needs a secure context (HTTPS) and a visible page */
   }
+  if (!wakeLock) startNoSleepVideo();
+}
+
+let noSleep: HTMLVideoElement | null = null;
+
+/**
+ * Fallback for plain-HTTP LAN pages, where the Wake Lock API is unavailable:
+ * a tiny muted, looping, playing video keeps mobile browsers from dimming the
+ * screen. The frames come from a 2x2 canvas, so no media file is needed.
+ * Must be started from a user gesture.
+ */
+function startNoSleepVideo(): void {
+  if (noSleep) {
+    void noSleep.play().catch(() => {});
+    return;
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 2;
+  const ctx = canvas.getContext('2d');
+  const stream = (canvas as HTMLCanvasElement & { captureStream?: (fps: number) => MediaStream }).captureStream?.(1);
+  if (!ctx || !stream) return;
+  let flip = false;
+  setInterval(() => {
+    flip = !flip;
+    ctx.fillStyle = flip ? '#000' : '#010101';
+    ctx.fillRect(0, 0, 2, 2);
+  }, 1000);
+  const v = document.createElement('video');
+  v.muted = true;
+  v.playsInline = true;
+  v.loop = true;
+  v.setAttribute('playsinline', '');
+  v.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0.01;pointer-events:none;left:0;top:0';
+  v.srcObject = stream;
+  document.body.appendChild(v);
+  noSleep = v;
+  void v.play().catch(() => {});
 }
 
 document.addEventListener('visibilitychange', () => {
