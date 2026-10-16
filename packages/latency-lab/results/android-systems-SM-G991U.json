@@ -1,0 +1,133 @@
+{
+ "date": "2026-10-16T18:20:59.081Z",
+ "model": "SM-G991U",
+ "results": [
+  {
+   "sys": "nes",
+   "file": "240pee.nes",
+   "core": "fceumm",
+   "fps": [
+    0
+   ],
+   "avg": null,
+   "crash": false
+  },
+  {
+   "sys": "snes",
+   "file": "horizontal-shooter.sfc",
+   "core": "snes9x",
+   "fps": [
+    57.5,
+    59.5,
+    59.5,
+    59.5,
+    59.5,
+    59.5,
+    59.5,
+    59.5
+   ],
+   "avg": 59.5,
+   "crash": false
+  },
+  {
+   "sys": "genesis",
+   "file": "bombx.bin",
+   "core": "genesis_plus_gx",
+   "fps": [
+    57.7,
+    59.5,
+    59.5,
+    59.5,
+    59.5,
+    59.5,
+    59.5,
+    59.5
+   ],
+   "avg": 59.5,
+   "crash": false
+  },
+  {
+   "sys": "gba",
+   "file": "240pee_mb.gba",
+   "core": "mgba",
+   "fps": [
+    57.8,
+    59.5,
+    59.5,
+    59.5,
+    59.5,
+    59.5,
+    59.5,
+    59.5
+   ],
+   "avg": 59.5,
+   "crash": false
+  },
+  {
+   "sys": "psx",
+   "file": "celeste.cue",
+   "core": "pcsx_rearmed",
+   "fps": [
+    54.7,
+    59.5,
+    59.6,
+    59.5,
+    59.6,
+    59.5,
+    59.6,
+    59.5
+   ],
+   "avg": 59.542857142857144,
+   "crash": false
+  },
+  {
+   "sys": "n64",
+   "file": "FlappyBird-v1.7.z64",
+   "core": "?",
+   "fps": [],
+   "avg": null,
+   "crash": false
+  },
+  {
+   "sys": "n64",
+   "file": "gamejam2024.z64",
+   "core": "?",
+   "fps": [],
+   "avg": null,
+   "crash": false
+  },
+  {
+   "sys": "psp",
+   "file": "BounceZero.pbp",
+   "core": "ppsspp",
+   "fps": [
+    57.5,
+    59.6,
+    59.5,
+    59.5,
+    59.6,
+    59.5,
+    59.6
+   ],
+   "avg": 59.550000000000004,
+   "crash": false
+  },
+  {
+   "sys": "nds",
+   "file": "ds-craft-beta1.7.1.nds",
+   "core": "melonds",
+   "fps": [
+    56.6,
+    59.6,
+    59.4,
+    59.5,
+    59.5,
+    59.5,
+    59.5,
+    59.5
+   ],
+   "avg": 59.5,
+   "crash": false
+  }
+ ]
+}

@@ -162,7 +162,9 @@ export const SYSTEMS: readonly SystemDef[] = [
     tier: 4,
     accent: '#2c8f3c',
     web: null,
-    android: { cores: ['mupen64plus_next_gles3', 'parallel_n64'] },
+    // mupen64plus_next aborts (destroyed-mutex in HWUI) under LibretroDroid on Android 15 /
+    // Adreno 660; parallel_n64 runs. See docs/MILESTONES.md "Known issues".
+    android: { cores: ['parallel_n64', 'mupen64plus_next_gles3'], experimental: true },
     bios: [],
   },
   {
