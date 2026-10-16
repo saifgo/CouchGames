@@ -104,7 +104,7 @@ export function PlayerChip({ p, big = false }: { p: PlayerView; big?: boolean })
         {big && (
           <small>
             {p.connected
-              ? `${TransportLabel[p.transport]} · ${Number.isNaN(p.oneWayP50) ? '…' : `${Math.round(p.oneWayP50)}–${Math.round(p.oneWayP95)} ms lag`}${q === 'bad' ? ' · weak Wi-Fi: move closer or use 5 GHz' : relay && q !== 'good' ? ' · high latency (relay)' : ''}`
+              ? `${TransportLabel[p.transport]} · ${Number.isNaN(p.oneWayP50) ? '…' : `${Math.round(p.oneWayP50)}–${Math.round(p.oneWayP95)} ms lag`}${q !== 'good' ? (relay ? ' · high latency (relay)' : ' · weak Wi-Fi: move closer or use 5 GHz') : ''}`
               : 'reconnecting…'}
           </small>
         )}

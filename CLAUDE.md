@@ -31,8 +31,15 @@ pnpm typecheck
 pnpm e2e              # Playwright: controller ↔ host, latency regression
 ```
 
-Playwright browsers live on D: on the dev machine (C: is nearly full):
-`PLAYWRIGHT_BROWSERS_PATH=D:/couch-cache/ms-playwright`.
+Android host (`apps/host-android-tv`): first run `pnpm --filter @couch/controller-web build` and
+`pnpm --filter @couch/systems export-json` (copied into assets), then `./gradlew :app:assembleDebug :app:testDebugUnitTest`.
+
+Dev-machine specifics (C: is nearly full, so caches live on D:):
+- `PLAYWRIGHT_BROWSERS_PATH=D:/couch-cache/ms-playwright`
+- `GRADLE_USER_HOME='D:\couch-cache\gradle-home'`
+- Git Bash: `MSYS_NO_PATHCONV=1` before `adb shell` with `/sdcard/...` paths.
+- Test phone: Galaxy S21 via adb. The `packages/latency-lab/scripts/android-*.ts` and `bench-*.ts` scripts drive it.
+  Close the controller tabs you open (they share a clientId and skew measurements).
 
 ## Rules
 

@@ -1,0 +1,32 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      # Free homebrew + emulator cores for the gameplay tests (downloaded, never committed).
+      - run: pnpm test-roms && pnpm cores
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @couch/controller-web build && pnpm --filter @couch/systems export-json
+      - run: cd apps/host-android-tv && ./gradlew :app:testDebugUnitTest :app:assembleDebug

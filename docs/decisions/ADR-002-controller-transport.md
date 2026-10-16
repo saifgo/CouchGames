@@ -73,8 +73,8 @@ Then add the frame-poll wait inside the emulator: 0–16.7 ms, mean 8.3 ms (ADR-
 
 - The brief's fallback chain ("public HTTPS page → WebRTC → **WebSocket to host on LAN** → relay") is not possible as written. See `docs/DEVIATIONS.md` §2.
 - Public mode needs the owner to pick a domain and hosting (Cloudflare Workers + Durable Objects, or a small VPS). **Owner decision, not blocking M1–M6** (LAN mode covers everything).
-- 2.4 GHz misses the p99 target on both paths (radio retries and Wi-Fi power save). The TV lobby warns when a player's p95 exceeds 25 ms ("move closer / use 5 GHz").
-- CI keeps the loopback benchmark as a regression test (`e2e/latency.spec.ts`). It fails if loopback p95 exceeds 5 ms.
+- 2.4 GHz misses the p99 target on both paths (radio retries and Wi-Fi power save). The TV lobby warns when a player's one-way p95 exceeds 20 ms ("weak Wi-Fi: move closer or use 5 GHz").
+- CI keeps the loopback benchmark as a regression test (`e2e/couch.spec.ts`, "latency regression"). It fails if loopback p95 exceeds 5 ms.
 
 ## Open measurements
 
