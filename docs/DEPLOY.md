@@ -40,6 +40,39 @@ Or swap the named volume for a bind mount in `docker-compose.yml` (`- /srv/couch
 and drop files into that folder over SFTP. The library rescans automatically (5 s cache), or press
 *Refresh library* on the TV. You can also drag files onto the TV page, which keeps them in that browser only.
 
+### ROMs from an S3 bucket
+
+Instead of the volume, the server can read the library from S3 or any S3-compatible service
+(Cloudflare R2, MinIO, Backblaze B2, Wasabi). Set `S3_BUCKET` and the server lists and streams
+objects from there. Keys use the same layout under `S3_PREFIX`:
+
+```
+s3://my-games/couch/roms/snes/Super Mario World (USA).sfc   ← S3_PREFIX=couch/roms/
+s3://my-games/couch/roms/psx/Game.cue + Game (Track 1).bin
+s3://my-games/couch/roms/bios/scph5501.bin                  ← served as /bios/
+```
+
+The TV still loads `/roms/...` from the Couch server, which proxies the bytes (Range requests
+included). The bucket can stay **private** and needs no CORS rules. Every ROM load costs the server
+the egress from S3 to itself and from itself to the TV. A bucket in the same region as the server
+keeps that fast and cheap; R2 has no egress fees.
+
+Credentials come from the standard AWS chain: `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`, an
+instance role, or `AWS_PROFILE`. The key only needs read access:
+
+```json
+{ "Version": "2012-10-17", "Statement": [
+  { "Effect": "Allow", "Action": "s3:ListBucket", "Resource": "arn:aws:s3:::my-games",
+    "Condition": { "StringLike": { "s3:prefix": "couch/roms/*" } } },
+  { "Effect": "Allow", "Action": "s3:GetObject", "Resource": "arn:aws:s3:::my-games/couch/roms/*" } ] }
+```
+
+Upload with `aws s3 sync ./roms s3://my-games/couch/roms/`. New objects appear within 5 s, or
+immediately with *Refresh library*. In Coolify, set the variables on the service's
+**Environment Variables** tab, and mark the secret key as secret. When S3 is on, the `couch-roms`
+volume is not used. With `METADATA=1` the server downloads each cartridge ROM (≤ 64 MB) once to
+compute its CRC. The result is cached in `couch-cache`.
+
 ## Plain Docker
 
 ```sh
@@ -60,6 +93,12 @@ points at the container's internal IP.
 | `METADATA` | `1` | `0` disables No-Intro name lookups (they download DAT files) |
 | `TELEMETRY_URL` | unset | Forward opt-in latency summaries (add `TELEMETRY_URL: ${TELEMETRY_URL}` under `environment:` in the compose file) |
 | `RELAY_DELAY_MS` | `0` | Artificial relay delay (testing only) |
+| `S3_BUCKET` | unset | Read ROMs + BIOS from this bucket instead of `roms/` (see above) |
+| `S3_PREFIX` | empty | Key prefix of the library, e.g. `couch/roms/` |
+| `S3_REGION` | `us-east-1` | Bucket region (`auto` for R2) |
+| `S3_ENDPOINT` | unset | S3-compatible endpoint, e.g. `https://<account>.r2.cloudflarestorage.com` |
+| `S3_FORCE_PATH_STYLE` | `0` | `1` for MinIO and other path-style services |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | unset | Read-only credentials (or use an instance role) |
 
 | Build arg | Default | |
 |---|---|---|

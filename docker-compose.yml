@@ -15,6 +15,15 @@ services:
       COI: "1"
       STUN: "1"
       METADATA: ${METADATA:-1}
+      # ROMs from an S3 bucket instead of the couch-roms volume (leave S3_BUCKET empty to
+      # use the volume). Same layout under the prefix: <system>/<file>, BIOS in bios/.
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_PREFIX: ${S3_PREFIX:-}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-0}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
     expose:
       - "8787"
     volumes:

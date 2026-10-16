@@ -1,13 +1,13 @@
-import { createReadStream } from 'node:fs';
-import { appendFile, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createServer as createHttpServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
 import { networkInterfaces } from 'node:os';
 import { extname, join } from 'node:path';
 import { WebSocketServer } from 'ws';
 import type { RTCIceServerLike } from '@couch/protocol';
-import { crc32File, safeJoin, scanLibrary, type LibraryRoot, type RomEntry } from './library.js';
+import { crc32, scanLibrary, type LibraryRoot, type ResolvedRoot, type RomEntry } from './library.js';
 import { MetadataStore } from './metadata.js';
+import { FsStore, type RomStore } from './store.js';
 import { titleFromFilename } from '@couch/systems';
 import { Rooms } from './rooms.js';
 
@@ -28,7 +28,9 @@ export interface CouchServerOptions {
   maxPeersPerRoom?: number;
   relayDelayMs?: number;
   libraryRoots?: LibraryRoot[];
+  /** BIOS files, served under /bios/: a local directory or a store (e.g. S3). */
   biosDir?: string;
+  bios?: RomStore;
   static?: StaticMount[];
   /** Send COOP/COEP so pages are cross-origin isolated (needed by threaded WASM cores). */
   crossOriginIsolation?: boolean;
@@ -94,7 +96,15 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
     relayDelayMs: opts.relayDelayMs ?? 0,
     log,
   });
-  const roots = opts.libraryRoots ?? [];
+  const roots: ResolvedRoot[] = (opts.libraryRoots ?? []).map((r) => {
+    const store = r.store ?? (r.dir !== undefined ? new FsStore(r.dir) : null);
+    if (!store) throw new Error(`library root ${r.urlPrefix} needs a dir or a store`);
+    return { ...r, store };
+  });
+  const bios = opts.bios ?? (opts.biosDir ? new FsStore(opts.biosDir) : null);
+  const mounts = [...(opts.static ?? [])]
+    .sort((a, b) => b.prefix.length - a.prefix.length) // longest first so "/c" wins over "/"
+    .map((m) => ({ ...m, store: new FsStore(m.dir) }));
   let libraryCache: { at: number; entries: RomEntry[] } | null = null;
   const crcCache = new Map<string, string>();
 
@@ -103,22 +113,22 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
   /** Attach cached CRC metadata now; compute the missing ones in the background. */
   const enrich = async (entries: RomEntry[]) => {
     if (!metadata) return;
-    const missing: { e: RomEntry; path: string }[] = [];
+    const missing: { e: RomEntry; store: RomStore; rel: string }[] = [];
     for (const e of entries) {
       if (e.source !== 'user') continue;
-      const root = roots.find((r) => r.source === e.source)!;
-      const path = join(root.dir, e.system, e.file);
-      const m = await metadata.peek(path);
+      const store = roots.find((r) => r.source === e.source)!.store;
+      const rel = `${e.system}/${e.file}`;
+      const m = await metadata.peek(store, rel);
       if (m) {
         e.crc = m.crc;
         e.canonical = m.name;
         if (m.name) e.title = titleFromFilename(m.name);
-      } else missing.push({ e, path });
+      } else missing.push({ e, store, rel });
     }
     if (missing.length && !enriching) {
       enriching = true;
       void (async () => {
-        for (const { e, path } of missing) await metadata.lookup(e.system, path).catch(() => null);
+        for (const { e, store, rel } of missing) await metadata.lookup(e.system, store, rel).catch(() => null);
         enriching = false;
         libraryCache = null; // next request picks up the names
       })();
@@ -184,26 +194,18 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
         const id = path.split('/')[3]!;
         const entry = (await getLibrary(false)).find((e) => e.id === id);
         if (!entry) return notFound(res);
-        const root = roots.find((r) => r.source === entry.source)!;
+        const store = roots.find((r) => r.source === entry.source)!.store;
         let crc = crcCache.get(id);
         if (!crc) {
-          crc = await crc32File(join(root.dir, entry.system, entry.file));
+          crc = await crc32(await store.open(`${entry.system}/${entry.file}`));
           crcCache.set(id, crc);
         }
         return json(res, { id, crc });
       }
       for (const root of roots) {
-        if (path.startsWith(root.urlPrefix + '/')) {
-          const file = safeJoin(root.dir, path.slice(root.urlPrefix.length + 1));
-          return file ? sendFile(req, res, file) : notFound(res);
-        }
+        if (path.startsWith(root.urlPrefix + '/')) return sendFile(req, res, root.store, path.slice(root.urlPrefix.length + 1));
       }
-      if (opts.biosDir && path.startsWith('/bios/')) {
-        const file = safeJoin(opts.biosDir, path.slice('/bios/'.length));
-        return file ? sendFile(req, res, file) : notFound(res);
-      }
-      // Longest prefix first so "/c" wins over "/".
-      const mounts = [...(opts.static ?? [])].sort((a, b) => b.prefix.length - a.prefix.length);
+      if (bios && path.startsWith('/bios/')) return sendFile(req, res, bios, path.slice('/bios/'.length));
       for (const m of mounts) {
         const bare = m.prefix.replace(/\/+$/, '');
         if (bare && path === bare) {
@@ -212,10 +214,10 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
         }
         const prefix = bare + '/';
         if (!path.startsWith(prefix)) continue;
-        const rel = path.slice(prefix.length);
-        const file = safeJoin(m.dir, rel || 'index.html');
-        if (file && (await isFile(file))) return sendFile(req, res, file);
-        if (m.spa && !extname(rel)) return sendFile(req, res, join(m.dir, 'index.html'));
+        const rel = path.slice(prefix.length) || 'index.html';
+        const st = await m.store.stat(rel);
+        if (st) return sendFile(req, res, m.store, rel, st);
+        if (m.spa && !extname(rel)) return sendFile(req, res, m.store, 'index.html');
         return notFound(res);
       }
       notFound(res);
@@ -289,32 +291,39 @@ function notFound(res: ServerResponse) {
   res.writeHead(404, { 'Content-Type': MIME['.txt']! }).end('not found');
 }
 
-async function isFile(p: string) {
-  return (await stat(p).catch(() => null))?.isFile() ?? false;
-}
-
-async function sendFile(req: IncomingMessage, res: ServerResponse, file: string) {
-  const st = await stat(file).catch(() => null);
-  if (!st?.isFile()) return notFound(res);
-  const type = MIME[extname(file).toLowerCase()] ?? 'application/octet-stream';
+async function sendFile(
+  req: IncomingMessage,
+  res: ServerResponse,
+  store: RomStore,
+  rel: string,
+  known?: { size: number } | null,
+) {
+  const st = known ?? (await store.stat(rel));
+  if (!st) return notFound(res);
+  const type = MIME[extname(rel).toLowerCase()] ?? 'application/octet-stream';
   const headers: Record<string, string | number> = {
     'Content-Type': type,
     'Accept-Ranges': 'bytes',
     'Cache-Control': type.startsWith('text/html') ? 'no-cache' : 'public, max-age=3600',
   };
   const range = req.headers.range ? /^bytes=(\d*)-(\d*)$/.exec(req.headers.range) : null;
+  let start = 0;
+  let end = st.size - 1;
   if (range && (range[1] || range[2])) {
-    const start = range[1] ? Number(range[1]) : Math.max(0, st.size - Number(range[2]));
-    const end = range[1] && range[2] ? Math.min(Number(range[2]), st.size - 1) : st.size - 1;
+    start = range[1] ? Number(range[1]) : Math.max(0, st.size - Number(range[2]));
+    end = range[1] && range[2] ? Math.min(Number(range[2]), st.size - 1) : st.size - 1;
     if (start > end || start >= st.size) {
       res.writeHead(416, { 'Content-Range': `bytes */${st.size}` }).end();
       return;
     }
     res.writeHead(206, { ...headers, 'Content-Range': `bytes ${start}-${end}/${st.size}`, 'Content-Length': end - start + 1 });
-    createReadStream(file, { start, end }).pipe(res);
-    return;
+  } else {
+    res.writeHead(200, { ...headers, 'Content-Length': st.size });
   }
-  res.writeHead(200, { ...headers, 'Content-Length': st.size });
-  if (req.method === 'HEAD') return void res.end();
-  createReadStream(file).pipe(res);
+  if (req.method === 'HEAD' || st.size === 0) return void res.end();
+  const body = await store.open(rel, start, end).catch((err: Error) => {
+    res.destroy(err);
+    return null;
+  });
+  body?.on('error', (err) => res.destroy(err)).pipe(res);
 }

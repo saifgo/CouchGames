@@ -7,10 +7,11 @@
  * machine. Disc systems (PS1/PSP/PS2) are skipped: CRC-ing gigabytes is too slow
  * and their DATs are per-track.
  */
-import { createReadStream } from 'node:fs';
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { ConsoleId } from '@couch/protocol';
+import { crc32 } from './library.js';
+import type { RomStore } from './store.js';
 
 const DAT_NAMES: Partial<Record<ConsoleId, string>> = {
   nes: 'Nintendo - Nintendo Entertainment System',
@@ -35,28 +36,6 @@ export function headerSkip(system: ConsoleId, size: number, firstBytes: Uint8Arr
   if (system === 'nes' && firstBytes[0] === 0x4e && firstBytes[1] === 0x45 && firstBytes[2] === 0x53 && firstBytes[3] === 0x1a) return 16;
   if (system === 'snes' && size % 1024 === 512) return 512;
   return 0;
-}
-
-let crcTable: Uint32Array | null = null;
-function table(): Uint32Array {
-  if (crcTable) return crcTable;
-  crcTable = new Uint32Array(256);
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    crcTable[n] = c >>> 0;
-  }
-  return crcTable;
-}
-
-export async function crc32(path: string, skip = 0): Promise<string> {
-  const t = table();
-  let crc = 0xffffffff;
-  for await (const chunk of createReadStream(path, { start: skip })) {
-    const buf = chunk as Buffer;
-    for (let i = 0; i < buf.length; i++) crc = t[(crc ^ buf[i]!) & 0xff]! ^ (crc >>> 8);
-  }
-  return ((crc ^ 0xffffffff) >>> 0).toString(16).padStart(8, '0').toUpperCase();
 }
 
 /** Parses clrmamepro DAT text into CRC → game name. */
@@ -131,33 +110,30 @@ export class MetadataStore {
   }
 
   /** Cached metadata, or null if not computed yet (call lookup() to compute). */
-  async peek(path: string): Promise<Meta | null> {
+  async peek(store: RomStore, rel: string): Promise<Meta | null> {
     await this.load();
-    const st = await stat(path).catch(() => null);
+    const st = await store.stat(rel).catch(() => null);
     if (!st) return null;
-    const hit = this.cache[path];
+    const hit = this.cache[store.id(rel)];
     return hit && hit.key === `${st.size}:${st.mtimeMs}` ? { crc: hit.crc, name: hit.name } : null;
   }
 
-  async lookup(system: ConsoleId, path: string): Promise<Meta | null> {
+  async lookup(system: ConsoleId, store: RomStore, rel: string): Promise<Meta | null> {
     if (!DAT_NAMES[system]) return null;
     await this.load();
-    const st = await stat(path).catch(() => null);
+    const st = await store.stat(rel).catch(() => null);
     if (!st || st.size > MAX_BYTES) return null;
     const key = `${st.size}:${st.mtimeMs}`;
-    const hit = this.cache[path];
+    const id = store.id(rel);
+    const hit = this.cache[id];
     if (hit && hit.key === key && hit.name !== undefined) return { crc: hit.crc, name: hit.name };
-    const head = new Uint8Array(16);
-    const fh = await (await import('node:fs/promises')).open(path, 'r');
-    try {
-      await fh.read(head, 0, 16, 0);
-    } finally {
-      await fh.close();
-    }
-    const crc = await crc32(path, headerSkip(system, st.size, head));
+    const chunks: Buffer[] = [];
+    for await (const c of await store.open(rel, 0, 15)) chunks.push(c as Buffer);
+    const head = new Uint8Array(Buffer.concat(chunks));
+    const crc = await crc32(await store.open(rel, headerSkip(system, st.size, head)));
     const dat = await this.dat(system);
     const name = dat?.get(crc) ?? null;
-    this.cache[path] = { key, crc, name };
+    this.cache[id] = { key, crc, name };
     this.save();
     return { crc, name };
   }

@@ -51,6 +51,7 @@ not GPL-compatible) · ❌ not usable.
 | LibretroDroid | GPL-3.0 | host-android-tv | libretro frontend for Android (powers Lemuroid) |
 | ws | MIT | signaling | WebSocket server |
 | tsx | MIT | signaling | Run TypeScript in Node without a build step |
+| @aws-sdk/client-s3 (+ @smithy/* deps) | Apache-2.0 | signaling | Optional ROM library in an S3 / S3-compatible bucket |
 | fflate | MIT | host-web, latency-lab | Unzip PPSSPP assets / zipped ROMs in the browser |
 | qrcode | MIT | host-web | QR code for pairing |
 | Preact | MIT | controller-web | Tiny UI runtime (hot path bypasses it) |

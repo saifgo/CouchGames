@@ -1,9 +1,8 @@
 import { createHash } from 'node:crypto';
-import { createReadStream } from 'node:fs';
-import { readdir, readFile, stat } from 'node:fs/promises';
-import { extname, join, resolve, sep } from 'node:path';
+import { extname, resolve, sep } from 'node:path';
 import { SYSTEMS, titleFromFilename } from '@couch/systems';
 import type { ConsoleId } from '@couch/protocol';
+import type { RomStore } from './store.js';
 
 export type RomSource = 'user' | 'homebrew';
 
@@ -25,58 +24,67 @@ export interface RomEntry {
 }
 
 export interface LibraryRoot {
-  dir: string;
+  /** Where the files live: a local directory (shorthand for an FsStore), or a store. */
+  dir?: string;
+  store?: RomStore;
   source: RomSource;
   /** URL prefix the files are served under, e.g. "/roms". */
   urlPrefix: string;
 }
 
+export interface ResolvedRoot extends LibraryRoot {
+  store: RomStore;
+}
+
 const enc = (s: string) => s.split('/').map(encodeURIComponent).join('/');
 
-export async function scanLibrary(roots: LibraryRoot[]): Promise<RomEntry[]> {
+export async function scanLibrary(roots: ResolvedRoot[]): Promise<RomEntry[]> {
   const out: RomEntry[] = [];
   for (const root of roots) {
-    for (const sys of SYSTEMS) {
-      const dir = join(root.dir, sys.id);
-      let names: string[];
-      try {
-        names = await readdir(dir);
-      } catch {
-        continue;
-      }
-      for (const name of names.sort((a, b) => a.localeCompare(b))) {
-        const ext = extname(name).toLowerCase();
-        if (!sys.extensions.includes(ext)) continue;
-        const full = join(dir, name);
-        const st = await stat(full).catch(() => null);
-        if (!st?.isFile()) continue;
-        const extra = ext === '.cue' ? await cueTracks(full) : [];
-        out.push({
-          id: createHash('sha1').update(`${root.source}/${sys.id}/${name}`).digest('hex').slice(0, 12),
-          system: sys.id,
-          file: name,
-          title: titleFromFilename(name),
-          size: st.size,
-          mtimeMs: st.mtimeMs,
-          source: root.source,
-          url: `${root.urlPrefix}/${enc(`${sys.id}/${name}`)}`,
-          extra: extra.map((t) => `${root.urlPrefix}/${enc(`${sys.id}/${t}`)}`),
-        });
-      }
-    }
+    // Systems in parallel (one LIST each on S3), kept in catalog order.
+    const perSystem = await Promise.all(
+      SYSTEMS.map(async (sys) => {
+        const files = (await root.store.list(sys.id).catch(() => []))
+          .filter((f) => sys.extensions.includes(extname(f.name).toLowerCase()))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        return Promise.all(
+          files.map(async (f): Promise<RomEntry> => {
+            const extra = extname(f.name).toLowerCase() === '.cue' ? await cueTracks(root.store, `${sys.id}/${f.name}`) : [];
+            return {
+              id: createHash('sha1').update(`${root.source}/${sys.id}/${f.name}`).digest('hex').slice(0, 12),
+              system: sys.id,
+              file: f.name,
+              title: titleFromFilename(f.name),
+              size: f.size,
+              mtimeMs: f.mtimeMs,
+              source: root.source,
+              url: `${root.urlPrefix}/${enc(`${sys.id}/${f.name}`)}`,
+              extra: extra.map((t) => `${root.urlPrefix}/${enc(`${sys.id}/${t}`)}`),
+            };
+          }),
+        );
+      }),
+    );
+    out.push(...perSystem.flat());
   }
   return out;
 }
 
 /** Track files referenced by a .cue sheet (same directory only). */
-async function cueTracks(cuePath: string): Promise<string[]> {
-  const text = await readFile(cuePath, 'utf8').catch(() => '');
+async function cueTracks(store: RomStore, rel: string): Promise<string[]> {
+  const text = await readText(store, rel, 256 * 1024).catch(() => '');
   const files: string[] = [];
   for (const m of text.matchAll(/^\s*FILE\s+"?([^"\r\n]+?)"?\s+\w+\s*$/gim)) {
     const f = m[1]!;
     if (!f.includes('/') && !f.includes('\\') && !files.includes(f)) files.push(f);
   }
   return files;
+}
+
+async function readText(store: RomStore, rel: string, maxBytes: number): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const c of await store.open(rel, 0, maxBytes - 1)) chunks.push(c as Buffer);
+  return Buffer.concat(chunks).toString('utf8');
 }
 
 /** Resolves `rel` inside `root`, refusing path traversal. */
@@ -86,12 +94,12 @@ export function safeJoin(root: string, rel: string): string | null {
   return full === base || full.startsWith(base + sep) ? full : null;
 }
 
-/** CRC32 (IEEE) of a file, streamed. Used for metadata lookup by hash. */
-export async function crc32File(path: string): Promise<string> {
+/** CRC32 (IEEE) of a byte stream. Used for metadata lookup by hash. */
+export async function crc32(chunks: AsyncIterable<unknown>): Promise<string> {
   const table = crcTable();
   let crc = 0xffffffff;
-  for await (const chunk of createReadStream(path)) {
-    const buf = chunk as Buffer;
+  for await (const chunk of chunks) {
+    const buf = chunk as Uint8Array;
     for (let i = 0; i < buf.length; i++) crc = table[(crc ^ buf[i]!) & 0xff]! ^ (crc >>> 8);
   }
   return ((crc ^ 0xffffffff) >>> 0).toString(16).padStart(8, '0').toUpperCase();
