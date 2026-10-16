@@ -16,7 +16,7 @@ export function startLabServer(opts: { port?: number; relayDelayMs?: number; coi
     labResultsDir: `${repo}packages/latency-lab/results/raw`,
     static: [
       { prefix: '/lab', dir: `${repo}packages/latency-lab/dist`, spa: false },
-      { prefix: '/cores', dir: `${repo}apps/host-web/public/cores`, spa: false },
+      { prefix: '/cores', dir: `${repo}apps/host-web/cores`, spa: false },
     ],
     log: () => {},
   });

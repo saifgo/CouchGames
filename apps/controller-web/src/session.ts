@@ -82,7 +82,8 @@ export class Session {
     server = location.origin,
     caps = { gyro: typeof DeviceMotionEvent !== 'undefined' },
   ) {
-    this.link = new PhoneLink({ server, room, clientId: clientId() });
+    const mode = new URLSearchParams(location.search).get('transport');
+    this.link = new PhoneLink({ server, room, clientId: clientId(), ...(mode === 'ws' || mode === 'webrtc' ? { mode } : {}) });
     this.link.on('state', (s) => {
       this.update({ link: s });
       if (s === 'open') this.hello(caps.gyro);

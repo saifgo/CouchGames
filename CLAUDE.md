@@ -24,7 +24,7 @@ roms/                 User ROMs (git-ignored). test-roms/ = downloaded homebrew 
 ```sh
 pnpm install
 pnpm test-roms        # legal homebrew into test-roms/
-pnpm cores            # web emulator cores into apps/host-web/public/cores/
+pnpm cores            # web emulator cores into apps/host-web/cores/
 pnpm build && pnpm start   # build everything, serve TV + controller on :8787
 pnpm test             # unit tests (vitest) across the workspace
 pnpm typecheck

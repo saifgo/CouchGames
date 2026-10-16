@@ -1,0 +1,24 @@
+{
+ "date": "2026-10-16T17:35:03.614Z",
+ "game": "horizontal-shooter",
+ "taps": 186,
+ "freq": "5200",
+ "view": {
+  "state": "open",
+  "room": "EFPD",
+  "players": [
+   {
+    "slot": 0,
+    "name": "SM-G991U",
+    "color": "#ff4d5e",
+    "connected": true,
+    "transport": 1,
+    "rttMs": 45.1320199477097,
+    "oneWayP50": 5,
+    "oneWayP95": 9.5,
+    "jitterMs": 2.336070068448522,
+    "lossPct": 0.13089005235602094
+   }
+  ]
+ }
+}

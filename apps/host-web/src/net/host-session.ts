@@ -111,6 +111,8 @@ export class HostSession extends Emitter<Events> {
     this.link.on('transport', (id, k) => {
       const p = this.byPeer(id);
       if (p) {
+        // New path, new statistics: don't mix WebSocket and WebRTC samples.
+        if (p.transport !== k) p.stats.reset();
         p.transport = k;
         this.publish();
       }
@@ -196,7 +198,7 @@ export class HostSession extends Emitter<Events> {
     // Decode into scratch first so a stale packet never touches live state.
     if (!decodeInputInto(view, this.scratch)) return;
     const s = this.scratch;
-    const transit = p.clock.synced ? p.clock.oneWay(s.clientTimeMs, now) : 0;
+    const transit = p.clock.synced ? p.clock.oneWay(s.clientTimeMs, now) : NaN;
     if (!p.stats.onPacket(s.seq, transit)) return;
     const d = p.input;
     d.seq = s.seq;
@@ -308,7 +310,8 @@ export class HostSession extends Emitter<Events> {
     this.link.sendCtrl(peerId, encodeControl({ type: MsgType.WELCOME, slot, color: p.color, name, skin: this.skin, hostName: this.hostName }));
     this.link.sendCtrl(peerId, encodeControl({ type: MsgType.SKIN, skin: this.skin, gameTitle: this.gameTitle }));
     this.link.sendCtrl(peerId, encodeControl({ type: MsgType.HOST_STATE, ...this.hostState }));
-    this.ping(p);
+    // Burst of pings so the clock offset converges within a second (min-RTT filter).
+    for (let i = 0; i < 5; i++) setTimeout(() => this.ping(p!), i * 200);
     this.emit('join', p);
     this.sendRoster();
     this.publish();

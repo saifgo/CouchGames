@@ -31,9 +31,11 @@ export function App() {
     if (settings.gyro !== 'off') await requestMotionPermission();
     const s = new Session(code, name, haptics, params.get('server') ?? location.origin);
     s.start();
+    (window as unknown as { __couchPhone: unknown }).__couchPhone = { session: s };
     setRoom(code);
     setSession(s);
-    history.replaceState(null, '', `?r=${code}`);
+    const keep = params.get('transport');
+    history.replaceState(null, '', `?r=${code}${keep ? `&transport=${keep}` : ''}`);
   };
 
   const leave = () => {
@@ -43,7 +45,12 @@ export function App() {
 
   const preview = params.get('preview');
   if (preview) return <PreviewScreen skin={preview} settings={settings} />;
-  if (!session) return <JoinScreen room={room} name={settings.name} onJoin={join} />;
+  // ?autojoin=1&name=X: join without the form (kiosk/testing). Fullscreen needs a tap later.
+  const autojoin = params.get('autojoin') === '1' && room && !session;
+  useEffect(() => {
+    if (autojoin) void join(room, params.get('name') ?? (settings.name || 'Player'));
+  }, []);
+  if (!session) return autojoin ? <div class="banner">Joining…</div> : <JoinScreen room={room} name={settings.name} onJoin={join} />;
   return <PlayScreen session={session} settings={settings} update={update} onLeave={leave} />;
 }
 

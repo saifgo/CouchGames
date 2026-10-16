@@ -63,6 +63,18 @@ describe('LinkStats', () => {
   });
 });
 
+describe('LinkStats without clock sync', () => {
+  it('tracks loss but records no latency for NaN transit', () => {
+    const ls = new LinkStats(10);
+    ls.onPacket(1, NaN);
+    ls.onPacket(3, NaN);
+    expect(ls.lost).toBe(1);
+    expect(ls.latency.size).toBe(0);
+    ls.onPacket(4, 6);
+    expect(ls.latency.values()).toEqual([6]);
+  });
+});
+
 describe('room codes', () => {
   it('generates valid codes and normalizes input', () => {
     for (let i = 0; i < 100; i++) expect(normalizeRoomCode(generateRoomCode())).not.toBeNull();

@@ -20,15 +20,9 @@ Drop your own game files into the folder matching the system:
 | `ps2/`     | PlayStation 2 (experimental) | `.iso`, `.chd`                            |
 | `bios/`    | Firmware files (see below)| as named below                               |
 
-After adding files, run:
-
-```sh
-pnpm roms:index
-```
-
-This scans the folders and writes the library index the web host reads. The web
-host also accepts drag-and-drop files at runtime. Those are kept in the browser's
-IndexedDB and never uploaded.
+The couch server scans these folders live. After adding files, choose **Refresh library**
+on the TV (or reload the page). The web host also accepts drag-and-drop files at runtime.
+Those are kept in the browser's IndexedDB and never uploaded.
 
 The Android TV host scans `roms/` on USB drives and the device's
 `Download/roms/` and `Documents/roms/` folders, using the same layout.

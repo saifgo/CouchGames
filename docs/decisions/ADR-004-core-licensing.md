@@ -33,7 +33,7 @@ We ship or download one libretro core per system. Some popular cores use a sourc
 
 - **Option 3 now, with option 2 one setting away:**
   - Defaults: snes9x (SNES) and genesis_plus_gx (Genesis/SMS/GG). They're the best quality/performance choices on weak TV hardware.
-  - They're never committed or bundled. Web: `pnpm cores` → `apps/host-web/public/cores/`. Android: downloaded into app storage on first use of that system (M3), not packaged in the APK.
+  - They're never committed or bundled. Web: `pnpm cores` → `apps/host-web/cores/`. Android: downloaded into app storage on first use of that system (M3), not packaged in the APK.
   - Settings → Cores lets the user pick bsnes / clownmdemu instead. `@couch/systems` lists both, preferred first.
 - **If the project is ever monetised** (ads, paid app, store fees, donations tied to features), the defaults must switch to the GPL alternatives first. That's an owner decision, recorded in `docs/DEVIATIONS.md`.
 - Each downloaded core keeps its own licence file next to the binary (`*_LICENSE.txt` on web; the Android download screen shows it too).

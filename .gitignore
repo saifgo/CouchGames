@@ -15,7 +15,7 @@ roms/**
 
 # Downloaded homebrew test ROMs and emulator cores
 test-roms/
-apps/host-web/public/cores/
+apps/host-web/cores/
 apps/host-web/public/roms-index.json
 
 # Latency lab raw runs (summaries are committed under docs/)
@@ -32,3 +32,5 @@ apps/host-android-tv/app/src/main/assets/controller/
 *.keystore
 packages/latency-lab/dist/
 docs/img/skins/*.png.tmp
+e2e/test-results/
+test-results/

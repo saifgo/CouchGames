@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Downloads libretro WebAssembly cores for the web host into
- * apps/host-web/public/cores/ (git-ignored), so the TV works offline and never
+ * apps/host-web/cores/ (git-ignored), so the TV works offline and never
  * depends on a third-party CDN at play time.
  *
  *  - retroarch/<core>_libretro.{js,wasm}   official RetroArch Emscripten builds
@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 import sevenBin from '7zip-bin';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const outRoot = join(root, 'apps/host-web/public/cores');
+const outRoot = join(root, 'apps/host-web/cores');
 const force = process.argv.includes('--force');
 const only = process.argv.find((a) => a.startsWith('--only='))?.slice(7).split(',');
 

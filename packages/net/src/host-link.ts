@@ -103,8 +103,11 @@ export class HostLink extends Emitter<Events> {
     this.emit('state', s);
   }
 
+  private connecting = false;
+
   private async connect() {
-    if (this.closed) return;
+    if (this.closed || this.connecting) return;
+    this.connecting = true;
     this.setState(this.attempt ? 'reconnecting' : 'connecting');
     try {
       await this.socket.open();
@@ -115,8 +118,11 @@ export class HostLink extends Emitter<Events> {
         ...(this.secret ? { secret: this.secret } : {}),
       });
     } catch {
+      this.connecting = false;
       this.onSocketClose();
+      return;
     }
+    this.connecting = false;
   }
 
   private onSocketClose() {

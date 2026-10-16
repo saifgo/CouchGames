@@ -30,7 +30,7 @@ const srv = await startCouchServer({
   static: [
     { prefix: '/c', dir: `${repo}apps/controller-web/dist`, spa: true },
     { prefix: '/lab', dir: `${repo}packages/latency-lab/dist`, spa: false },
-    { prefix: '/cores', dir: `${repo}apps/host-web/public/cores`, spa: false },
+    { prefix: '/cores', dir: `${repo}apps/host-web/cores`, spa: false },
     { prefix: '/', dir: `${repo}apps/host-web/dist`, spa: true },
   ],
 });

@@ -10,16 +10,19 @@
   },
   "scripts": {
     "build": "turbo run build",
+    "start": "pnpm --filter @couch/signaling start",
+    "dev": "node scripts/dev.mjs",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
-    "dev": "node scripts/dev.mjs",
+    "e2e": "playwright test -c e2e/playwright.config.ts",
     "test-roms": "node scripts/fetch-test-roms.mjs",
-    "roms:index": "node scripts/index-roms.mjs",
-    "cores": "node scripts/fetch-cores.mjs"
+    "cores": "node scripts/fetch-cores.mjs",
+    "setup": "pnpm install && pnpm test-roms && pnpm cores && pnpm build"
   },
   "devDependencies": {
     "7zip-bin": "5.2.0",
     "turbo": "^2.11.8",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@playwright/test": "^1.64.1"
   }
 }

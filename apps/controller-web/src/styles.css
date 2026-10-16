@@ -43,15 +43,16 @@ button.danger { background: #3a1a20; color: var(--danger); }
 .pad-svg .on .press { transform: scale(0.92); }
 .pad-svg .knob .face { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
 
-.hud { position: absolute; top: max(6px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); display: flex; align-items: center; gap: 8px; pointer-events: none; }
-.hud > * { pointer-events: auto; }
-.badge { min-width: 46px; padding: 4px 10px; border-radius: 999px; font-weight: 900; color: #fff; text-shadow: 0 1px 2px #0008; }
-.ping { width: 10px; height: 10px; border-radius: 50%; background: #666; box-shadow: 0 0 0 2px #0006; }
+.hud { position: absolute; top: max(4px, env(safe-area-inset-top)); left: 0; right: 0; height: 24vh; pointer-events: none; }
+.hud > * { pointer-events: auto; position: absolute; top: 12vh; transform: translateY(-50%); }
+/* Badge and gear flank the Home button (drawn by the pad at the top centre). */
+.badge { right: calc(50% + 9vh); min-width: 46px; padding: 4px 10px; border-radius: 999px; font-weight: 900; color: #fff; text-shadow: 0 1px 2px #0008; border: 0; }
+.ping { right: calc(50% + 6.5vh); width: 10px; height: 10px; border-radius: 50%; background: #666; box-shadow: 0 0 0 2px #0006; }
 .ping.good { background: #2ed47a; }
 .ping.ok { background: #ffc83d; }
 .ping.bad { background: var(--danger); }
-.title { font-size: 0.8rem; color: #fffc; background: #0006; padding: 2px 8px; border-radius: 6px; max-width: 30vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gear { margin-left: auto; background: #0005; border-radius: 50%; width: 38px; height: 38px; padding: 0; font-size: 1.2rem; }
+.title { display: none; }
+.gear { left: calc(50% + 7vh); background: #0005; border-radius: 50%; width: 38px; height: 38px; padding: 0; font-size: 1.2rem; }
 .banner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #000c; padding: 0.6rem 1.2rem; border-radius: 999px; font-weight: 600; pointer-events: none; }
 .banner.error { top: 30%; color: var(--danger); }
 .debug { position: absolute; bottom: max(4px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); font: 11px ui-monospace, monospace; background: #000b; padding: 3px 8px; border-radius: 6px; white-space: nowrap; pointer-events: none; }

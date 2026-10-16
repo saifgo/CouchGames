@@ -25,27 +25,48 @@ export class SignalSocket extends Emitter<Events> {
     return this.ws?.bufferedAmount ?? 0;
   }
 
+  private pending: { promise: Promise<void>; reject: (e: Error) => void } | null = null;
+
+  /**
+   * Opens a fresh socket. Concurrent callers share one attempt; closing a socket
+   * that is still connecting rejects its promise (callers never hang).
+   */
   open(timeoutMs = 8000): Promise<void> {
+    if (this.pending) return this.pending.promise;
     this.close();
-    return new Promise((resolve, reject) => {
+    let rejectFn!: (e: Error) => void;
+    const promise = new Promise<void>((resolve, reject) => {
+      rejectFn = reject;
       const ws = new WebSocket(this.url);
       ws.binaryType = 'arraybuffer';
       this.ws = ws;
+      const done = () => {
+        clearTimeout(timer);
+        this.pending = null;
+      };
       const timer = setTimeout(() => {
+        done();
+        ws.onopen = ws.onerror = ws.onclose = null;
         ws.close();
+        if (this.ws === ws) this.ws = null;
         reject(new Error(`could not reach ${this.url}`));
       }, timeoutMs);
       ws.onopen = () => {
-        clearTimeout(timer);
+        done();
         this.emit('open');
         resolve();
       };
       ws.onerror = () => {
-        clearTimeout(timer);
-        reject(new Error(`could not reach ${this.url}`));
+        if (ws.readyState !== WebSocket.OPEN) {
+          done();
+          reject(new Error(`could not reach ${this.url}`));
+        }
       };
       ws.onclose = (ev) => {
-        clearTimeout(timer);
+        if (this.pending?.promise === promise) {
+          done();
+          reject(new Error(`closed while connecting (${ev.code})`));
+        }
         if (this.ws === ws) {
           this.ws = null;
           this.emit('close', ev.code);
@@ -65,6 +86,8 @@ export class SignalSocket extends Emitter<Events> {
         }
       };
     });
+    this.pending = { promise, reject: rejectFn };
+    return promise;
   }
 
   send(msg: ClientToServer): void {
@@ -78,6 +101,11 @@ export class SignalSocket extends Emitter<Events> {
   close(): void {
     const ws = this.ws;
     this.ws = null;
+    if (this.pending) {
+      const p = this.pending;
+      this.pending = null;
+      p.reject(new Error('closed'));
+    }
     if (ws) {
       ws.onclose = ws.onmessage = ws.onerror = ws.onopen = null;
       ws.close();

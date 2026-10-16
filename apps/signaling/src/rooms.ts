@@ -65,7 +65,12 @@ export class Rooms {
         send(ws, { t: 'error', code: 'bad-request', message: 'malformed message' });
       }
     });
-    ws.on('close', () => this.onClose(ws));
+    ws.on('error', (err) => this.opts.log(`socket error from ${remote}: ${err.message}`));
+    ws.on('close', (code, reason) => {
+      const role = this.roles.get(ws);
+      if (role && role.kind !== 'none') this.opts.log(`${role.kind} ${role.kind === 'peer' ? role.peer.id : ''} in ${role.room.code} closed: ${code} ${reason.toString()}`);
+      this.onClose(ws);
+    });
   }
 
   private onText(ws: WebSocket, text: string, remote: string): void {
@@ -152,6 +157,7 @@ export class Rooms {
     for (const p of room.peers.values()) {
       if (p.clientId === clientId && clientId) {
         room.peers.delete(p.id);
+        this.opts.log(`peer ${p.id} in ${room.code} superseded by a reconnect of the same device`);
         p.ws.close(4002, 'superseded');
         if (room.host) send(room.host, { t: 'peer-left', peer: p.id });
       }

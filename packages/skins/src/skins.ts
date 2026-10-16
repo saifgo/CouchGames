@@ -88,7 +88,7 @@ const snes: Skin = {
     shoulder('l', L(0.38, 0.085), [bit(Button.L)], 'L', '#b7b7c3', '#4b4b5c', 0.26),
     shoulder('r', R(0.38, 0.085), [bit(Button.R)], 'R', '#b7b7c3', '#4b4b5c', 0.26),
     { kind: 'dpad', id: 'dpad', pos: L(0.42, 0.56), size: 0.52, style: 'cross', color: '#2b2b33' },
-    ...selectStart('#4b4b5c', '#5c5c6b', 0.6),
+    ...selectStart('#e3e3ea', '#5c5c6b', 0.6),
     ...diamond(
       0.42,
       0.56,

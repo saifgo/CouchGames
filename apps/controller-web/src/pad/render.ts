@@ -54,7 +54,7 @@ function glyphPath(g: Glyph, r: number, ink: string, parent: Element) {
 }
 
 function renderButton(c: ButtonControl, rc: ResolvedControl, H: number, scale: number, parent: Element): RenderedControl {
-  const g = el('g', { class: 'ctl btn', transform: `translate(${rc.cx},${rc.cy})` }, parent);
+  const g = el('g', { class: 'ctl btn', 'data-id': c.id, transform: `translate(${rc.cx},${rc.cy})` }, parent);
   const inner = el('g', { class: 'press' }, g);
   const k = c.pos.anchor === 'center' ? 1 : scale;
   if (c.shape === 'circle') {
@@ -82,7 +82,7 @@ function renderButton(c: ButtonControl, rc: ResolvedControl, H: number, scale: n
 }
 
 function renderDpad(c: DpadControl, rc: ResolvedControl, H: number, scale: number, parent: Element): RenderedControl {
-  const g = el('g', { class: 'ctl dpad', transform: `translate(${rc.cx},${rc.cy})` }, parent);
+  const g = el('g', { class: 'ctl dpad', 'data-id': c.id, transform: `translate(${rc.cx},${rc.cy})` }, parent);
   const s = (c.size / 2) * H * scale;
   const a = s * 0.34; // arm half-width
   if (c.style === 'disc') el('circle', { r: s * 1.05, fill: c.color, class: 'face' }, g);
@@ -106,7 +106,7 @@ function renderDpad(c: DpadControl, rc: ResolvedControl, H: number, scale: numbe
 }
 
 function renderStick(c: StickControl, rc: ResolvedControl, H: number, scale: number, parent: Element): RenderedControl {
-  const base = el('g', { class: 'ctl stick', transform: `translate(${rc.cx},${rc.cy})` }, parent);
+  const base = el('g', { class: 'ctl stick', 'data-id': c.id, transform: `translate(${rc.cx},${rc.cy})` }, parent);
   const r = c.r * H * scale;
   el('circle', { r: r * 1.15, class: 'well' }, base);
   el('circle', { r: r * 1.02, fill: 'rgba(0,0,0,.25)', stroke: 'rgba(255,255,255,.12)', 'stroke-width': 2 }, base);
@@ -117,7 +117,7 @@ function renderStick(c: StickControl, rc: ResolvedControl, H: number, scale: num
 }
 
 export function renderSkin(skin: Skin, resolved: ResolvedControl[], W: number, H: number, scale: number): RenderResult {
-  const svg = el('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`, class: 'pad-svg' });
+  const svg = el('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`, class: 'pad-svg', 'data-skin': skin.id });
   const defs = el('defs', {}, svg);
   const gloss = el('radialGradient', { id: 'gloss', cx: '35%', cy: '30%', r: '70%' }, defs);
   el('stop', { offset: '0%', 'stop-color': '#fff', 'stop-opacity': 0.35 }, gloss);
@@ -154,7 +154,7 @@ export function renderSkin(skin: Skin, resolved: ResolvedControl[], W: number, H
   });
 
   // Home/menu button (opens the TV's in-game menu).
-  const menu = el('g', { class: 'ctl btn menu', transform: `translate(${W / 2},${H * 0.12})` }, svg);
+  const menu = el('g', { class: 'ctl btn menu', 'data-id': 'menu', transform: `translate(${W / 2},${H * 0.12})` }, svg);
   const mi = el('g', { class: 'press' }, menu);
   el('circle', { r: H * 0.055, class: 'well' }, mi);
   el('circle', { r: H * 0.047, fill: 'rgba(255,255,255,.14)', stroke: skin.body.print, 'stroke-width': 1.5, class: 'face' }, mi);

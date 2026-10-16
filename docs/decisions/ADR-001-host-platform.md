@@ -105,7 +105,7 @@ Frame cost is time spent inside one `retro_run` tick (budget 16.7 ms). Each run 
 
 - The web host must ship the couch server (`apps/signaling`) on the laptop: phones can't connect to a browser tab directly. `pnpm start` runs it.
 - The web host shows a one-time "switch on" splash for audio activation.
-- Downloaded cores live in `apps/host-web/public/cores/` (≈150 MB, git-ignored, `pnpm cores`). The TV never depends on a CDN at play time.
+- Downloaded cores live in `apps/host-web/cores/` (≈150 MB, git-ignored, `pnpm cores`). The TV never depends on a CDN at play time.
 - The brief's PS1 placement on web is partially contradicted: it's green on a laptop, red on Android-class SoCs. See `docs/DEVIATIONS.md`.
 
 ## Open measurements

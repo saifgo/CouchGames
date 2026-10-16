@@ -27,7 +27,14 @@ export interface SystemDef {
    * Web host cores (Nostalgist.js / RetroArch Emscripten build), preferred first.
    * null when no usable web core exists.
    */
-  web: { cores: string[]; analog: boolean; experimental?: boolean } | null;
+  web: {
+    cores: string[];
+    backend: 'retroarch' | 'ejs' | 'ejs-thread';
+    analog: boolean;
+    experimental?: boolean;
+    /** Measured too heavy for phone/TV-class SoCs in WASM (ADR-001): desktop CPUs only. */
+    desktopOnly?: boolean;
+  } | null;
   /** Android TV host cores (LibretroDroid, libretro buildbot arm64-v8a names), preferred first. */
   android: { cores: string[]; experimental?: boolean };
   bios: BiosFile[];
@@ -45,7 +52,7 @@ export const SYSTEMS: readonly SystemDef[] = [
     maxPlayers: 4,
     tier: 1,
     accent: '#d6262f',
-    web: { cores: ['fceumm', 'nestopia', 'quicknes'], analog: false },
+    web: { cores: ['fceumm'], backend: 'retroarch', analog: false },
     android: { cores: ['fceumm', 'nestopia'] },
     bios: [],
   },
@@ -60,8 +67,8 @@ export const SYSTEMS: readonly SystemDef[] = [
     maxPlayers: 5,
     tier: 2,
     accent: '#7b5fc7',
-    web: { cores: ['snes9x', 'snes9x2010'], analog: false },
-    android: { cores: ['snes9x', 'bsnes'] },
+    web: { cores: ['snes9x'], backend: 'retroarch', analog: false },
+    android: { cores: ['snes9x', 'bsnes_mercury_performance', 'bsnes'] },
     bios: [],
   },
   {
@@ -75,8 +82,8 @@ export const SYSTEMS: readonly SystemDef[] = [
     maxPlayers: 4,
     tier: 1,
     accent: '#1f6fd1',
-    web: { cores: ['genesis_plus_gx', 'picodrive', 'clownmdemu'], analog: false },
-    android: { cores: ['genesis_plus_gx', 'picodrive'] },
+    web: { cores: ['genesis_plus_gx'], backend: 'retroarch', analog: false },
+    android: { cores: ['genesis_plus_gx', 'clownmdemu', 'picodrive'] },
     bios: [],
   },
   {
@@ -90,7 +97,7 @@ export const SYSTEMS: readonly SystemDef[] = [
     maxPlayers: 1,
     tier: 1,
     accent: '#8bac0f',
-    web: { cores: ['gambatte', 'mgba'], analog: false },
+    web: { cores: ['gambatte'], backend: 'retroarch', analog: false },
     android: { cores: ['gambatte', 'mgba'] },
     bios: [],
   },
@@ -105,7 +112,7 @@ export const SYSTEMS: readonly SystemDef[] = [
     maxPlayers: 1,
     tier: 1,
     accent: '#e0368f',
-    web: { cores: ['gambatte', 'mgba'], analog: false },
+    web: { cores: ['gambatte'], backend: 'retroarch', analog: false },
     android: { cores: ['gambatte', 'mgba'] },
     bios: [],
   },
@@ -120,7 +127,7 @@ export const SYSTEMS: readonly SystemDef[] = [
     maxPlayers: 1,
     tier: 2,
     accent: '#4b3fb5',
-    web: { cores: ['mgba', 'vba_next'], analog: false },
+    web: { cores: ['mgba'], backend: 'retroarch', analog: false },
     android: { cores: ['mgba'] },
     bios: [{ file: 'gba_bios.bin', required: false, note: 'mGBA has a built-in HLE BIOS' }],
   },
@@ -135,7 +142,7 @@ export const SYSTEMS: readonly SystemDef[] = [
     maxPlayers: 4,
     tier: 3,
     accent: '#8e9aa6',
-    web: { cores: ['pcsx_rearmed'], analog: true },
+    web: { cores: ['pcsx_rearmed'], backend: 'retroarch', analog: true, desktopOnly: true },
     android: { cores: ['pcsx_rearmed', 'swanstation'] },
     bios: [
       { file: 'scph5501.bin', required: false, note: 'USA BIOS; HLE fallback breaks some games' },
@@ -169,7 +176,7 @@ export const SYSTEMS: readonly SystemDef[] = [
     maxPlayers: 1,
     tier: 4,
     accent: '#30343b',
-    web: null,
+    web: { cores: ['ppsspp'], backend: 'ejs-thread', analog: true, experimental: true, desktopOnly: true },
     android: { cores: ['ppsspp'] },
     bios: [],
   },
@@ -184,7 +191,7 @@ export const SYSTEMS: readonly SystemDef[] = [
     maxPlayers: 1,
     tier: 4,
     accent: '#a7adb5',
-    web: null,
+    web: { cores: ['melonds', 'desmume2015'], backend: 'ejs', analog: false, desktopOnly: true },
     android: { cores: ['melonds', 'desmume'] },
     bios: [
       { file: 'bios7.bin', required: false, note: 'melonDS falls back to HLE' },
@@ -204,7 +211,7 @@ export const SYSTEMS: readonly SystemDef[] = [
     tier: 5,
     accent: '#1d3b8f',
     web: null,
-    android: { cores: ['play'], experimental: true },
+    android: { cores: ['play', 'pcsx2'], experimental: true },
     bios: [{ file: 'ps2-bios.bin', required: false, note: 'Play! runs many titles with HLE; some need a real BIOS' }],
   },
 ];

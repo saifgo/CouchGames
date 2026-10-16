@@ -15,6 +15,7 @@ export default defineConfig({
       '/test-roms': 'http://localhost:8787',
       '/bios': 'http://localhost:8787',
       '/c': 'http://localhost:8787',
+      '/cores': 'http://localhost:8787',
     },
   },
 });

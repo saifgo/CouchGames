@@ -39,6 +39,8 @@ export class PhoneLink extends Emitter<Events> {
   transport: TransportKind = TransportKind.UNKNOWN;
   /** Input packets dropped because a path was backed up (should stay ~0). */
   dropped = 0;
+  /** Last connection events (debug overlay / diagnostics). */
+  readonly events: { t: number; e: string }[] = [];
 
   private readonly socket: SignalSocket;
   private rtc: RtcPeer | null = null;
@@ -110,7 +112,13 @@ export class PhoneLink extends Emitter<Events> {
     return this.rtc?.pc.connectionState ?? 'none';
   }
 
+  private note(e: string) {
+    this.events.push({ t: Math.round(performance.now()), e });
+    if (this.events.length > 60) this.events.shift();
+  }
+
   private setState(s: PhoneLinkState) {
+    this.note(`state ${s}`);
     if (this.state === s) return;
     this.state = s;
     this.emit('state', s);
@@ -118,18 +126,25 @@ export class PhoneLink extends Emitter<Events> {
 
   private setTransport(k: TransportKind) {
     if (this.transport === k) return;
+    this.note(`transport ${k}`);
     this.transport = k;
     this.emit('transport', k);
   }
 
+  private connecting = false;
+
   private async connect(): Promise<void> {
-    if (this.closed) return;
+    if (this.closed || this.connecting || this.socket.isOpen) return;
+    this.connecting = true;
+    this.note('connect');
     this.setState(this.attempt === 0 ? 'connecting' : 'reconnecting');
     try {
       await this.socket.open();
       this.socket.send({ t: 'join', room: this.opts.room, clientId: this.opts.clientId });
     } catch {
       this.scheduleReconnect();
+    } finally {
+      this.connecting = false;
     }
   }
 
@@ -145,6 +160,7 @@ export class PhoneLink extends Emitter<Events> {
   }
 
   private onSocketClose(code: number) {
+    this.note(`socket closed ${code} (visibility ${typeof document !== 'undefined' ? document.visibilityState : '?'}, online ${typeof navigator !== 'undefined' ? navigator.onLine : '?'})`);
     this.canUseSocket = false;
     if (this.closed) return;
     if (code === 4000) {
@@ -159,7 +175,7 @@ export class PhoneLink extends Emitter<Events> {
 
   private checkHealth() {
     if (this.closed) return;
-    if (!this.socket.isOpen && !this.reconnectTimer) {
+    if (!this.socket.isOpen && !this.reconnectTimer && !this.connecting) {
       this.attempt = 0;
       void this.connect();
     } else if (this.rtc && ['failed', 'closed', 'disconnected'].includes(this.rtc.pc.connectionState)) {

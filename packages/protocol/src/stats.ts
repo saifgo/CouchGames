@@ -139,7 +139,11 @@ export class LinkStats {
     this.latency = new Ring(window);
   }
 
-  /** Returns false if the packet is stale (older seq) and must be dropped. */
+  /**
+   * Returns false if the packet is stale (older seq) and must be dropped.
+   * Pass NaN as transit when it is unknown (clock not synced yet): sequence and
+   * loss are still tracked, latency is not recorded.
+   */
   onPacket(seq: number, transitMs: number): boolean {
     if (this.lastSeq >= 0) {
       if (!seqNewer(seq, this.lastSeq)) {
@@ -151,6 +155,7 @@ export class LinkStats {
     }
     this.lastSeq = seq;
     this.received++;
+    if (Number.isNaN(transitMs)) return true;
     if (!Number.isNaN(this.lastTransit)) {
       const d = Math.abs(transitMs - this.lastTransit);
       this.jitter += (d - this.jitter) / 16;
