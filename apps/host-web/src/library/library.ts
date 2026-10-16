@@ -17,6 +17,8 @@ export interface Game {
   /** Server URL path (server games) */
   url?: string;
   extra?: string[];
+  /** Canonical No-Intro name from the server's CRC lookup, when known. */
+  canonical?: string | null;
 }
 
 const romStore = createStore('couch-roms', 'files');

@@ -91,6 +91,16 @@ fun SettingsScreen(app: CouchApp, onRemeasure: () -> Unit, onClose: () -> Unit) 
             }
             item(version + 6) { Row2("Box art from the internet", if (s.onlineArt) "On" else "Off", "thumbnails.libretro.com, by file name") { s.onlineArt = !s.onlineArt } }
             item(version + 7) { Row2("Latency overlay in game", if (s.latencyOverlay) "On" else "Off", "Also toggled from the in-game menu") { s.latencyOverlay = !s.latencyOverlay } }
+            item(version + 8) {
+                val history = app.diagnostics.latencyHistory()
+                val last = history.lastOrNull()?.players?.mapNotNull { it.p95 }?.maxOrNull()
+                Row2(
+                    "Keep anonymous latency history",
+                    if (s.telemetry) "On" else "Off",
+                    "Per-session lag summaries, no names, stored on this device · ${history.size} sessions" + (last?.let { " · last p95 $it ms" } ?: ""),
+                ) { s.telemetry = !s.telemetry }
+            }
+            item(version + 9) { Row2("Show the welcome tips again", "›", "Crash reports on this device: ${app.diagnostics.crashCount()}") { s.onboardingDone = false } }
             for (sys in Systems.all.filter { it.android.cores.size > 1 }) {
                 item("${version}core${sys.id}") {
                     val current = s.core(sys.id)?.takeIf { it in sys.android.cores } ?: sys.android.cores.first()

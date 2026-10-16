@@ -27,7 +27,7 @@ Brief §2.1 and community data: PS2 needs roughly Snapdragon 845-class CPU, and 
 
 1. **Experimental flag** `Settings → Labs → PS2 (experimental)`, off by default, Android TV host only.
 2. **Core order**: `play` (no BIOS needed for many games, BSD) → `pcsx2` (LRPS2, needs BIOS; enabled when a BIOS is present and the core initialises a GLES context under LibretroDroid).
-3. **Benchmark gate**: when the flag is enabled, the app runs a 10-second CPU+GPU micro-benchmark. It refuses to enable PS2 below the Shield-class threshold (`tier ≥ 5` in `@couch/systems`), with a clear message.
+3. **Benchmark gate**: the device benchmark (run at first start, re-runnable in Settings) must report tier 5 (Shield-class or better, `@couch/systems` tier). Below that, PS2 games stay hidden even with the flag on.
 4. **Web host**: PS2 is hidden.
 
 ## Consequences

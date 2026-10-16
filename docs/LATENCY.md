@@ -14,6 +14,8 @@ Budget (brief §5), from touch on the phone to input visible to the core: **p95 
 
 **Our layer** (handler → core-visible) measured on 5 GHz: **p95 6.7 ms, p99 8.6–9.8 ms**, inside budget. On 2.4 GHz the tail misses p99 (58–79 ms). The TV flags such players.
 
+**Product-level check** (real controller page, real TV app, SNES game running, S21 on 5 GHz, `scripts/bench-ingame.ts`): one-way **p50 5 ms, p95 9.5 ms**, jitter 2.3 ms, loss 0.13 %, WebRTC P2P.
+
 ## How to reproduce
 
 ```sh
@@ -31,7 +33,7 @@ Manual phone run without adb: open `http://<pc-ip>:8787/lab/host.html` on the PC
 
 ## Debugging latency in the product
 
-- **TV**: press `L` on a keyboard, or hold the Home button on any phone for 2 s, to show the per-player overlay (transport, RTT, one-way p50/p95, jitter, loss).
+- **TV**: press `L` on a keyboard, or choose *Show latency overlay* in the in-game menu (Home button on any phone), to show the per-player overlay (transport, RTT, one-way p50/p95, jitter, loss, fps).
 - **Phone**: triple-tap the player badge to show echo-RTT and packet counters.
 
 <!-- RESULTS -->

@@ -72,6 +72,7 @@ function Console() {
   useEffect(() => {
     session.maxPlayers = settings.maxPlayers;
     saveHostSettings(settings);
+    document.documentElement.dataset.theme = settings.theme;
   }, [settings]);
 
   useEffect(() => {
@@ -139,6 +140,9 @@ function Console() {
         onSettings={() => setShowSettings(true)}
         onImport={(f) => void onImport(f)}
       />
+      {!settings.onboardingDone && !detail && !showSettings && (
+        <Onboarding joinUrl={joinUrl} onDone={() => setSettings((s) => ({ ...s, onboardingDone: true }))} />
+      )}
       {detail && <GameDetail game={detail} settings={settings} onPlay={(resume) => play(detail, resume)} onClose={() => setDetail(null)} />}
       {showSettings && <SettingsModal settings={settings} onChange={(p) => setSettings((s) => ({ ...s, ...p }))} onClose={() => setShowSettings(false)} />}
       {picker && (
@@ -167,6 +171,32 @@ function Console() {
         </Modal>
       )}
     </>
+  );
+}
+
+/** First-run tips (M6 onboarding). */
+function Onboarding({ joinUrl, onDone }: { joinUrl: string | null; onDone: () => void }) {
+  const steps = [
+    ['🎮', 'Add your games', 'Put your own ROM files in roms/<system>/ next to the server (e.g. roms/snes/), or drop files on this screen. Run pnpm test-roms for free homebrew.'],
+    ['📱', 'Phones are the controllers', `Scan the QR code with each phone — no app to install. Up to 4 players (8 in Settings).${joinUrl ? ` Or open ${joinUrl.replace(/\?r=.*/, '')}` : ''}`],
+    ['🏠', 'Home button = menu', 'In a game, press Home on your phone for save states, controller swaps and quit. Triple-tap your player badge on the phone for latency stats.'],
+  ];
+  return (
+    <Modal onClose={onDone} className="onboarding">
+      <h1>Welcome to Couch</h1>
+      <div className="onboarding-steps">
+        {steps.map(([icon, title, text]) => (
+          <div key={title} className="onboarding-step">
+            <div className="onboarding-icon">{icon}</div>
+            <h2>{title}</h2>
+            <p>{text}</p>
+          </div>
+        ))}
+      </div>
+      <button className="primary big" data-nav data-nav-default onClick={onDone}>
+        Let’s play
+      </button>
+    </Modal>
   );
 }
 

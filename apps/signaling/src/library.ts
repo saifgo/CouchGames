@@ -19,6 +19,9 @@ export interface RomEntry {
   url: string;
   /** Companion files (e.g. .bin tracks referenced by a .cue), as URL paths. */
   extra: string[];
+  /** Canonical No-Intro name from the CRC lookup (M6), when known. */
+  canonical?: string | null;
+  crc?: string;
 }
 
 export interface LibraryRoot {

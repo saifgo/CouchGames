@@ -25,7 +25,7 @@ const THUMB_DIRS: Record<string, string> = {
 export function thumbnailUrl(g: Game, kind: 'Named_Boxarts' | 'Named_Snaps' | 'Named_Titles' = 'Named_Boxarts'): string | null {
   const dir = THUMB_DIRS[g.system];
   if (!dir || g.source === 'homebrew') return null;
-  const name = g.file.replace(/\.[^.]+$/, '').replace(/[&*/:`<>?\\|]/g, '_');
+  const name = (g.canonical ?? g.file.replace(/\.[^.]+$/, '')).replace(/[&*/:`<>?\\|]/g, '_');
   return `https://thumbnails.libretro.com/${encodeURIComponent(dir)}/${kind}/${encodeURIComponent(name)}.png`;
 }
 

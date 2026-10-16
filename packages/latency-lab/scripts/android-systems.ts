@@ -18,7 +18,7 @@ const games = [
   ['n64', 'gamejam2024.z64'],
   ['psp', 'BounceZero.pbp'],
   ['nds', 'ds-craft-beta1.7.1.nds'],
-].filter(([s]) => !only || only.includes(s!));
+].filter(([s]) => !only || only.includes(s!)) as [string, string][];
 const results: Record<string, unknown>[] = [];
 for (const [sys, file] of games) {
   const size = statSync(`${repo}test-roms/${sys}/${file}`).size;

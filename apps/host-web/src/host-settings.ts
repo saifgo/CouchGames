@@ -16,6 +16,10 @@ export interface HostSettings {
   cores: Partial<Record<ConsoleId, string>>;
   /** Fetch box art from thumbnails.libretro.com by game name (M6). */
   onlineArt: boolean;
+  /** Opt-in: store anonymous per-session latency summaries (no names/ids) on the server. */
+  telemetry: boolean;
+  theme: 'midnight' | 'sunset' | 'arcade';
+  onboardingDone: boolean;
 }
 
 const DEFAULTS: HostSettings = {
@@ -28,6 +32,9 @@ const DEFAULTS: HostSettings = {
   ambientMusic: false,
   cores: {},
   onlineArt: true,
+  telemetry: false,
+  theme: 'midnight',
+  onboardingDone: false,
 };
 
 const KEY = 'couch.host.settings.v1';

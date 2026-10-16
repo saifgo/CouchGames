@@ -103,6 +103,8 @@ class MainActivity : ComponentActivity() {
         var showSettings by remember { mutableStateOf(false) }
         var needsPerm by remember { mutableStateOf(needsStoragePermission()) }
         var tick by remember { mutableStateOf(0) }
+        var crashed by remember { mutableStateOf(app.diagnostics.takeUncleanExit()) }
+        var onboarding by remember { mutableStateOf(!app.settings.onboardingDone) }
         val view by app.session.view.collectAsState()
         val joinUrl = remember(view.room) { LanServer.lanAddress()?.let { "http://$it:${app.server.port}/c/?r=${view.room}" } }
 
@@ -184,7 +186,35 @@ class MainActivity : ComponentActivity() {
             }
             if (showSettings) {
                 BackHandler { showSettings = false }
-                SettingsScreen(app, onRemeasure = { scope.launch { measure(); tick++ } }) { showSettings = false; tick++ }
+                SettingsScreen(app, onRemeasure = { scope.launch { measure(); tick++ } }) {
+                    showSettings = false
+                    onboarding = !s.onboardingDone
+                    tick++
+                }
+            }
+            crashed?.let { c ->
+                Notice(
+                    title = "The emulator stopped",
+                    text = "Couch closed while playing ${c.title} with the ${c.core} core. That core may not support this game or this device.",
+                    primary = "Try another core",
+                    onPrimary = {
+                        Systems.byId(c.system)?.let { sys ->
+                            val cores = sys.android.cores
+                            s.setCore(sys.id, cores[(cores.indexOf(c.core) + 1).mod(cores.size)])
+                        }
+                        crashed = null
+                    },
+                ) { crashed = null }
+            }
+            if (crashed == null && onboarding && !showSettings) {
+                Notice(
+                    title = "Welcome to Couch",
+                    text = "1 · Copy your games into roms/<system>/ on a USB drive or in Documents (this device creates the folders for you).\n" +
+                        "2 · Scan the QR code with each phone: it becomes the controller, no app needed.\n" +
+                        "3 · In a game, press Home on your phone for save states, controller swaps and quit.",
+                    primary = "Let's play",
+                    onPrimary = { s.onboardingDone = true; onboarding = false },
+                ) { s.onboardingDone = true; onboarding = false }
             }
         }
     }
@@ -200,6 +230,23 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         resumes.value++
     }
+}
+
+@Composable
+private fun Notice(title: String, text: String, primary: String, onPrimary: () -> Unit, onClose: () -> Unit) {
+    val first = remember { FocusRequester() }
+    BackHandler { onClose() }
+    Box(Modifier.fillMaxSize().background(Color(0xC804060A)), contentAlignment = Alignment.Center) {
+        Column(Modifier.width(760.dp).clip(RoundedCornerShape(24.dp)).background(Panel).padding(30.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text(title, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+            Text(text, color = Muted, fontSize = 17.sp, lineHeight = 26.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = onPrimary, modifier = Modifier.focusRequester(first)) { Text(primary) }
+                Button(onClick = onClose) { Text("Close") }
+            }
+        }
+    }
+    LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
 }
 
 @Composable

@@ -16,10 +16,12 @@ class CouchApp : Application() {
     lateinit var library: Library
     lateinit var cores: Cores
     lateinit var saves: Saves
+    lateinit var diagnostics: Diagnostics
     val input = InputBridge()
 
     override fun onCreate() {
         super.onCreate()
+        diagnostics = Diagnostics(this).also { it.installJvmHandler() }
         Systems.load(this)
         settings = Settings(this)
         session = HostSession(this, settings.hostName).also { it.maxPlayers = settings.maxPlayers }

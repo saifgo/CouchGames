@@ -41,6 +41,7 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.Text
 import app.couch.tv.CouchApp
+import app.couch.tv.Diagnostics
 import app.couch.tv.library.Game
 import app.couch.tv.library.Systems
 import app.couch.tv.protocol.MenuAction
@@ -165,6 +166,8 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
 
     // 2) Phones → emulator, Home button → menu, phone menu actions.
     DisposableEffect(Unit) {
+        val startedAt = System.currentTimeMillis()
+        app.diagnostics.gameStarted(Diagnostics.Session(game.id, game.title, sys.id, core, startedAt))
         app.settings.touchRecent(game.id)
         app.session.setSkin(sys.skin, game.title)
         navigator.enabled = false
@@ -185,6 +188,9 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
         val prevJoin = app.session.onJoinLeave
         app.session.onJoinLeave = { p, joined -> scope.launch { flash(if (joined) "P${p.slot + 1} ${p.name} joined" else "P${p.slot + 1} ${p.name} disconnected") } }
         onDispose {
+            app.diagnostics.gameEnded()
+            val ms = System.currentTimeMillis() - startedAt
+            if (app.settings.telemetry && ms > 30_000) runCatching { app.diagnostics.recordLatency(sys.id, core, ms, app.session.view.value.players) }
             app.session.onMenu = null
             app.session.onJoinLeave = prevJoin
             app.input.view = null

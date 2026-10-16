@@ -8,7 +8,9 @@ test.skip(!process.env.SHOTS, 'set SHOTS=1');
 
 test('screenshots', async ({ browser }) => {
   mkdirSync(out, { recursive: true });
-  const host = await (await browser.newContext({ viewport: { width: 1920, height: 1080 } })).newPage();
+  const hostCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  await hostCtx.addInitScript(() => localStorage.setItem('couch.host.settings.v1', JSON.stringify({ onboardingDone: true })));
+  const host = await hostCtx.newPage();
   await host.goto('/?autostart=1');
   await expect(host.locator('.lobby .code')).toHaveText(/^[A-Z]{4}$/);
   const room = (await host.locator('.lobby .code').textContent())!;

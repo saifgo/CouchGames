@@ -39,7 +39,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Usb
 import androidx.tv.material3.Button
+import androidx.tv.material3.Icon
+import androidx.tv.material3.IconButton
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Text
@@ -118,9 +124,11 @@ fun HomeScreen(
                         Text("▲● Couch", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = Accent)
                         view.players.forEach { PlayerChip(it) }
                         Spacer(Modifier.weight(1f))
-                        if (needsStoragePermission && rows.isNotEmpty()) Button(onClick = onGrantStorage) { Text("Allow USB folders", maxLines = 1) }
-                        Button(onClick = onRefresh) { Text("⟳ Refresh", maxLines = 1) }
-                        Button(onClick = onSettings, modifier = Modifier.padding(end = 24.dp)) { Text("⚙", maxLines = 1) }
+                        if (needsStoragePermission && rows.isNotEmpty()) {
+                            IconButton(onClick = onGrantStorage) { Icon(Icons.Default.Usb, contentDescription = "Allow USB folders") }
+                        }
+                        IconButton(onClick = onRefresh) { Icon(Icons.Default.Refresh, contentDescription = "Refresh library") }
+                        IconButton(onClick = onSettings, modifier = Modifier.padding(end = 24.dp)) { Icon(Icons.Default.Settings, contentDescription = "Settings") }
                     }
                 }
                 if (needsStoragePermission && rows.isEmpty()) {

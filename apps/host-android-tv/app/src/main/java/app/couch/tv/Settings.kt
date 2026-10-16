@@ -34,6 +34,13 @@ class Settings(context: Context) {
         get() = p.getBoolean("onlineArt", true)
         set(v) = p.edit { putBoolean("onlineArt", v) }
 
+    var telemetry: Boolean
+        get() = p.getBoolean("telemetry", false)
+        set(v) = p.edit { putBoolean("telemetry", v) }
+    var onboardingDone: Boolean
+        get() = p.getBoolean("onboardingDone", false)
+        set(v) = p.edit { putBoolean("onboardingDone", v) }
+
     fun core(system: String): String? = p.getString("core.$system", null)
     fun setCore(system: String, core: String) = p.edit { putString("core.$system", core) }
 

@@ -264,9 +264,10 @@
       "web": null,
       "android": {
         "cores": [
-          "mupen64plus_next_gles3",
-          "parallel_n64"
-        ]
+          "parallel_n64",
+          "mupen64plus_next_gles3"
+        ],
+        "experimental": true
       },
       "bios": []
     },

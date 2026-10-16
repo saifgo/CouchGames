@@ -26,6 +26,9 @@ const srv = await startCouchServer({
   ],
   biosDir: env.BIOS_DIR ?? `${repo}roms/bios`,
   crossOriginIsolation: env.COI === '1',
+  metadataCacheDir: env.METADATA === '0' ? undefined : `${repo}.cache/metadata`,
+  diagnosticsDir: `${repo}.cache/logs`,
+  ...(env.TELEMETRY_URL ? { telemetryUrl: env.TELEMETRY_URL } : {}),
   ...(env.LAB === '1' ? { labResultsDir: `${repo}packages/latency-lab/results/raw` } : {}),
   static: [
     { prefix: '/c', dir: `${repo}apps/controller-web/dist`, spa: true },

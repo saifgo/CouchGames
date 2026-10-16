@@ -33,6 +33,8 @@ export function Player({ game, resume, settings, session, view, onExit, setNavEn
   const [swapFrom, setSwapFrom] = useState<number | null>(null);
   const menuRef = useRef<MenuPage | null>(null);
   menuRef.current = menu;
+  const viewRef = useRef(view);
+  viewRef.current = view;
   const sys = getSystem(game.system)!;
 
   const refreshSaves = async () => setSaves(await listSaves(game.id));
@@ -80,8 +82,10 @@ export function Player({ game, resume, settings, session, view, onExit, setNavEn
         setNavEnabled(true);
       }
     })();
+    const startedAt = Date.now();
     return () => {
       alive = false;
+      if (settings.telemetry && Date.now() - startedAt > 30_000) sendTelemetry(game, sys.id, coreFor(sys, settings), Date.now() - startedAt, viewRef.current);
       void engineRef.current?.exit();
       engineRef.current = null;
       session.setSkin('modern', null);
@@ -370,6 +374,27 @@ export function Player({ game, resume, settings, session, view, onExit, setNavEn
     </div>
   );
 }
+
+/** Anonymous per-session latency summary (opt-in, M6): no names, ids or game titles. */
+function sendTelemetry(_game: Game, system: string, core: string, ms: number, view: SessionView) {
+  const body = {
+    kind: 'latency-session',
+    system,
+    core,
+    minutes: Math.round(ms / 6000) / 10,
+    host: { ua: navigator.userAgent.replace(/\([^)]*\)/g, '').slice(0, 80), cores: navigator.hardwareConcurrency },
+    players: view.players.map((p) => ({
+      transport: TransportLabel[p.transport],
+      rttMs: round(p.rttMs),
+      p50: round(p.oneWayP50),
+      p95: round(p.oneWayP95),
+      jitter: round(p.jitterMs),
+      lossPct: round(p.lossPct),
+    })),
+  };
+  void fetch('/api/telemetry', { method: 'POST', body: JSON.stringify(body), keepalive: true }).catch(() => {});
+}
+const round = (n: number) => (Number.isFinite(n) ? Math.round(n * 10) / 10 : null);
 
 function SaveThumb({ blob }: { blob: Blob }) {
   const [url, setUrl] = useState('');

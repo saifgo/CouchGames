@@ -1,5 +1,5 @@
 import { createReadStream } from 'node:fs';
-import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { createServer as createHttpServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
 import { networkInterfaces } from 'node:os';
@@ -7,6 +7,8 @@ import { extname, join } from 'node:path';
 import { WebSocketServer } from 'ws';
 import type { RTCIceServerLike } from '@couch/protocol';
 import { crc32File, safeJoin, scanLibrary, type LibraryRoot, type RomEntry } from './library.js';
+import { MetadataStore } from './metadata.js';
+import { titleFromFilename } from '@couch/systems';
 import { Rooms } from './rooms.js';
 
 export interface StaticMount {
@@ -32,6 +34,14 @@ export interface CouchServerOptions {
   crossOriginIsolation?: boolean;
   /** When set, POST /api/lab/results stores latency-lab results here (dev only). */
   labResultsDir?: string;
+  /** Enables CRC → No-Intro name lookups for user ROMs; caches DATs + hashes here. */
+  metadataCacheDir?: string;
+  /**
+   * Local diagnostics (M6): crash reports and opt-in anonymous latency summaries
+   * are appended as JSONL here. Telemetry is forwarded only if telemetryUrl is set.
+   */
+  diagnosticsDir?: string;
+  telemetryUrl?: string;
   log?: (msg: string) => void;
 }
 
@@ -88,9 +98,38 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
   let libraryCache: { at: number; entries: RomEntry[] } | null = null;
   const crcCache = new Map<string, string>();
 
+  const metadata = opts.metadataCacheDir ? new MetadataStore(opts.metadataCacheDir, log) : null;
+  let enriching = false;
+  /** Attach cached CRC metadata now; compute the missing ones in the background. */
+  const enrich = async (entries: RomEntry[]) => {
+    if (!metadata) return;
+    const missing: { e: RomEntry; path: string }[] = [];
+    for (const e of entries) {
+      if (e.source !== 'user') continue;
+      const root = roots.find((r) => r.source === e.source)!;
+      const path = join(root.dir, e.system, e.file);
+      const m = await metadata.peek(path);
+      if (m) {
+        e.crc = m.crc;
+        e.canonical = m.name;
+        if (m.name) e.title = titleFromFilename(m.name);
+      } else missing.push({ e, path });
+    }
+    if (missing.length && !enriching) {
+      enriching = true;
+      void (async () => {
+        for (const { e, path } of missing) await metadata.lookup(e.system, path).catch(() => null);
+        enriching = false;
+        libraryCache = null; // next request picks up the names
+      })();
+    }
+  };
+
   const getLibrary = async (fresh: boolean) => {
     if (!fresh && libraryCache && Date.now() - libraryCache.at < 5000) return libraryCache.entries;
-    libraryCache = { at: Date.now(), entries: await scanLibrary(roots) };
+    const entries = await scanLibrary(roots);
+    await enrich(entries);
+    libraryCache = { at: Date.now(), entries };
     return libraryCache.entries;
   };
 
@@ -118,6 +157,22 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
         await writeFile(join(opts.labResultsDir, name), body);
         log(`lab result saved: ${name}`);
         return json(res, { saved: name });
+      }
+      if (req.method === 'POST' && (path === '/api/crash' || path === '/api/telemetry') && opts.diagnosticsDir) {
+        const body = await readBody(req, 64 * 1024);
+        const record = { ...(JSON.parse(body) as object), receivedAt: new Date().toISOString() };
+        const file = path === '/api/crash' ? 'crash.jsonl' : 'latency-sessions.jsonl';
+        await mkdir(opts.diagnosticsDir, { recursive: true });
+        await appendFile(join(opts.diagnosticsDir, file), JSON.stringify(record) + '\n');
+        if (path === '/api/telemetry' && opts.telemetryUrl) {
+          void fetch(opts.telemetryUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(record) }).catch(() => {});
+        }
+        return json(res, { ok: true });
+      }
+      if (path === '/api/telemetry/summary' && opts.diagnosticsDir) {
+        const text = await readFile(join(opts.diagnosticsDir, 'latency-sessions.jsonl'), 'utf8').catch(() => '');
+        const rows = text.split('\n').filter(Boolean).slice(-200).map((l) => JSON.parse(l) as { system: string; players: { transport: string; p95: number }[] });
+        return json(res, { sessions: rows.length, recent: rows.slice(-10) });
       }
       if (path === '/api/health') return json(res, { ok: true, rooms: rooms.size });
       if (path === '/api/lan') {

@@ -6,8 +6,15 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 const repo = fileURLToPath(new URL('../', import.meta.url));
 const haveGame = existsSync(`${repo}test-roms/nes/240pee.nes`) && existsSync(`${repo}apps/host-web/cores/retroarch/fceumm_libretro.wasm`);
 
+// Tests open their own contexts (TV + phones); close them so a running emulator
+// doesn't steal CPU from the next test.
+test.afterEach(async ({ browser }) => {
+  for (const c of browser.contexts()) await c.close();
+});
+
 async function openHost(browser: Browser): Promise<{ host: Page; room: string }> {
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+  await ctx.addInitScript(() => localStorage.setItem('couch.host.settings.v1', JSON.stringify({ onboardingDone: true })));
   const host = await ctx.newPage();
   await host.goto('/?autostart=1');
   const code = host.locator('.lobby .code');

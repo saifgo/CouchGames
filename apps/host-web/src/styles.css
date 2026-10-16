@@ -15,6 +15,9 @@
   font-size: clamp(14px, 1.45vh, 30px);
   font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
 }
+/* Themes (M6) */
+:root[data-theme='sunset'] { --accent: #ff8a65; --focus: #ff8a65; --bg: #120a14; --panel: rgba(32, 18, 34, 0.8); --panel-solid: #1e1220; }
+:root[data-theme='arcade'] { --accent: #39ff88; --focus: #39ff88; --bg: #040806; --panel: rgba(10, 24, 16, 0.8); --panel-solid: #0b1a12; }
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; height: 100%; background: var(--bg); color: var(--text); overflow: hidden; }
 button { font: inherit; color: inherit; background: rgba(255, 255, 255, 0.08); border: 0; border-radius: 0.8rem; padding: 0.8rem 1.4rem; cursor: pointer; transition: transform 0.12s ease, background 0.12s ease, box-shadow 0.12s ease; }
@@ -152,3 +155,12 @@ code { background: rgba(255, 255, 255, 0.08); padding: 0.1em 0.4em; border-radiu
 .slots-grid button { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.8rem; }
 .thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 0.5rem; background: #000; image-rendering: pixelated; }
 .thumb.empty { display: flex; align-items: center; justify-content: center; color: var(--muted); background: rgba(255, 255, 255, 0.04); }
+
+/* onboarding */
+.modal.onboarding { width: 76rem; text-align: center; }
+.modal.onboarding h1 { font-size: 2.8rem; margin-top: 0; }
+.onboarding-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6rem; margin: 1.6rem 0 2.2rem; text-align: left; }
+.onboarding-step { background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); border-radius: 1.2rem; padding: 1.6rem; }
+.onboarding-step h2 { margin: 0.6rem 0; font-size: 1.4rem; }
+.onboarding-step p { color: var(--muted); line-height: 1.5; }
+.onboarding-icon { font-size: 2.6rem; }

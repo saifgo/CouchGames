@@ -61,6 +61,16 @@ not GPL-compatible) · ❌ not usable.
 | Ktor | Apache-2.0 | host-android-tv | Embedded LAN HTTP/WebSocket server |
 | stream-webrtc-android (libwebrtc) | Apache-2.0 / BSD-3 | host-android-tv | WebRTC DataChannels |
 | ZXing core | Apache-2.0 | host-android-tv | QR code rendering |
+| Coil 3 | Apache-2.0 | host-android-tv | Box art loading |
+| androidx.tvprovider | Apache-2.0 | host-android-tv | "Continue playing" on the TV home screen |
+| kotlinx.serialization / coroutines | Apache-2.0 | host-android-tv | JSON, concurrency |
+
+## Data
+
+| Data | Licence | Use |
+|---|---|---|
+| libretro-database No-Intro DATs | CC-BY-SA-4.0 | Downloaded on demand by the couch server for CRC → title lookup (not redistributed) |
+| thumbnails.libretro.com box art | © respective owners, served by libretro | Fetched at runtime by the TV for display only (can be disabled) |
 
 ## Test content
 

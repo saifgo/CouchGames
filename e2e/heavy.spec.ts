@@ -7,6 +7,10 @@ const repo = fileURLToPath(new URL('../', import.meta.url));
 const has = (p: string) => existsSync(`${repo}${p}`);
 
 async function launch(page: Page, base: string, title: string) {
+  await page.addInitScript(() => {
+    const k = 'couch.host.settings.v1';
+    localStorage.setItem(k, JSON.stringify({ ...JSON.parse(localStorage.getItem(k) ?? '{}'), onboardingDone: true }));
+  });
   page.on('pageerror', (e) => console.log('pageerror', e.message));
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto(`${base}/?autostart=1`);

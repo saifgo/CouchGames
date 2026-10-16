@@ -79,7 +79,7 @@ async function run(): Promise<LabResult> {
   const t0 = performance.now();
   out.textContent = `connecting (${mode})…`;
   link.start();
-  const wanted = mode === 'webrtc' ? [TransportKind.WEBRTC_P2P, TransportKind.WEBRTC_RELAY] : [TransportKind.WS_RELAY, TransportKind.WS_LAN];
+  const wanted: TransportKind[] = mode === 'webrtc' ? [TransportKind.WEBRTC_P2P, TransportKind.WEBRTC_RELAY] : [TransportKind.WS_RELAY, TransportKind.WS_LAN];
   await new Promise<void>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`no ${mode} link after 15 s (state ${link.state}, rtc ${link.rtcState})`)), 15000);
     const check = () => {
