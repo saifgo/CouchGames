@@ -100,7 +100,8 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
     res.setHeader('Access-Control-Allow-Origin', '*');
     if (opts.crossOriginIsolation) {
       res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-      res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+      // credentialless (not require-corp) so cross-origin box art still loads.
+      res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     }
     if (req.method === 'OPTIONS') {

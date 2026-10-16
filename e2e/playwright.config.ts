@@ -16,11 +16,21 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     launchOptions: { args: ['--autoplay-policy=no-user-gesture-required', '--disable-features=WebRtcHideLocalIpsWithMdns'] },
   },
-  webServer: {
-    command: 'pnpm --filter @couch/signaling start',
-    url: `http://localhost:${PORT}/api/health`,
-    env: { PORT: String(PORT), LAB: '1' },
-    reuseExistingServer: false,
-    timeout: 60_000,
-  },
+  webServer: [
+    {
+      command: 'pnpm --filter @couch/signaling start',
+      url: `http://localhost:${PORT}/api/health`,
+      env: { PORT: String(PORT), LAB: '1' },
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
+    {
+      // Cross-origin isolated instance (SharedArrayBuffer) for pthread cores like PSP.
+      command: 'pnpm --filter @couch/signaling start',
+      url: `http://localhost:${PORT - 1}/api/health`,
+      env: { PORT: String(PORT - 1), COI: '1' },
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
+  ],
 });

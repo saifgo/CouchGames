@@ -92,7 +92,6 @@ export class Engine {
   private frameMs = 0;
   private lastFrameT = 0;
   private fps = 0;
-  private fpsWindow: number[] = [];
   paused = false;
 
   constructor(readonly opts: LaunchOptions) {}
@@ -259,18 +258,20 @@ export class Engine {
   }
 
   private trackFrames(): void {
+    // Window of (time, frame count) samples: fps = frames advanced / wall time.
+    // Uses the core's own counter when exported (EmulatorJS builds), else rAF ticks.
+    const samples: [number, number][] = [];
+    let ticks = 0;
     const tick = (t: number) => {
       if (this.frames < 0) return;
-      const fc = this.mod?._get_current_frame_count?.();
+      ticks++;
+      const fc = this.mod?._get_current_frame_count?.() ?? ticks;
       if (this.lastFrameT) this.frameMs = this.frameMs * 0.9 + (t - this.lastFrameT) * 0.1;
       this.lastFrameT = t;
-      this.fpsWindow.push(fc ?? t);
-      if (this.fpsWindow.length > 60) this.fpsWindow.shift();
-      if (this.fpsWindow.length > 1) {
-        // With a core frame counter, fps = frames advanced per wall second; else rAF rate.
-        if (fc !== undefined) this.fps = ((this.fpsWindow.at(-1)! - this.fpsWindow[0]!) * 1000) / (this.frameMs * (this.fpsWindow.length - 1) || 1);
-        else this.fps = 1000 / (this.frameMs || 16.7);
-      }
+      samples.push([t, fc]);
+      while (samples.length > 2 && t - samples[0]![0] > 2000) samples.shift();
+      const [t0, f0] = samples[0]!;
+      if (t - t0 > 250) this.fps = ((fc - f0) * 1000) / (t - t0);
       this.frames++;
       requestAnimationFrame(tick);
     };
