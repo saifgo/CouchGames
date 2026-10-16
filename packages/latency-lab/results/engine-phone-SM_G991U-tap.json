@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-16T16:57:32.485Z",
+  "model": "SM-G991U",
+  "soc": "SM8350",
+  "seconds": 15,
+  "results": [
+    {
+      "label": "engine-gba-ejs-mgba",
+      "mode": "engine",
+      "system": "gba",
+      "engine": "ejs",
+      "core": "mgba",
+      "rom": "/test-roms/gba/240pee_mb.gba",
+      "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36",
+      "crossOriginIsolated": false,
+      "launchMs": 689.9000000059605,
+      "seconds": 15.10829999999702,
+      "fps": 59.569905283862354,
+      "rafFps": 59.569905283862354,
+      "emulatedFps": 59.569905283862354,
+      "frameCostMs": {
+        "n": 900,
+        "min": 2,
+        "mean": 5.621777777589029,
+        "p50": 5.899999991059303,
+        "p95": 6.4000000059604645,
+        "p99": 7.600000008940697,
+        "max": 15.200000002980232,
+        "sd": 0.9708605324471961
+      },
+      "frameIntervalMs": {
+        "n": 899,
+        "min": 11.599999994039536,
+        "mean": 16.78676307007455,
+        "p50": 16.799999997019768,
+        "p95": 17.5,
+        "p99": 18.099999994039536,
+        "max": 22.30000001192093,
+        "sd": 0.5142815551199968
+      },
+      "overBudgetPct": 0,
+      "hitchPct": 0,
+      "inputReachedCore": null,
+      "gl": "ANGLE (Qualcomm, Adreno (TM) 660, OpenGL ES 3.2)"
+    }
+  ]
+}

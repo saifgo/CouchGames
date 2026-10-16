@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lab host</title>
+    <style>
+      body { font: 18px/1.4 ui-monospace, monospace; background: #0b0d12; color: #e8ecf1; padding: 2rem; }
+      #room { font-size: 6rem; letter-spacing: .3em; font-weight: 700; color: #ffd166; }
+      table { border-collapse: collapse; margin-top: 1rem; }
+      td, th { padding: .2rem .8rem; border-bottom: 1px solid #222; text-align: right; }
+    </style>
+  </head>
+  <body>
+    <div>Room</div>
+    <div id="room">····</div>
+    <div id="url"></div>
+    <table id="peers"></table>
+    <script type="module" src="./src/host.ts"></script>
+  </body>
+</html>

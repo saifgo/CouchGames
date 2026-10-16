@@ -1,0 +1,34 @@
+node_modules/
+dist/
+.turbo/
+*.log
+.DS_Store
+coverage/
+playwright-report/
+test-results/
+
+# User-supplied games and firmware: never committed
+roms/**
+!roms/README.md
+!roms/*/
+!roms/*/.gitkeep
+
+# Downloaded homebrew test ROMs and emulator cores
+test-roms/
+apps/host-web/public/cores/
+apps/host-web/public/roms-index.json
+
+# Latency lab raw runs (summaries are committed under docs/)
+packages/latency-lab/results/raw/
+
+# Android
+apps/host-android-tv/.gradle/
+apps/host-android-tv/build/
+apps/host-android-tv/app/build/
+apps/host-android-tv/local.properties
+apps/host-android-tv/app/src/main/jniLibs/
+apps/host-android-tv/app/src/main/assets/controller/
+*.apk
+*.keystore
+packages/latency-lab/dist/
+docs/img/skins/*.png.tmp

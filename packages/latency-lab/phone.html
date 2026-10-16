@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <title>Lab phone</title>
+    <style>
+      body { font: 16px/1.4 ui-monospace, monospace; background: #0b0d12; color: #e8ecf1; padding: 1rem; }
+      input, select, button { font: inherit; padding: .5rem; margin: .2rem 0; }
+      button { background: #3d9bff; color: #fff; border: 0; border-radius: 8px; padding: .8rem 1.2rem; }
+      pre { white-space: pre-wrap; background: #151a22; padding: .8rem; border-radius: 8px; }
+    </style>
+  </head>
+  <body>
+    <label>Room <input id="room" size="5" autocapitalize="characters" /></label>
+    <label>Mode <select id="mode"><option>webrtc</option><option>ws</option></select></label>
+    <label>Samples <input id="n" value="2000" size="5" /></label>
+    <label>Label <input id="label" placeholder="e.g. 5GHz-pixel7" size="14" /></label>
+    <button id="go">Run</button>
+    <pre id="out">idle</pre>
+    <script type="module" src="./src/phone.ts"></script>
+  </body>
+</html>
