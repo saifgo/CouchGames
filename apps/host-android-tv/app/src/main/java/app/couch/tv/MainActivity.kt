@@ -7,6 +7,9 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings as AndroidSettings
 import android.util.Log
+import android.hardware.input.InputManager
+import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -50,6 +53,7 @@ import app.couch.tv.ui.HomeScreen
 import app.couch.tv.ui.Muted
 import app.couch.tv.ui.Panel
 import app.couch.tv.ui.PhoneNavigator
+import app.couch.tv.ui.PlayersDialog
 import app.couch.tv.ui.SettingsScreen
 import app.couch.tv.ui.hexColor
 import app.couch.tv.ui.homeHandler
@@ -72,9 +76,20 @@ class MainActivity : ComponentActivity() {
             app.input.apply(p.slot, p.input)
             navigator.feed(p.slot, p.input)
         }
+        (getSystemService(INPUT_SERVICE) as InputManager).registerInputDeviceListener(app.gamepads, null)
         deepLinkGame.value = intent?.data?.takeIf { it.scheme == "couch" }?.lastPathSegment
         setContent { CouchTheme { Root() } }
     }
+
+    override fun onDestroy() {
+        (getSystemService(INPUT_SERVICE) as InputManager).unregisterInputDeviceListener(app.gamepads)
+        super.onDestroy()
+    }
+
+    /** Game controllers paired with the TV play like phones (see Gamepads); the remote is untouched. */
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean = app.gamepads.onKey(event) || super.dispatchKeyEvent(event)
+
+    override fun dispatchGenericMotionEvent(ev: MotionEvent): Boolean = app.gamepads.onMotion(ev) || super.dispatchGenericMotionEvent(ev)
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -101,6 +116,7 @@ class MainActivity : ComponentActivity() {
         var playing by remember { mutableStateOf<Pair<Game, Boolean>?>(null) }
         var detail by remember { mutableStateOf<Game?>(null) }
         var showSettings by remember { mutableStateOf(false) }
+        var showPlayers by remember { mutableStateOf(false) }
         var needsPerm by remember { mutableStateOf(needsStoragePermission()) }
         var tick by remember { mutableStateOf(0) }
         var crashed by remember { mutableStateOf(app.diagnostics.takeUncleanExit()) }
@@ -142,16 +158,21 @@ class MainActivity : ComponentActivity() {
             val sys = Systems.byId(g.system) ?: return@filter false
             sys.tier <= s.effectiveTier && (sys.id != "ps2" || s.ps2Experimental)
         }
+        val recents = remember(tick) { s.recents() }
+        val favs = remember(tick) { s.favourites() }
+        // Platform wheel stops: every game, recents, favourites, then one per system (same as the web host).
         val rows = remember(playable, tick) {
             val byId = playable.associateBy { it.id }
+            val byTitle = compareBy<Game> { it.title.lowercase() }
             buildList {
-                val recent = s.recents().mapNotNull { byId[it] }
-                if (recent.isNotEmpty()) add(HomeRow("recent", "Continue playing", null, recent))
-                val favs = s.favourites()
-                playable.filter { it.id in favs }.takeIf { it.isNotEmpty() }?.let { add(HomeRow("fav", "Favourites", null, it)) }
+                add(HomeRow("all", "All Games", "All Games", "${playable.size} games", null, playable.sortedWith(byTitle)))
+                val recent = recents.mapNotNull { byId[it] }.take(20)
+                if (recent.isNotEmpty()) add(HomeRow("recent", "Recent", "Recently Played", "Jump back in", Color(0xFF4DD8FF), recent))
+                val fav = playable.filter { it.id in favs }.sortedWith(byTitle)
+                if (fav.isNotEmpty()) add(HomeRow("fav", "Favourites", "Favourites", "${fav.size} games", Color(0xFFFFD166), fav))
                 for (sys in Systems.all) {
-                    val list = playable.filter { it.system == sys.id }.sortedBy { it.title.lowercase() }
-                    if (list.isNotEmpty()) add(HomeRow(sys.id, sys.name, hexColor(sys.accent), list))
+                    val list = playable.filter { it.system == sys.id }.sortedWith(byTitle)
+                    if (list.isNotEmpty()) add(HomeRow(sys.id, sys.shortName, sys.name, "${sys.maker} · ${sys.year}", hexColor(sys.accent), list))
                 }
             }
         }
@@ -173,12 +194,24 @@ class MainActivity : ComponentActivity() {
                 joinUrl = joinUrl,
                 maxPlayers = s.maxPlayers,
                 onlineArt = s.onlineArt,
+                recents = recents,
+                favourites = favs,
                 needsStoragePermission = needsPerm,
                 onGrantStorage = { requestStorage() },
                 onOpen = { detail = it },
                 onSettings = { showSettings = true },
                 onRefresh = { refresh() },
+                onPlayers = { showPlayers = true },
             )
+            if (showPlayers) {
+                PlayersDialog(
+                    view = view,
+                    maxPlayers = s.maxPlayers,
+                    onSwap = { a, b -> app.session.swapSlots(a, b) },
+                    onRemove = { app.session.removePlayer(it) },
+                    onTidy = { app.session.tidySlots() },
+                ) { showPlayers = false }
+            }
             detail?.let { g ->
                 GameDetail(g, s.onlineArt, app.saves.hasAuto(g.id), onPlay = { resume -> detail = null; playing = g to resume }, onFav = { s.toggleFavourite(g.id); tick++ }) {
                     detail = null
@@ -210,8 +243,8 @@ class MainActivity : ComponentActivity() {
                 Notice(
                     title = "Welcome to Couch",
                     text = "1 · Copy your games into roms/<system>/ on a USB drive or in Documents (this device creates the folders for you).\n" +
-                        "2 · Scan the QR code with each phone: it becomes the controller, no app needed.\n" +
-                        "3 · In a game, press Home on your phone for save states, controller swaps and quit.",
+                        "2 · Scan the QR code with each phone: it becomes the controller, no app needed. Game controllers paired with this TV join with any button.\n" +
+                        "3 · In a game, press Home on your phone for save states, controller swaps and quit. If a player leaves, use Players (bottom bar) or Controllers (in-game menu) to swap or remove them.",
                     primary = "Let's play",
                     onPrimary = { s.onboardingDone = true; onboarding = false },
                 ) { s.onboardingDone = true; onboarding = false }

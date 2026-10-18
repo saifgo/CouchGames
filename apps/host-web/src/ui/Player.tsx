@@ -332,7 +332,7 @@ export function Player({ game, resume, settings, session, view, onExit, setNavEn
           )}
           {menu === 'players' && (
             <div className="menu-list">
-              <p className="hint">{swapFrom === null ? 'Pick a player to move, then the slot to swap with.' : `Swap P${swapFrom + 1} with…`}</p>
+              <p className="hint">{swapFrom === null ? 'Pick a player, then the slot to swap with (or remove them).' : `Swap P${swapFrom + 1} with…`}</p>
               {Array.from({ length: settings.maxPlayers }, (_, i) => {
                 const p = view.players.find((x) => x.slot === i);
                 return (
@@ -354,17 +354,36 @@ export function Player({ game, resume, settings, session, view, onExit, setNavEn
                   </button>
                 );
               })}
-              {view.players.length > 0 && (
+              {swapFrom !== null && view.players.some((p) => p.slot === swapFrom) && (
                 <button
                   data-nav
                   className="danger"
                   onClick={() => {
-                    const away = view.players.filter((p) => !p.connected);
-                    for (const p of away) session.removePlayer(p.slot);
-                    flash(away.length ? `Freed ${away.length} slot(s)` : 'Nobody is away');
+                    const p = view.players.find((x) => x.slot === swapFrom);
+                    for (let k = 0; k < 8; k++) engineRef.current?.clearInput(k);
+                    session.removePlayer(swapFrom);
+                    setSwapFrom(null);
+                    flash(`Removed ${p?.name ?? `P${swapFrom + 1}`}`);
                   }}
                 >
-                  Free slots of disconnected phones
+                  Remove P{swapFrom + 1} from the game
+                </button>
+              )}
+              {swapFrom !== null && (
+                <button data-nav onClick={() => setSwapFrom(null)}>
+                  Cancel
+                </button>
+              )}
+              {swapFrom === null && view.players.length > 0 && (
+                <button
+                  data-nav
+                  onClick={() => {
+                    for (let k = 0; k < 8; k++) engineRef.current?.clearInput(k);
+                    const removed = session.tidySlots();
+                    flash(removed ? `Removed ${removed} away player(s), everyone moved up` : 'Everyone moved up');
+                  }}
+                >
+                  Remove away players and move everyone up
                 </button>
               )}
             </div>

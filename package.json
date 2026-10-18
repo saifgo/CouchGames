@@ -17,6 +17,7 @@
     "e2e": "playwright test -c e2e/playwright.config.ts",
     "test-roms": "node scripts/fetch-test-roms.mjs",
     "cores": "node scripts/fetch-cores.mjs",
+    "logos": "node scripts/build-logos.mjs",
     "setup": "pnpm install && pnpm test-roms && pnpm cores && pnpm build"
   },
   "devDependencies": {

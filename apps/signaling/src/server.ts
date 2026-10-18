@@ -10,6 +10,7 @@ import { MetadataStore } from './metadata.js';
 import { FsStore, type RomStore } from './store.js';
 import { titleFromFilename } from '@couch/systems';
 import { Rooms } from './rooms.js';
+import { checkStorage, type StorageReport } from './storage-check.js';
 
 export interface StaticMount {
   /** URL prefix, e.g. "/" or "/c". */
@@ -135,9 +136,27 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
     }
   };
 
+  // Connection status of the user's ROM store (local folder or S3), for the TV's status chip.
+  const userStore = roots.find((r) => r.source === 'user')?.store ?? null;
+  let storage: { at: number; report: Promise<StorageReport> } | null = null;
+  const getStorage = (fresh: boolean): Promise<StorageReport> | null => {
+    if (!userStore) return null;
+    if (!fresh && storage && Date.now() - storage.at < 30_000) return storage.report;
+    const report = checkStorage(userStore);
+    storage = { at: Date.now(), report };
+    return report;
+  };
+
   const getLibrary = async (fresh: boolean) => {
     if (!fresh && libraryCache && Date.now() - libraryCache.at < 5000) return libraryCache.entries;
-    const entries = await scanLibrary(roots);
+    let scanFailed = false;
+    const entries = await scanLibrary(roots, (root, err) => {
+      if (root.store !== userStore || scanFailed) return;
+      scanFailed = true;
+      log(`library: can't list ${JSON.stringify(root.store.describe())}: ${(err as Error).message}`);
+    });
+    // A failed scan means the last "connected" status may be stale: check again.
+    if (scanFailed && storage) storage.at = 0;
     await enrich(entries);
     libraryCache = { at: Date.now(), entries };
     return libraryCache.entries;
@@ -190,6 +209,10 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
         return json(res, { port, secure: !!opts.tls, addresses: lanAddresses() });
       }
       if (path === '/api/library') return json(res, { roms: await getLibrary(url.searchParams.has('fresh')) });
+      if (path === '/api/storage') {
+        const report = await getStorage(url.searchParams.has('fresh'));
+        return report ? json(res, await report) : notFound(res);
+      }
       if (path.startsWith('/api/library/') && path.endsWith('/crc')) {
         const id = path.split('/')[3]!;
         const entry = (await getLibrary(false)).find((e) => e.id === id);
@@ -250,6 +273,11 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
   });
   const port = (server.address() as { port: number }).port;
   const url = `${opts.tls ? 'https' : 'http'}://localhost:${port}`;
+  void getStorage(true)?.then((r) => {
+    const where = r.store.kind === 's3' ? `s3://${r.store.bucket}/${r.store.prefix}` : r.store.path;
+    if (r.ok) log(`ROM storage ${where}: connected, ${r.games} game${r.games === 1 ? '' : 's'}${r.misplacedTotal ? `, ${r.misplacedTotal} misplaced file(s)` : ''}`);
+    else log(`ROM storage ${where}: NOT CONNECTED: ${r.error} [${r.errorCode}]`);
+  });
 
   return {
     server,

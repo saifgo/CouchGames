@@ -22,6 +22,8 @@ const DAT_NAMES: Partial<Record<ConsoleId, string>> = {
   gba: 'Nintendo - Game Boy Advance',
   n64: 'Nintendo - Nintendo 64',
   nds: 'Nintendo - Nintendo DS',
+  atari2600: 'Atari - 2600',
+  pce: 'NEC - PC Engine - TurboGrafx 16',
 };
 const MAX_BYTES = 64 * 1024 * 1024;
 

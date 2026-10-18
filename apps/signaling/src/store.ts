@@ -19,7 +19,18 @@ export interface StoredFile {
   mtimeMs: number;
 }
 
+/** Where a store points, for the connection status on the TV (no secrets). */
+export type StoreInfo =
+  | { kind: 'local'; path: string }
+  | { kind: 's3'; bucket: string; prefix: string; region: string; endpoint?: string };
+
 export interface RomStore {
+  describe(): StoreInfo;
+  /**
+   * Every file under the root, as "/"-separated relative paths, up to `max` entries.
+   * Throws when the store can't be reached (bad credentials, missing bucket...).
+   */
+  walk(max: number): Promise<{ files: string[]; truncated: boolean }>;
   /** Stable key for caches (metadata by CRC): absolute path or s3://bucket/key. */
   id(rel: string): string;
   /** Files directly inside `dir`. Missing directory → []. */
@@ -35,6 +46,26 @@ export class FsStore implements RomStore {
 
   id(rel: string) {
     return join(this.dir, rel);
+  }
+
+  describe(): StoreInfo {
+    return { kind: 'local', path: this.dir };
+  }
+
+  async walk(max: number) {
+    const files: string[] = [];
+    // Throws (ENOENT) when the folder itself is missing: that is a configuration error.
+    const visit = async (rel: string, depth: number): Promise<void> => {
+      const entries = await readdir(rel ? join(this.dir, rel) : this.dir, { withFileTypes: true });
+      for (const e of entries) {
+        if (files.length >= max) return;
+        const path = rel ? `${rel}/${e.name}` : e.name;
+        if (e.isFile()) files.push(path);
+        else if (e.isDirectory() && depth < 3) await visit(path, depth + 1);
+      }
+    };
+    await visit('', 0);
+    return { files, truncated: files.length >= max };
   }
 
   async list(dir: string): Promise<StoredFile[]> {
@@ -77,16 +108,20 @@ export interface S3StoreOptions {
 export class S3Store implements RomStore {
   readonly bucket: string;
   readonly prefix: string;
+  readonly region: string;
+  readonly endpoint: string | undefined;
   private readonly client: Pick<S3Client, 'send'>;
 
   constructor(opts: S3StoreOptions) {
     this.bucket = opts.bucket;
     const p = (opts.prefix ?? '').replace(/^\/+/, '');
     this.prefix = p && !p.endsWith('/') ? `${p}/` : p;
+    this.region = opts.region ?? 'us-east-1';
+    this.endpoint = opts.endpoint;
     this.client =
       opts.client ??
       new S3Client({
-        region: opts.region ?? 'us-east-1',
+        region: this.region,
         ...(opts.endpoint ? { endpoint: opts.endpoint } : {}),
         forcePathStyle: opts.forcePathStyle ?? false,
       });
@@ -94,11 +129,38 @@ export class S3Store implements RomStore {
 
   /** A store for a sub-folder of this one (e.g. "bios"), same bucket and client. */
   sub(dir: string): S3Store {
-    return new S3Store({ bucket: this.bucket, prefix: this.prefix + dir, client: this.client });
+    return new S3Store({
+      bucket: this.bucket,
+      prefix: this.prefix + dir,
+      region: this.region,
+      ...(this.endpoint ? { endpoint: this.endpoint } : {}),
+      client: this.client,
+    });
   }
 
   id(rel: string) {
     return `s3://${this.bucket}/${this.key(rel)}`;
+  }
+
+  describe(): StoreInfo {
+    return { kind: 's3', bucket: this.bucket, prefix: this.prefix, region: this.region, ...(this.endpoint ? { endpoint: this.endpoint } : {}) };
+  }
+
+  async walk(max: number) {
+    const files: string[] = [];
+    let token: string | undefined;
+    do {
+      const page = await this.client.send(
+        new ListObjectsV2Command({ Bucket: this.bucket, Prefix: this.prefix || undefined, ContinuationToken: token, MaxKeys: Math.min(1000, max) }),
+      );
+      for (const o of page.Contents ?? []) {
+        const rel = o.Key!.slice(this.prefix.length);
+        // Folder placeholders ("snes/") made by some upload tools are not files.
+        if (rel && !rel.endsWith('/')) files.push(rel);
+      }
+      token = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (token && files.length < max);
+    return { files: files.slice(0, max), truncated: !!token || files.length > max };
   }
 
   /** Object key for `rel`, or null for paths with empty / "." / ".." segments. */

@@ -113,6 +113,8 @@ code { background: rgba(255, 255, 255, 0.08); padding: 0.1em 0.4em; border-radiu
 .platforms::-webkit-scrollbar { display: none; }
 .platform { flex: 0 0 16rem; display: flex; flex-direction: column; align-items: center; gap: 0.15rem; padding: 0.6rem 0.8rem; background: transparent; border-radius: 0.4rem; opacity: 0.4; transition: opacity 0.2s ease, transform 0.2s ease; }
 .platform-logo { font-size: 2.4rem; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: 0.04em; line-height: 1.1; white-space: nowrap; color: var(--pf, #fff); -webkit-text-stroke: 1px rgba(255, 255, 255, 0.35); }
+.platform-img { height: 2.9rem; max-width: 14rem; object-fit: contain; margin: 0.05rem 0; }
+.platform:focus .platform-img, .platform.active .platform-img { filter: drop-shadow(0 0 0.5rem color-mix(in srgb, var(--pf, #fff) 70%, transparent)); }
 .platform small { font-family: var(--mono); font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
 .platform.active { opacity: 0.85; }
 .platform:focus { opacity: 1; transform: scale(1.12); box-shadow: none; background: transparent; }
@@ -175,6 +177,7 @@ code { background: rgba(255, 255, 255, 0.08); padding: 0.1em 0.4em; border-radiu
 .slot.filled { border-color: color-mix(in srgb, var(--pc) 55%, transparent); background: color-mix(in srgb, var(--pc) 14%, transparent); animation: slot-in 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.4); }
 .slot.filled .slot-avatar { background: var(--pc); color: #fff; text-shadow: 0 1px 2px #0008; box-shadow: 0 0 1rem var(--pc); }
 .slot.away { opacity: 0.55; }
+.device-icon { width: 72%; height: 72%; filter: drop-shadow(0 1px 1px #0008); }
 .slot .dot { position: absolute; top: 0.35rem; right: 0.35rem; width: 0.5rem; height: 0.5rem; }
 @keyframes slot-in { from { transform: scale(0.6); opacity: 0; } }
 
@@ -239,3 +242,22 @@ code { background: rgba(255, 255, 255, 0.08); padding: 0.1em 0.4em; border-radiu
 .onboarding-step h2 { margin: 0.6rem 0; font-size: 1.4rem; }
 .onboarding-step p { color: var(--muted); line-height: 1.5; }
 .onboarding-icon { font-size: 2.6rem; }
+
+/* ROM storage status (footer chip + panel) */
+.storage-chip { display: inline-flex; align-items: center; gap: 0.5rem; }
+.storage-chip .dot, .storage-status .dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: #888; flex: none; }
+.storage-chip.good .dot, .storage-status.good .dot { background: #2fa84f; box-shadow: 0 0 0.5rem #2fa84f; }
+.storage-chip.warn .dot { background: #e0a020; box-shadow: 0 0 0.5rem #e0a020; }
+.storage-chip.bad .dot, .storage-status.bad .dot { background: #d23a3a; box-shadow: 0 0 0.5rem #d23a3a; }
+.storage-chip.wait .dot { animation: pulse 1s ease-in-out infinite alternate; }
+@keyframes pulse { from { opacity: 0.3; } to { opacity: 1; } }
+.modal.storage { width: min(46rem, 92vw); max-height: 86vh; overflow: auto; }
+.storage-status { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; font-size: 1.3rem; font-weight: 700; }
+.storage-error { flex-basis: 100%; font-size: 1rem; font-weight: 400; color: #ff9b9b; }
+.storage-facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1.2rem; margin: 1rem 0; }
+.storage-facts dt { opacity: 0.6; }
+.storage-facts dd { margin: 0; word-break: break-all; }
+.storage-misplaced h2 { font-size: 1.05rem; color: #e0a020; margin: 0.6rem 0 0.4rem; }
+.storage-misplaced ul { margin: 0; padding-left: 1.2rem; font-size: 0.95rem; line-height: 1.5; }
+.storage-misplaced code { margin-right: 0.4rem; }
+.storage-actions { display: flex; gap: 0.8rem; justify-content: flex-end; margin-top: 1.2rem; }

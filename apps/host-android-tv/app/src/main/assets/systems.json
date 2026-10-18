@@ -382,6 +382,74 @@
           "note": "Play! runs many titles with HLE; some need a real BIOS"
         }
       ]
+    },
+    {
+      "id": "atari2600",
+      "name": "Atari 2600",
+      "shortName": "2600",
+      "maker": "Atari",
+      "year": 1977,
+      "extensions": [
+        ".a26",
+        ".bin",
+        ".zip"
+      ],
+      "skin": "atari2600",
+      "maxPlayers": 2,
+      "tier": 1,
+      "accent": "#c8642a",
+      "web": {
+        "cores": [
+          "stella2014"
+        ],
+        "backend": "ejs",
+        "analog": false
+      },
+      "android": {
+        "cores": [
+          "stella",
+          "stella2014"
+        ]
+      },
+      "bios": []
+    },
+    {
+      "id": "pce",
+      "name": "PC Engine",
+      "shortName": "PCE",
+      "maker": "NEC",
+      "year": 1987,
+      "extensions": [
+        ".pce",
+        ".cue",
+        ".chd",
+        ".ccd",
+        ".toc",
+        ".m3u"
+      ],
+      "skin": "pce",
+      "maxPlayers": 5,
+      "tier": 1,
+      "accent": "#e0561f",
+      "web": {
+        "cores": [
+          "mednafen_pce_fast"
+        ],
+        "backend": "retroarch",
+        "analog": false
+      },
+      "android": {
+        "cores": [
+          "mednafen_pce_fast"
+        ]
+      },
+      "bios": [
+        {
+          "file": "syscard3.pce",
+          "required": false,
+          "note": "System Card 3.0: needed for CD games only"
+        }
+      ]
     }
   ]
 }

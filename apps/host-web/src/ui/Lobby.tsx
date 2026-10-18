@@ -1,6 +1,6 @@
 import { PLAYER_COLORS } from '@couch/protocol';
 import type { SessionView } from '../net/host-session.js';
-import { QR, quality } from './common.js';
+import { DeviceIcon, QR, quality } from './common.js';
 
 /** Join panel: QR + room code + player slots, under the game details on the home screen. */
 export function Lobby({ view, joinUrl, maxPlayers, compact = false }: { view: SessionView; joinUrl: string | null; maxPlayers: number; compact?: boolean }) {
@@ -32,7 +32,7 @@ export function Lobby({ view, joinUrl, maxPlayers, compact = false }: { view: Se
             style={{ ['--pc' as string]: p?.color ?? PLAYER_COLORS[i] }}
             title={p ? p.name : `P${i + 1} open`}
           >
-            <span className="slot-avatar">{p ? p.name.slice(0, 1).toUpperCase() : i + 1}</span>
+            <span className="slot-avatar">{p ? <DeviceIcon ios={p.ios} /> : i + 1}</span>
             <span className="slot-label">{p ? p.name : `P${i + 1}`}</span>
             {p && <span className={`dot ${quality(p)}`} />}
           </div>

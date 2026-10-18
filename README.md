@@ -30,7 +30,7 @@ pnpm start         # → open http://localhost:8787 on the TV/laptop
   If Windows asks, allow Node.js on **private networks**.
 - PSP needs cross-origin isolation: start with `COI=1 pnpm start`, keep the TV page on `localhost`,
   and enable *PSP (experimental)* in Settings.
-- Systems: NES, SNES, Genesis, GB/GBC, GBA everywhere. PS1, NDS and PSP on desktop-class CPUs.
+- Systems: NES, SNES, Genesis, GB/GBC, GBA, Atari 2600, PC Engine everywhere. PS1, NDS and PSP on desktop-class CPUs.
   N64 and PS2 need the Android app.
 
 ### 2. Android TV / Google TV box (native host)

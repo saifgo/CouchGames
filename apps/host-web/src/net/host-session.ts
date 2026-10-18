@@ -58,6 +58,8 @@ export interface PlayerView {
   oneWayP95: number;
   jitterMs: number;
   lossPct: number;
+  /** The phone is an iPhone/iPad (picks the lobby icon). */
+  ios: boolean;
 }
 
 export interface SessionView {
@@ -185,6 +187,35 @@ export class HostSession extends Emitter<Events> {
     this.emit('leave', p);
     this.sendRoster();
     this.publish();
+  }
+
+  /**
+   * Frees the slots of phones that left (kept 5 minutes for a reconnect), then moves everyone
+   * up so players fill P1, P2, … in their current order. Fixes "P1 left and the game only
+   * listens to P1". Returns how many away players were removed.
+   */
+  tidySlots(): number {
+    const away = this.players.filter((p): p is NonNullable<typeof p> => !!p && !p.connected).map((p) => p.slot);
+    for (const slot of away) this.removePlayer(slot);
+    const list = this.players.filter((p): p is NonNullable<typeof p> => !!p).sort((a, b) => a.slot - b.slot);
+    this.players.fill(null);
+    let moved = false;
+    list.forEach((p, i) => {
+      this.players[i] = p;
+      if (p.slot === i) return;
+      moved = true;
+      p.slot = i;
+      p.color = PLAYER_COLORS[i]!;
+      if (p.peerId != null) {
+        this.peerSlot.set(p.peerId, i);
+        this.link.sendCtrl(p.peerId, encodeControl({ type: MsgType.SLOT, slot: i, color: p.color }));
+      }
+    });
+    if (moved) {
+      this.sendRoster();
+      this.publish();
+    }
+    return away.length;
   }
 
   /* --------------------------------------------------------- hot path */
@@ -405,6 +436,7 @@ export class HostSession extends Emitter<Events> {
             oneWayP95: lat.p95,
             jitterMs: p.stats.jitter,
             lossPct: p.stats.lossPermille / 10,
+            ios: p.caps?.ios ?? false,
           },
         ];
       }),

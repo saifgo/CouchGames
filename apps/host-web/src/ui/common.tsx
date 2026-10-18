@@ -18,6 +18,8 @@ const THUMB_DIRS: Record<string, string> = {
   n64: 'Nintendo - Nintendo 64',
   psp: 'Sony - PlayStation Portable',
   nds: 'Nintendo - Nintendo DS',
+  atari2600: 'Atari - 2600',
+  pce: 'NEC - PC Engine - TurboGrafx 16',
   ps2: 'Sony - PlayStation 2',
 };
 
@@ -91,12 +93,30 @@ export function quality(p: PlayerView): 'good' | 'ok' | 'bad' | 'off' {
   return v <= 20 ? 'good' : v <= 40 ? 'ok' : 'bad';
 }
 
+/** Icon of the player's device instead of a letter: iPhone or Android phone. */
+export function DeviceIcon({ ios }: { ios: boolean }) {
+  return ios ? (
+    <svg className="device-icon" viewBox="0 0 24 24" role="img" aria-label="iPhone">
+      <rect x="6" y="2" width="12" height="20" rx="3" fill="none" stroke="currentColor" strokeWidth="2" />
+      <rect x="10" y="4.2" width="4" height="1.6" rx="0.8" fill="currentColor" />
+    </svg>
+  ) : (
+    <svg className="device-icon" viewBox="0 0 24 24" role="img" aria-label="Android phone">
+      <rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
+      <circle cx="12" cy="5" r="1" fill="currentColor" />
+      <rect x="10" y="18.3" width="4" height="1.4" rx="0.7" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function PlayerChip({ p, big = false }: { p: PlayerView; big?: boolean }) {
   const q = quality(p);
   const relay = p.transport === TransportKind.WS_RELAY;
   return (
     <div className={`chip ${big ? 'big' : ''} ${p.connected ? '' : 'away'}`} style={{ ['--pc' as string]: p.color }}>
-      <span className="avatar">{p.name.slice(0, 1).toUpperCase()}</span>
+      <span className="avatar">
+        <DeviceIcon ios={p.ios} />
+      </span>
       <span className="chip-text">
         <b>
           P{p.slot + 1} · {p.name}

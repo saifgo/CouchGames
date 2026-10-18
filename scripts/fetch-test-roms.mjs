@@ -71,6 +71,22 @@ const MANIFEST = [
     source: 'https://github.com/retrobrews/md-games',
   },
   {
+    system: 'atari2600',
+    file: 'halo2600.bin',
+    title: 'Halo 2600',
+    url: 'https://raw.githubusercontent.com/retrobrews/atari2600-games/master/halo2600.bin',
+    license: 'free homebrew (retrobrews, free distribution approved by author)',
+    source: 'https://github.com/retrobrews/atari2600-games',
+  },
+  {
+    system: 'pce',
+    file: 'pcengine-polygon-sample.pce',
+    title: 'P.C.Engine polygon sample',
+    url: 'https://raw.githubusercontent.com/yhzmr442/P.C.Engine/main/sample.pce',
+    license: 'GPL-3.0',
+    source: 'https://github.com/yhzmr442/P.C.Engine',
+  },
+  {
     system: 'n64',
     file: 'FlappyBird-v1.7.z64',
     title: 'Flappy Bird 64',

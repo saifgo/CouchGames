@@ -46,6 +46,8 @@ class Player(
     @Volatile var color: String,
     @Volatile var peer: PhonePeer?,
     var caps: Caps,
+    /** A game controller paired with the TV (no phone, no network). */
+    val local: Boolean = false,
 ) {
     /** Latest full input state, written in place by the hot path. */
     val input = InputState()
@@ -70,6 +72,10 @@ data class PlayerView(
     val oneWayP95: Double,
     val jitterMs: Double,
     val lossPct: Double,
+    /** A game controller paired with the TV. */
+    val local: Boolean = false,
+    /** The phone is an iPhone/iPad (picks the lobby icon). */
+    val ios: Boolean = false,
 )
 
 data class SessionView(val room: String, val players: List<PlayerView>)
@@ -124,6 +130,8 @@ class HostSession(private val context: Context, var hostName: String) {
     @Volatile var onInput: ((Player) -> Unit)? = null
     @Volatile var onMenu: ((slot: Int, action: Int, arg: Int) -> Unit)? = null
     @Volatile var onJoinLeave: ((Player, joined: Boolean) -> Unit)? = null
+    /** Rumble for a TV controller (phones get it over the network). */
+    @Volatile var onLocalRumble: ((Player, strong: Int, weak: Int, durationMs: Int) -> Unit)? = null
 
     init {
         scope.launch {
@@ -289,13 +297,7 @@ class HostSession(private val context: Context, var hostName: String) {
         val name = b.name.ifBlank { "Player" }.take(16)
         val player: Player
         synchronized(this) {
-            var slot = players.indexOfFirst { it?.clientId == b.clientId }
-            if (slot < 0 && b.wantSlot != null && b.wantSlot in 0 until maxPlayers && players[b.wantSlot] == null) slot = b.wantSlot
-            if (slot < 0) slot = (0 until maxPlayers).firstOrNull { players[it] == null } ?: -1
-            if (slot < 0) {
-                slot = (0 until maxPlayers).filter { players[it]?.connected == false }
-                    .minByOrNull { players[it]!!.lastSeen } ?: -1
-            }
+            val slot = pickSlot(b.clientId, b.wantSlot)
             if (slot < 0) {
                 peer.sendCtrl(Codec.encodeControl(ControlMsg.Error(ErrorBody("room-full", "All $maxPlayers player slots are taken"))))
                 return
@@ -324,6 +326,56 @@ class HostSession(private val context: Context, var hostName: String) {
         publish()
     }
 
+    /** Same device back → its slot; else the slot it asks for; else the first free; else the longest-away one. Call under the lock. */
+    private fun pickSlot(clientId: String, wantSlot: Int?): Int {
+        var slot = players.indexOfFirst { it?.clientId == clientId }
+        if (slot < 0 && wantSlot != null && wantSlot in 0 until maxPlayers && players[wantSlot] == null) slot = wantSlot
+        if (slot < 0) slot = (0 until maxPlayers).firstOrNull { players[it] == null } ?: -1
+        if (slot < 0) {
+            slot = (0 until maxPlayers).filter { players[it]?.connected == false }
+                .minByOrNull { players[it]!!.lastSeen } ?: -1
+        }
+        return slot
+    }
+
+    /* ------------------------------------------- controllers paired with the TV */
+
+    /** A TV game controller pressed a button: seat it like a phone. Null when every slot is taken. */
+    fun joinLocal(clientId: String, name: String): Player? {
+        val player = synchronized(this) {
+            val slot = pickSlot(clientId, null)
+            if (slot < 0) return null
+            val existing = players[slot]
+            if (existing != null && existing.clientId == clientId) {
+                existing.also { it.name = name; it.connected = true; it.lastSeen = SystemClock.elapsedRealtime() }
+            } else {
+                Player(clientId, slot, name, PLAYER_COLORS[slot], null, Caps(vibrate = false, gyro = false, ios = false), local = true).also { players[slot] = it }
+            }
+        }
+        onJoinLeave?.invoke(player, true)
+        sendRoster()
+        publish()
+        return player
+    }
+
+    /** Hot path for TV controllers (main thread): [Player.input] was just updated. */
+    fun localInput(p: Player) {
+        p.lastSeen = SystemClock.elapsedRealtime()
+        onInput?.invoke(p)
+    }
+
+    /** The controller was switched off or unplugged: keep its slot for a while, like a phone. */
+    fun localGone(p: Player) {
+        if (players.getOrNull(p.slot) !== p) return
+        p.connected = false
+        p.lastSeen = SystemClock.elapsedRealtime()
+        p.input.clear()
+        onInput?.invoke(p)
+        onJoinLeave?.invoke(p, false)
+        sendRoster()
+        publish()
+    }
+
     /* ----------------------------------------------------------- public */
 
     fun setSkin(skin: String, title: String?) {
@@ -338,7 +390,12 @@ class HostSession(private val context: Context, var hostName: String) {
     }
 
     fun rumble(slot: Int, strong: Int, weak: Int, durationMs: Int) {
-        players.getOrNull(slot)?.peer?.sendCtrl(Codec.encodeControl(ControlMsg.Rumble(strong, weak, durationMs)))
+        val p = players.getOrNull(slot) ?: return
+        if (p.local) {
+            onLocalRumble?.invoke(p, strong, weak, durationMs)
+            return
+        }
+        p.peer?.sendCtrl(Codec.encodeControl(ControlMsg.Rumble(strong, weak, durationMs)))
     }
 
     fun swapSlots(a: Int, b: Int) {
@@ -363,6 +420,35 @@ class HostSession(private val context: Context, var hostName: String) {
         onJoinLeave?.invoke(p, false)
         sendRoster()
         publish()
+    }
+
+    /**
+     * Frees the slots of phones that left (they are kept 5 minutes for a reconnect), then moves
+     * everyone up so the players fill P1, P2, … in their current order. Fixes "P1 left and the
+     * game only listens to P1". Returns how many away players were removed.
+     */
+    fun tidySlots(): Int {
+        val away = synchronized(this) { players.filter { it != null && !it.connected }.map { it!!.slot } }
+        for (slot in away) removePlayer(slot)
+        val moved = mutableListOf<Player>()
+        synchronized(this) {
+            val list = players.filterNotNull().sortedBy { it.slot }
+            players.fill(null)
+            list.forEachIndexed { i, p ->
+                players[i] = p
+                if (p.slot != i) {
+                    p.slot = i
+                    p.color = PLAYER_COLORS[i]
+                    moved += p
+                }
+            }
+        }
+        for (p in moved) p.peer?.sendCtrl(Codec.encodeControl(ControlMsg.Slot(SlotBody(p.slot, p.color))))
+        if (moved.isNotEmpty()) {
+            sendRoster()
+            publish()
+        }
+        return away.size
     }
 
     /* --------------------------------------------------------- periodic */
@@ -402,7 +488,11 @@ class HostSession(private val context: Context, var hostName: String) {
             room,
             players.filterNotNull().map {
                 val s = summarize(it.stats.latency.values())
-                PlayerView(it.slot, it.name, it.color, it.connected, it.peer?.transport ?: 0, it.clock.srtt, s.p50, s.p95, it.stats.jitter, it.stats.lossPermille / 10)
+                PlayerView(
+                    it.slot, it.name, it.color, it.connected,
+                    if (it.local) TransportKind.BT_HID else it.peer?.transport ?: 0,
+                    it.clock.srtt, s.p50, s.p95, it.stats.jitter, it.stats.lossPermille / 10, it.local, it.caps.ios,
+                )
             }.sortedBy { it.slot },
         )
     }

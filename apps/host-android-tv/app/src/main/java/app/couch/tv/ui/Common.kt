@@ -19,12 +19,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.PhoneAndroid
+import androidx.compose.material.icons.rounded.PhoneIphone
+import androidx.compose.material.icons.rounded.SportsEsports
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.Dp
 import androidx.tv.material3.ColorScheme
+import androidx.tv.material3.Icon
 import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -72,12 +80,12 @@ fun qrBitmap(text: String, size: Int = 512): ImageBitmap {
 
 /** Generated cover art in the system's colours (used when no online art is found). */
 @Composable
-fun GeneratedArt(game: Game, modifier: Modifier = Modifier) {
+fun GeneratedArt(game: Game, modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(14.dp)) {
     val sys = Systems.byId(game.system)
     val hue = (abs(game.title.hashCode()) % 360).toFloat()
     Box(
         modifier
-            .clip(RoundedCornerShape(14.dp))
+            .clip(shape)
             .background(Brush.linearGradient(listOf(hexColor(sys?.accent ?: "#333333"), Color.hsl(hue, 0.45f, 0.22f), Bg))),
     ) {
         Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.SpaceBetween) {
@@ -95,6 +103,24 @@ fun quality(p: PlayerView): Color = when {
     else -> Bad
 }
 
+/** What the player holds: a game controller paired with the TV, an iPhone or an Android phone. */
+fun deviceIcon(p: PlayerView): ImageVector = when {
+    p.local -> Icons.Rounded.SportsEsports
+    p.ios -> Icons.Rounded.PhoneIphone
+    else -> Icons.Rounded.PhoneAndroid
+}
+
+fun deviceLabel(p: PlayerView): String = when {
+    p.local -> "TV controller"
+    p.ios -> "iPhone"
+    else -> "Android phone"
+}
+
+@Composable
+fun DeviceIcon(p: PlayerView, size: Dp, tint: Color = Color.White) {
+    Icon(deviceIcon(p), contentDescription = deviceLabel(p), tint = tint, modifier = Modifier.size(size))
+}
+
 @Composable
 fun PlayerChip(p: PlayerView, detailed: Boolean = false) {
     Row(
@@ -103,13 +129,20 @@ fun PlayerChip(p: PlayerView, detailed: Boolean = false) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Box(Modifier.size(28.dp).clip(CircleShape).background(hexColor(p.color)), contentAlignment = Alignment.Center) {
-            Text(p.name.take(1).uppercase(), fontWeight = FontWeight.Black, color = Color.White)
+            DeviceIcon(p, 18.dp)
         }
         Column {
             Text("P${p.slot + 1} · ${p.name}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = if (p.connected) Color.White else Muted)
             if (detailed) {
                 val lag = if (p.oneWayP50.isNaN()) "…" else "${p.oneWayP50.toInt()}–${p.oneWayP95.toInt()} ms lag"
-                Text(if (p.connected) "${TransportKind.label(p.transport)} · $lag" else "reconnecting…", fontSize = 12.sp, color = Muted)
+                Text(
+                    when {
+                        !p.connected -> "reconnecting…"
+                        p.local -> "TV controller"
+                        else -> "${TransportKind.label(p.transport)} · $lag"
+                    },
+                    fontSize = 12.sp, color = Muted,
+                )
             }
         }
         Box(Modifier.size(9.dp).clip(CircleShape).background(quality(p)))

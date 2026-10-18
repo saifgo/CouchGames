@@ -102,6 +102,8 @@ export const CONSOLES = [
   'psp',
   'nds',
   'ps2',
+  'atari2600',
+  'pce',
 ] as const;
 export type ConsoleId = (typeof CONSOLES)[number];
 /** A skin id is a console id or the console-agnostic "modern" pad. */

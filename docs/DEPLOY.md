@@ -49,8 +49,22 @@ objects from there. Keys use the same layout under `S3_PREFIX`:
 ```
 s3://my-games/couch/roms/snes/Super Mario World (USA).sfc   ← S3_PREFIX=couch/roms/
 s3://my-games/couch/roms/psx/Game.cue + Game (Track 1).bin
+s3://my-games/couch/roms/pce/Bonk's Adventure (USA).pce
 s3://my-games/couch/roms/bios/scph5501.bin                  ← served as /bios/
 ```
+
+Rules: one folder per system directly under the prefix, files directly inside it (no sub-folders),
+folder names **lower-case** (S3 keys are case-sensitive, so `SNES/` is not `snes/`). Folder names:
+`nes snes genesis gb gbc gba psx n64 psp nds ps2 atari2600 pce`, plus `bios/`. The accepted file
+extensions per system are in `roms/README.md`. A disc's `.cue` and its track files sit side by side.
+
+**Checking the connection.** The library footer on the TV has a storage chip (green: connected,
+amber: connected but some files are in the wrong place, red: not connected). Select it for the
+bucket, prefix, region, whether listing and reading work, games per system, BIOS files found, a
+plain-language error (wrong secret key, wrong region, missing permission...), and every file that
+is not picked up with the reason. *Test again* re-checks after you change the bucket. The same
+report is at `GET /api/storage` (`?fresh` to skip the 30 s cache), and the server logs
+`ROM storage …: connected, N games` or `NOT CONNECTED: …` at startup.
 
 The TV still loads `/roms/...` from the Couch server, which proxies the bytes (Range requests
 included). The bucket can stay **private** and needs no CORS rules. Every ROM load costs the server

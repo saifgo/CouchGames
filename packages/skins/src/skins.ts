@@ -7,6 +7,8 @@
  *  - Genesis Plus GX: Y→A, B→B, A→C, L→X, X→Y, R→Z, SELECT→MODE
  *  - PCSX-ReARMed / PPSSPP / Play!: B→✕, A→○, Y→□, X→△
  *  - Mupen64Plus-Next: B→A, Y→B, L2→Z, right analog→C-buttons
+ *  - Beetle PCE Fast: A→I, B→II, SELECT→Select, START→Run (6-button pads: Y→III, X→IV, L→V, R→VI)
+ *  - Stella: B→fire, SELECT→Game Select, START→Game Reset, L/L2 and R/R2→difficulty A/B
  */
 import { Button, type SkinId } from '@couch/protocol';
 import type { ButtonControl, Control, Effect, Glyph, Pos, Skin, SkinBody } from './types.js';
@@ -292,6 +294,42 @@ const modern: Skin = {
   ],
 };
 
+/* ----------------------------------------------------------- Atari 2600 */
+// Stella: B = fire, SELECT/START = the console's Game Select / Game Reset switches,
+// L/L2 = left difficulty A/B, R/R2 = right difficulty A/B (they latch, like the real switches).
+const atari2600: Skin = {
+  id: 'atari2600',
+  name: 'Joystick',
+  analog: false,
+  body: body({ background: 'linear-gradient(#3a2a1c,#1f160e)', shell: '#151515', well: '#0a0a0a', accent: '#6b4a2c', print: '#e98a3a' }),
+  controls: [
+    { kind: 'dpad', id: 'dpad', pos: L(0.45, 0.6), size: 0.56, style: 'disc', color: '#1b1b1b' },
+    btn('fire', R(0.42, 0.6), [bit(Button.B)], { color: '#d1452a', ink: '#3b0d05', label: 'FIRE', r: 0.14 }),
+    pill('select', C(-0.125, 0.26), [bit(Button.SELECT)], 'SELECT', '#3a3a3a', '#e98a3a'),
+    pill('reset', C(0.125, 0.26), [bit(Button.START)], 'RESET', '#3a3a3a', '#e98a3a'),
+    pill('ldiffa', L(0.22, 0.12), [bit(Button.L)], 'L DIFF A', '#2a2a2a', '#e98a3a', 0.09, 0.04),
+    pill('ldiffb', L(0.48, 0.12), [bit(Button.L2)], 'L DIFF B', '#2a2a2a', '#e98a3a', 0.09, 0.04),
+    pill('rdiffa', R(0.48, 0.12), [bit(Button.R)], 'R DIFF A', '#2a2a2a', '#e98a3a', 0.09, 0.04),
+    pill('rdiffb', R(0.22, 0.12), [bit(Button.R2)], 'R DIFF B', '#2a2a2a', '#e98a3a', 0.09, 0.04),
+  ],
+};
+
+/* ------------------------------------------------------------ PC Engine */
+// Beetle PCE Fast: RetroPad A = button I (right), B = button II (left), SELECT/START = Select/Run.
+const pce: Skin = {
+  id: 'pce',
+  name: 'TurboPad',
+  analog: false,
+  body: body({ background: 'linear-gradient(#ececec,#d4d4d4)', shell: '#1c1c1c', well: '#0d0d0d', accent: '#a0a0a0', print: '#e0561f' }),
+  controls: [
+    { kind: 'dpad', id: 'dpad', pos: L(0.45, 0.58), size: 0.56, style: 'cross', color: '#1d1d1d' },
+    pill('select', C(-0.125, 0.66), [bit(Button.SELECT)], 'SELECT', '#3a3a3a', '#e0561f'),
+    pill('run', C(0.125, 0.66), [bit(Button.START)], 'RUN', '#3a3a3a', '#e0561f'),
+    btn('ii', R(0.62, 0.62), [bit(Button.B)], { color: '#2a2a2a', ink: '#e0561f', label: 'II', r: 0.11 }),
+    btn('i', R(0.3, 0.62), [bit(Button.A)], { color: '#2a2a2a', ink: '#e0561f', label: 'I', r: 0.11 }),
+  ],
+};
+
 export const SKINS: Readonly<Record<SkinId, Skin>> = {
   nes,
   snes,
@@ -304,6 +342,8 @@ export const SKINS: Readonly<Record<SkinId, Skin>> = {
   n64,
   psp,
   nds,
+  atari2600,
+  pce,
   modern,
 };
 

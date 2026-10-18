@@ -27,7 +27,7 @@ const only = process.argv.find((a) => a.startsWith('--only='))?.slice(7).split('
 const RETROARCH_VERSION = 'v1.22.2';
 const EJS_VERSION = '4.2.3';
 
-const RETROARCH_CORES = ['fceumm', 'snes9x', 'genesis_plus_gx', 'gambatte', 'mgba', 'pcsx_rearmed'];
+const RETROARCH_CORES = ['fceumm', 'snes9x', 'genesis_plus_gx', 'gambatte', 'mgba', 'pcsx_rearmed', 'mednafen_pce_fast'];
 const EJS_CORES = [
   'fceumm',
   'snes9x',
@@ -40,6 +40,7 @@ const EJS_CORES = [
   'ppsspp',
   'melonds',
   'desmume2015',
+  'stella2014',
 ];
 
 const want = (c) => !only || only.includes(c);

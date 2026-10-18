@@ -38,13 +38,19 @@ export interface ResolvedRoot extends LibraryRoot {
 
 const enc = (s: string) => s.split('/').map(encodeURIComponent).join('/');
 
-export async function scanLibrary(roots: ResolvedRoot[]): Promise<RomEntry[]> {
+/** `onError` hears about folders that could not be listed (e.g. S3 access denied); they count as empty. */
+export async function scanLibrary(roots: ResolvedRoot[], onError?: (root: ResolvedRoot, err: unknown) => void): Promise<RomEntry[]> {
   const out: RomEntry[] = [];
   for (const root of roots) {
     // Systems in parallel (one LIST each on S3), kept in catalog order.
     const perSystem = await Promise.all(
       SYSTEMS.map(async (sys) => {
-        const files = (await root.store.list(sys.id).catch(() => []))
+        const files = (
+          await root.store.list(sys.id).catch((err: unknown) => {
+            onError?.(root, err);
+            return [];
+          })
+        )
           .filter((f) => sys.extensions.includes(extname(f.name).toLowerCase()))
           .sort((a, b) => a.name.localeCompare(b.name));
         return Promise.all(

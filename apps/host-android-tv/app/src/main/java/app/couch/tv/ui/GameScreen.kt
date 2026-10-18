@@ -96,7 +96,6 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
     var menu by remember { mutableStateOf<Page?>(null) }
     var toast by remember { mutableStateOf<String?>(null) }
     var overlay by remember { mutableStateOf(app.settings.latencyOverlay) }
-    var swapFrom by remember { mutableStateOf<Int?>(null) }
     var slots by remember { mutableStateOf(app.saves.slots(game.id)) }
     var fps by remember { mutableStateOf(0.0) }
     val session by app.session.view.collectAsState()
@@ -122,7 +121,6 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
 
     fun closeMenu() {
         menu = null
-        swapFrom = null
         navigator.enabled = false
         view?.onResume()
         app.input.enabled = true
@@ -186,7 +184,7 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
             }
         }
         val prevJoin = app.session.onJoinLeave
-        app.session.onJoinLeave = { p, joined -> scope.launch { flash(if (joined) "P${p.slot + 1} ${p.name} joined" else "P${p.slot + 1} ${p.name} disconnected") } }
+        app.session.onJoinLeave = { p, joined -> scope.launch { flash(if (joined) "P${p.slot + 1} ${p.name} joined" else "P${p.slot + 1} ${p.name} left · Menu → Controllers to swap or remove") } }
         onDispose {
             app.diagnostics.gameEnded()
             val ms = System.currentTimeMillis() - startedAt
@@ -307,7 +305,7 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
                 Text("${sys.shortName} · $core · ${"%.1f".format(fps)} fps", fontFamily = FontFamily.Monospace, fontSize = 13.sp)
                 session.players.forEach { p ->
                     Text(
-                        "P${p.slot + 1} ${p.name}: ${TransportKind.label(p.transport)} · rtt ${fmt(p.rttMs)} · 1-way p50 ${fmt(p.oneWayP50)} / p95 ${fmt(p.oneWayP95)} ms · jitter ${fmt(p.jitterMs)} · loss ${"%.1f".format(p.lossPct)}%",
+                        if (p.local) "P${p.slot + 1} ${p.name}: TV controller (no network)" else "P${p.slot + 1} ${p.name}: ${TransportKind.label(p.transport)} · rtt ${fmt(p.rttMs)} · 1-way p50 ${fmt(p.oneWayP50)} / p95 ${fmt(p.oneWayP95)} ms · jitter ${fmt(p.jitterMs)} · loss ${"%.1f".format(p.lossPct)}%",
                         color = hexColor(p.color),
                         fontFamily = FontFamily.Monospace,
                         fontSize = 13.sp,
@@ -349,23 +347,17 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
                             val label = "Slot ${i + 1}" + (at?.let { "  ·  " + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it)) } ?: "  ·  empty")
                             item(label, i == 0, page == Page.SAVE || at != null) { scope.launch { if (page == Page.SAVE) save("slot$i") else load(i) } }
                         }
-                        Page.PLAYERS -> {
-                            Text(if (swapFrom == null) "Pick a player to move, then the slot to swap with." else "Swap P${swapFrom!! + 1} with…", color = Muted)
-                            for (i in 0 until app.settings.maxPlayers) {
-                                val p = session.players.firstOrNull { it.slot == i }
-                                item("P${i + 1}: ${p?.let { it.name + if (it.connected) "" else " (away)" } ?: "empty"}", i == 0, true) {
-                                    val from = swapFrom
-                                    if (from == null) swapFrom = i else {
-                                        app.session.swapSlots(from, i)
-                                        swapFrom = null
-                                    }
-                                }
-                            }
-                        }
+                        Page.PLAYERS -> PlayerManager(
+                            view = session,
+                            maxPlayers = app.settings.maxPlayers,
+                            onSwap = { a, b -> app.session.swapSlots(a, b) },
+                            onRemove = { app.session.removePlayer(it) },
+                            onTidy = { app.session.tidySlots() },
+                        )
                     }
                 }
             }
-            LaunchedEffect(page) { runCatching { first.requestFocus() } }
+            if (page != Page.PLAYERS) LaunchedEffect(page) { runCatching { first.requestFocus() } }
         }
         toast?.let {
             Text(

@@ -44,3 +44,13 @@ test('PS1 (pcsx_rearmed) runs on a desktop-class host', async ({ page, baseURL }
   test.skip(!has('test-roms/psx/celeste.cue'), 'needs pnpm test-roms');
   console.log(await launch(page, baseURL!, 'celeste'));
 });
+
+test('Atari 2600 (stella2014, EmulatorJS build) runs on the web host', async ({ page, baseURL }) => {
+  test.skip(!has('test-roms/atari2600/halo2600.bin') || !has('apps/host-web/cores/ejs/stella2014_libretro.wasm'), 'needs pnpm test-roms && pnpm cores');
+  console.log(await launch(page, baseURL!, 'halo2600'));
+});
+
+test('PC Engine (mednafen_pce_fast) runs on the web host', async ({ page, baseURL }) => {
+  test.skip(!has('test-roms/pce/pcengine-polygon-sample.pce') || !has('apps/host-web/cores/retroarch/mednafen_pce_fast_libretro.wasm'), 'needs pnpm test-roms && pnpm cores');
+  console.log(await launch(page, baseURL!, 'pcengine-polygon-sample'));
+});

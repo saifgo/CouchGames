@@ -2,6 +2,7 @@ package app.couch.tv
 
 import android.app.Application
 import app.couch.tv.emu.Cores
+import app.couch.tv.emu.Gamepads
 import app.couch.tv.emu.InputBridge
 import app.couch.tv.library.Library
 import app.couch.tv.library.Systems
@@ -18,6 +19,8 @@ class CouchApp : Application() {
     lateinit var saves: Saves
     lateinit var diagnostics: Diagnostics
     val input = InputBridge()
+    /** Bluetooth/USB game controllers paired with the TV. */
+    val gamepads by lazy { Gamepads(session) }
 
     override fun onCreate() {
         super.onCreate()

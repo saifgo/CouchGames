@@ -61,7 +61,7 @@ class Diagnostics(private val context: Context) {
         val soc = if (Build.VERSION.SDK_INT >= 31) Build.SOC_MODEL else Build.HARDWARE
         fun r(v: Double) = if (v.isNaN()) null else Math.round(v * 10) / 10.0
         val rec = LatencyRecord(system, core, Math.round(ms / 6000.0) / 10.0, soc, players.map {
-            PlayerLatency(TransportKind.label(it.transport), r(it.oneWayP50), r(it.oneWayP95), r(it.jitterMs), r(it.lossPct))
+            PlayerLatency(if (it.local) "TV controller" else TransportKind.label(it.transport), r(it.oneWayP50), r(it.oneWayP95), r(it.jitterMs), r(it.lossPct))
         })
         File(dir, "latency-sessions.jsonl").appendText(json.encodeToString(LatencyRecord.serializer(), rec) + "\n")
     }

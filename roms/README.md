@@ -18,6 +18,8 @@ Drop your own game files into the folder matching the system:
 | `psp/`     | PSP                       | `.iso`, `.cso`, `.pbp`                       |
 | `nds/`     | Nintendo DS               | `.nds`, `.zip`                               |
 | `ps2/`     | PlayStation 2 (experimental) | `.iso`, `.chd`                            |
+| `atari2600/` | Atari 2600              | `.a26`, `.bin`, `.zip`                       |
+| `pce/`     | PC Engine / TurboGrafx-16 (+CD) | `.pce`, `.cue`, `.chd`, `.ccd`, `.toc`, `.m3u` |
 | `bios/`    | Firmware files (see below)| as named below                               |
 
 The couch server scans these folders live. After adding files, choose **Refresh library**
@@ -37,6 +39,7 @@ Some systems need firmware dumped from your own console. Put it in `bios/` with 
 | Nintendo DS | `bios7.bin`, `bios9.bin`, `firmware.bin` | Optional for most games (melonDS/DeSmuME have HLE) |
 | PlayStation 2 | `ps2-*.bin` / `SCPH-*.bin` | Required by the Play! core for some titles |
 | GBA | `gba_bios.bin` | Optional (mGBA has HLE) |
+| PC Engine CD | `syscard3.pce` (System Card 3.0) | Needed for CD games only. HuCard (`.pce`) games run without it. |
 
 ## Free test ROMs
 

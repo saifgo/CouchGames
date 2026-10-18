@@ -29,6 +29,8 @@ const DEFAULT_CORE: Record<string, string> = {
   n64: 'mupen64plus_next',
   psp: 'ppsspp',
   nds: 'melonds',
+  atari2600: 'stella2014',
+  pce: 'mednafen_pce_fast',
 };
 const core = params.get('core') ?? DEFAULT_CORE[system]!;
 

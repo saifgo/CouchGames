@@ -29,6 +29,9 @@ not GPL-compatible) · ❌ not usable.
 | ppsspp | PSP | GPL-2.0-or-later | ✅ | Android (web: threads build, experimental) |
 | melonds | NDS | GPL-3.0 | ✅ | web + Android |
 | desmume / desmume2015 | NDS | GPL-2.0 | ✅ | fallback |
+| stella | Atari 2600 | GPL-2.0-or-later | ✅ | Android default |
+| stella2014 | Atari 2600 | GPL-2.0 | ✅ | web (EmulatorJS build) + Android fallback |
+| mednafen_pce_fast (Beetle PCE Fast) | PC Engine / TurboGrafx-16 (+CD) | GPL-2.0 | ✅ | web + Android |
 | play (Play!) | PS2 | BSD-2-Clause | ✅ | Android, experimental flag (ADR-003) |
 | ARMSX2 | PS2 | GPL-3.0 (PCSX2 fork) | ✅ license, ❌ not a libretro core | not used (ADR-003) |
 | AetherSX2 / NetherSX2 | PS2 | proprietary / unlicensed patch | ❌ | never |
@@ -83,3 +86,27 @@ User games live in the git-ignored `roms/`.
 
 All controller skins and UI art are original SVG drawn for this project. They contain no console maker
 logos or trademarks. Console names are used only nominatively ("SNES-style pad").
+
+**Exception: console logos on the platform wheel** (owner decision, 2026-10-18). `packages/systems/logos/*.svg`
+and the Android copies `res/drawable-nodpi/logo_*.png` come from Wikimedia Commons, where each file is marked
+**public domain** (simple text/shape logos). `scripts/build-logos.mjs` lists the exact files. Black parts are
+turned white for the dark UI; nothing else changes.
+
+| System | Commons file |
+|---|---|
+| NES | NES logo.svg |
+| SNES | SNES logo.svg |
+| Genesis | Sega genesis logo.svg |
+| Game Boy | Nintendo Game Boy Logo.svg |
+| Game Boy Color | Game Boy Color logo.svg |
+| Game Boy Advance | Game Boy Advance logo.svg |
+| PlayStation | PlayStation logo and wordmark.svg |
+| Nintendo 64 | Nintendo 64 wordmark.svg |
+| PSP | PSP Logo.svg |
+| Nintendo DS | Nintendo DS Logo.svg |
+| PlayStation 2 | PlayStation 2 logo.svg |
+| Atari 2600 | Atari 2600 logo.svg |
+
+⚠️ Public domain covers copyright only. These logos are **trademarks** of Nintendo, Sega, Sony Interactive
+Entertainment and Atari. They're fine for personal use. Before publishing or selling the app, replace them, or
+get legal advice on nominative use.

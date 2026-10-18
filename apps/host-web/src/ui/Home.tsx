@@ -5,6 +5,7 @@ import { favourites, recents, type Game } from '../library/library.js';
 import type { SessionView } from '../net/host-session.js';
 import { Art, PlayerChip, useClock } from './common.js';
 import { Lobby } from './Lobby.js';
+import { StorageChip } from './Storage.js';
 
 interface Props {
   games: Game[];
@@ -16,6 +17,14 @@ interface Props {
   onImport: (files: File[]) => void;
 }
 
+/** Console logos (packages/systems/logos, made by scripts/build-logos.mjs), by system id. */
+const LOGOS: Record<string, string> = Object.fromEntries(
+  Object.entries(import.meta.glob<string>('../../../../packages/systems/logos/*.svg', { eager: true, query: '?url', import: 'default' })).map(([path, url]) => [
+    path.slice(path.lastIndexOf('/') + 1, -4),
+    url,
+  ]),
+);
+
 /** A stop on the platform wheel: every game, recents, favourites, then one per system. */
 interface Platform {
   key: string;
@@ -24,6 +33,8 @@ interface Platform {
   title: string;
   sub: string;
   accent?: string;
+  /** Console logo shown instead of the label. */
+  logo?: string;
   games: Game[];
 }
 
@@ -54,7 +65,10 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
     if (fav.length) out.push({ key: 'fav', label: 'Favourites', title: 'Favourites', sub: `${fav.length} games`, accent: '#ffd166', games: fav });
     for (const sys of SYSTEMS) {
       const list = playable.filter((g) => g.system === sys.id).sort(byTitle);
-      if (list.length) out.push({ key: sys.id, label: sys.shortName, title: sys.name, sub: `${sys.maker} · ${sys.year}`, accent: sys.accent, games: list });
+      if (list.length) {
+        const logo = LOGOS[sys.id];
+        out.push({ key: sys.id, label: sys.shortName, title: sys.name, sub: `${sys.maker} · ${sys.year}`, accent: sys.accent, games: list, ...(logo ? { logo } : {}) });
+      }
     }
     return out;
   }, [playable, favs]);
@@ -134,7 +148,11 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
             onFocus={() => pickPlatform(p.key)}
             onClick={() => pickPlatform(p.key)}
           >
-            <span className="platform-logo">{p.label}</span>
+            {p.logo ? (
+              <img className="platform-img" src={p.logo} alt={p.title} draggable={false} />
+            ) : (
+              <span className="platform-logo">{p.label}</span>
+            )}
             <small>{p.sub}</small>
           </button>
         ))}
@@ -238,6 +256,7 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
           </span>
         )}
         <span className="grow" />
+        <StorageChip />
         <button className="add" data-nav onClick={() => fileRef.current?.click()}>
           ＋ Add games
         </button>

@@ -216,6 +216,43 @@ export const SYSTEMS: readonly SystemDef[] = [
     android: { cores: ['play', 'pcsx2'], experimental: true },
     bios: [{ file: 'ps2-bios.bin', required: false, note: 'Play! runs many titles with HLE; some need a real BIOS' }],
   },
+  {
+    id: 'atari2600',
+    name: 'Atari 2600',
+    shortName: '2600',
+    maker: 'Atari',
+    year: 1977,
+    // .bin is the usual dump name; it is also a Genesis extension, so a file only counts
+    // for the system whose folder it is in (roms/atari2600/ vs roms/genesis/).
+    extensions: ['.a26', '.bin', '.zip'],
+    skin: 'atari2600',
+    // Two joysticks (Stella maps RetroPad ports 1 and 2 to the left and right jacks).
+    maxPlayers: 2,
+    tier: 1,
+    accent: '#c8642a',
+    // No Stella in the official RetroArch WebAssembly set; EmulatorJS ships stella2014.
+    web: { cores: ['stella2014'], backend: 'ejs', analog: false },
+    android: { cores: ['stella', 'stella2014'] },
+    bios: [],
+  },
+  {
+    id: 'pce',
+    name: 'PC Engine',
+    shortName: 'PCE',
+    maker: 'NEC',
+    year: 1987,
+    // HuCards (.pce) and CD-ROM² images. .cue/.chd are shared with PS1, so the folder decides.
+    // Beetle PCE Fast does not open .zip and has no SuperGrafx (.sgx) support.
+    extensions: ['.pce', '.cue', '.chd', '.ccd', '.toc', '.m3u'],
+    skin: 'pce',
+    // Up to 5 with the multitap (Bomberman '93/'94).
+    maxPlayers: 5,
+    tier: 1,
+    accent: '#e0561f',
+    web: { cores: ['mednafen_pce_fast'], backend: 'retroarch', analog: false },
+    android: { cores: ['mednafen_pce_fast'] },
+    bios: [{ file: 'syscard3.pce', required: false, note: 'System Card 3.0: needed for CD games only' }],
+  },
 ];
 
 export const SYSTEM_BY_ID: Readonly<Record<ConsoleId, SystemDef>> = Object.fromEntries(
