@@ -24,17 +24,89 @@ export interface Game {
 const romStore = createStore('couch-roms', 'files');
 const saveStore = createStore('couch-saves', 'states');
 
-export async function loadLibrary(): Promise<Game[]> {
-  const games: Game[] = [];
+/** Progress of a server library load, one console at a time. */
+export interface LibraryProgress {
+  done: number;
+  total: number;
+  /** Consoles being fetched right now. */
+  loading: ConsoleId[];
+  /** Consoles that could not be fetched (server unreachable, timeout). */
+  failed: ConsoleId[];
+}
+
+const SERVER_CACHE = 'couch.serverLibrary.v1';
+interface ServerCache {
+  at: number;
+  roms: Game[];
+}
+
+/**
+ * The server's games as last loaded, or null. The library rarely changes, so the TV uses
+ * this copy and only asks the server again when someone presses Refresh.
+ */
+export function cachedServerLibrary(): ServerCache | null {
   try {
-    const res = await fetch('/api/library');
-    if (res.ok) {
-      const { roms } = (await res.json()) as { roms: Game[] };
-      games.push(...roms);
-    }
+    const c = JSON.parse(localStorage.getItem(SERVER_CACHE) ?? 'null') as ServerCache | null;
+    return c && Array.isArray(c.roms) ? { at: c.at, roms: c.roms.filter((g) => getSystem(g.system)) } : null;
   } catch {
-    /* server unreachable: local files only */
+    return null;
   }
+}
+
+/**
+ * Loads the server's games console by console (a few requests at a time), so each row
+ * appears as soon as it is ready and the screen shows what is happening. `fresh` makes
+ * the server list its storage again instead of using its own copy. Saved for next time
+ * when every console loaded.
+ */
+export async function loadServerLibrary(opts: {
+  fresh?: boolean;
+  onProgress?: (p: LibraryProgress) => void;
+  /** Games so far, in catalog order. */
+  onGames?: (games: Game[]) => void;
+  parallel?: number;
+}): Promise<Game[]> {
+  const ids = SYSTEMS.map((s) => s.id);
+  const bySystem = new Map<ConsoleId, Game[]>();
+  const p: LibraryProgress = { done: 0, total: ids.length, loading: [], failed: [] };
+  const report = () => opts.onProgress?.({ ...p, loading: [...p.loading], failed: [...p.failed] });
+  const collect = () => ids.flatMap((id) => bySystem.get(id) ?? []);
+  report();
+  const queue = [...ids];
+  const worker = async () => {
+    for (let id = queue.shift(); id; id = queue.shift()) {
+      p.loading.push(id);
+      report();
+      try {
+        const res = await fetch(`/api/library?system=${id}${opts.fresh ? '&fresh' : ''}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { roms } = (await res.json()) as { roms: Game[] };
+        // An older server ignores ?system= and sends everything: keep this console's games.
+        bySystem.set(id, roms.filter((g) => g.system === id));
+        opts.onGames?.(collect());
+      } catch {
+        p.failed.push(id);
+      }
+      p.loading.splice(p.loading.indexOf(id), 1);
+      p.done++;
+      report();
+    }
+  };
+  await Promise.all(Array.from({ length: opts.parallel ?? 4 }, worker));
+  const games = collect();
+  if (!p.failed.length && games.length) {
+    try {
+      localStorage.setItem(SERVER_CACHE, JSON.stringify({ at: Date.now(), roms: games } satisfies ServerCache));
+    } catch {
+      /* storage full: load from the server next time */
+    }
+  }
+  return games;
+}
+
+/** Games dropped onto this TV page (IndexedDB). */
+export async function loadLocalGames(): Promise<Game[]> {
+  const games: Game[] = [];
   for (const [, value] of await entries<string, { meta: Game; blob: Blob }>(romStore)) games.push(value.meta);
   return games.filter((g) => getSystem(g.system));
 }

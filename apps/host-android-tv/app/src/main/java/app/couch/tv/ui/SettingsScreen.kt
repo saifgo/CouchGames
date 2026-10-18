@@ -31,6 +31,7 @@ import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.Text
 import app.couch.tv.CouchApp
 import app.couch.tv.library.RemoteLibrary
+import kotlinx.coroutines.launch
 import app.couch.tv.library.ServerState
 import app.couch.tv.library.Systems
 import androidx.compose.foundation.border
@@ -147,14 +148,17 @@ fun SettingsScreen(app: CouchApp, server: ServerState?, onServerChanged: () -> U
         }
     }
     if (editServer) {
+        val save = { url: String ->
+            s.serverUrl = url
+            editServer = false
+            version++
+            onServerChanged()
+        }
         ServerDialog(
             initial = s.serverUrl,
-            onSave = { url ->
-                s.serverUrl = RemoteLibrary.normalizeServer(url)
-                editServer = false
-                version++
-                onServerChanged()
-            },
+            // Test before saving; keep the address variant that answered (e.g. without :8787).
+            test = { input -> app.remote.connect(input) },
+            onSave = save,
             onCancel = { editServer = false },
         )
     }
@@ -163,9 +167,21 @@ fun SettingsScreen(app: CouchApp, server: ServerState?, onServerChanged: () -> U
 
 /** Address entry for the Couch server (TV keyboard or a USB/Bluetooth keyboard). */
 @Composable
-private fun ServerDialog(initial: String, onSave: (String) -> Unit, onCancel: () -> Unit) {
+private fun ServerDialog(initial: String, test: suspend (String) -> Result<String>, onSave: (String) -> Unit, onCancel: () -> Unit) {
     var text by remember { mutableStateOf(initial.ifEmpty { "https://" }) }
     var focused by remember { mutableStateOf(false) }
+    var testing by remember { mutableStateOf(false) }
+    var problem by remember { mutableStateOf<String?>(null) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    fun connect() {
+        if (RemoteLibrary.normalizeServer(text).isEmpty()) return onSave("")
+        testing = true
+        problem = null
+        scope.launch {
+            test(text).fold({ onSave(it) }, { problem = it.message ?: it.javaClass.simpleName })
+            testing = false
+        }
+    }
     val field = remember { FocusRequester() }
     androidx.activity.compose.BackHandler { onCancel() }
     Box(Modifier.fillMaxSize().background(Color(0xE004060A)), contentAlignment = Alignment.Center) {
@@ -187,7 +203,7 @@ private fun ServerDialog(initial: String, onSave: (String) -> Unit, onCancel: ()
                 textStyle = TextStyle(color = Color.White, fontSize = 22.sp),
                 cursorBrush = SolidColor(Color.White),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done, autoCorrectEnabled = false),
-                keyboardActions = KeyboardActions(onDone = { onSave(text) }),
+                keyboardActions = KeyboardActions(onDone = { connect() }),
                 modifier = Modifier.fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color.White.copy(alpha = .08f))
@@ -196,8 +212,10 @@ private fun ServerDialog(initial: String, onSave: (String) -> Unit, onCancel: ()
                     .focusRequester(field)
                     .onFocusChanged { focused = it.isFocused },
             )
+            problem?.let { Text(it, color = Color(0xFFFF9B9B), fontSize = 15.sp) }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = { onSave(text) }) { Text("Save & connect") }
+                Button(onClick = { if (!testing) connect() }) { Text(if (testing) "Connecting…" else "Save & connect") }
+                if (problem != null) Button(onClick = { onSave(RemoteLibrary.normalizeServer(text)) }) { Text("Save anyway") }
                 Button(onClick = { onSave("") }) { Text("Turn off") }
                 Button(onClick = onCancel) { Text("Cancel") }
             }

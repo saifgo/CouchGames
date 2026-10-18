@@ -133,4 +133,15 @@ describe('library API', () => {
     expect(await file.text()).toBe('NES');
     expect((await fetch(`${srv.url}/roms/..%2F..%2Fsecret`)).status).toBe(404);
   });
+
+  it('serves one console at a time and keeps the list until a fresh scan', async () => {
+    type Lib = { system?: string; roms: { title: string }[] };
+    const nes = async (q = '') => (await (await fetch(`${srv.url}/api/library?system=nes${q}`)).json()) as Lib;
+    expect(await nes()).toEqual({ system: 'nes', roms: [expect.objectContaining({ title: 'Cool Game' })] });
+    expect((await fetch(`${srv.url}/api/library?system=nope`)).status).toBe(404);
+    writeFileSync(join(romDir, 'nes', 'New Game.nes'), Buffer.from('NES'));
+    expect((await nes()).roms.map((r) => r.title)).toEqual(['Cool Game']); // cached
+    expect((await nes('&fresh')).roms.map((r) => r.title)).toEqual(['Cool Game', 'New Game']);
+    expect((await (await fetch(`${srv.url}/api/library`)).json() as Lib).roms).toHaveLength(3);
+  });
 });

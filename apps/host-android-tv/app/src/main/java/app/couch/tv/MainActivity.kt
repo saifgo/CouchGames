@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Button
 import androidx.tv.material3.Text
 import app.couch.tv.library.Game
+import app.couch.tv.library.LoadProgress
 import app.couch.tv.library.RemoteLibrary
 import app.couch.tv.library.SERVER_ROOT
 import app.couch.tv.library.ServerState
@@ -61,6 +62,8 @@ import app.couch.tv.ui.SettingsScreen
 import app.couch.tv.ui.hexColor
 import app.couch.tv.ui.homeHandler
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -128,7 +131,11 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun Root() {
         val scope = rememberCoroutineScope()
-        var games by remember { mutableStateOf<List<Game>>(emptyList()) }
+        var localGames by remember { mutableStateOf<List<Game>>(emptyList()) }
+        var serverGames by remember { mutableStateOf<List<Game>>(emptyList()) }
+        val games = remember(localGames, serverGames) { localGames + serverGames }
+        var serverLoad by remember { mutableStateOf<LoadProgress?>(null) }
+        var serverJob by remember { mutableStateOf<Job?>(null) }
         var server by remember { mutableStateOf<ServerState?>(null) }
         var playing by remember { mutableStateOf<Pair<Game, Boolean>?>(null) }
         var detail by remember { mutableStateOf<Game?>(null) }
@@ -141,26 +148,74 @@ class MainActivity : ComponentActivity() {
         val view by app.session.view.collectAsState()
         val joinUrl = remember(view.room) { LanServer.lanAddress()?.let { "http://$it:${app.server.port}/c/?r=${view.room}" } }
 
-        fun refresh() = scope.launch {
+        /** USB / internal storage folders: cheap, rescanned whenever we come back home. */
+        fun refreshLocal() = scope.launch {
             needsPerm = needsStoragePermission()
-            val local = withContext(Dispatchers.IO) {
+            localGames = withContext(Dispatchers.IO) {
                 runCatching { app.library.scan() }
                     .onFailure { Log.e("Couch", "library scan failed", it) }
                     .getOrDefault(emptyList())
             }
-            // Games from the Couch server (its roms/ folder or S3 bucket), downloaded on first play.
-            val url = app.settings.serverUrl
-            val remote = if (url.isEmpty()) null else app.remote.fetch(url).onFailure { Log.w("Couch", "server library $url: ${it.message}") }
-            server = if (url.isEmpty()) null else ServerState(
-                url = url,
-                reachable = remote!!.isSuccess,
-                games = remote.getOrNull()?.size ?: 0,
-                error = remote.exceptionOrNull()?.let { it.message ?: it.javaClass.simpleName },
-                storage = if (remote.isSuccess) app.remote.storage(url) else null,
-            )
-            games = local + remote?.getOrNull().orEmpty()
-            Log.i("Couch", "library: ${local.size} local games in ${app.library.roots().map { it.path }}, ${server?.games ?: 0} from ${url.ifEmpty { "no server" }}")
+            Log.i("Couch", "library: ${localGames.size} local games in ${app.library.roots().map { it.path }}")
             tick++
+        }
+
+        /**
+         * Games from the Couch server (its roms/ folder or S3 bucket), downloaded on first play.
+         * The saved list is used unless [network]: the library rarely changes, so the server is
+         * only asked again on Refresh (with [fresh], it also re-lists its storage).
+         */
+        fun refreshServer(network: Boolean, fresh: Boolean = false) {
+            val saved = app.settings.serverUrl
+            if (saved.isEmpty()) {
+                serverJob?.cancel()
+                server = null
+                serverGames = emptyList()
+                serverLoad = null
+                return
+            }
+            if (serverJob?.isActive == true) return
+            serverJob = scope.launch {
+                if (!network) {
+                    val cached = app.remote.saved(saved)
+                    if (cached != null) {
+                        serverGames = cached.games
+                        server = ServerState(cached.server, true, cached.games.size, null, cached.storage, savedAt = cached.at)
+                        return@launch
+                    }
+                }
+                serverLoad = LoadProgress(0, Systems.all.size, emptyList(), emptyList())
+                val conn = app.remote.connect(saved)
+                val url = conn.getOrNull() ?: saved
+                // A variant answered (e.g. without Coolify's :8787): remember the address that works.
+                if (url != saved) app.settings.serverUrl = url
+                val result = conn.fold(
+                    { app.remote.load(url, fresh, onProgress = { serverLoad = it }, onGames = { serverGames = it }) },
+                    { Result.failure(it) },
+                ).onFailure { Log.w("Couch", "server library $url: ${it.message}", it.cause) }
+                val failed = serverLoad?.failed?.size ?: 0
+                result.onSuccess { serverGames = it }
+                // Not reached at all: finish the bar as failed so it doesn't look stuck.
+                if (result.isFailure) serverLoad = LoadProgress(Systems.all.size, Systems.all.size, emptyList(), Systems.all.map { it.id })
+                server = ServerState(
+                    url = url,
+                    reachable = result.isSuccess,
+                    games = result.getOrNull()?.size ?: serverGames.size,
+                    error = result.exceptionOrNull()?.let { it.message ?: it.javaClass.simpleName },
+                    storage = if (result.isSuccess) app.remote.storage(url) else null,
+                    savedAt = if (result.isSuccess && failed == 0) System.currentTimeMillis() else null,
+                    failed = if (result.isSuccess) failed else 0,
+                )
+                Log.i("Couch", "library: ${serverGames.size} games from $url (${failed} consoles failed)")
+                // Keep the finished bar up for a moment so it reads as "done", not "vanished".
+                delay(1200)
+                serverLoad = null
+            }
+        }
+
+        fun refresh(network: Boolean = false, fresh: Boolean = false) {
+            refreshLocal()
+            refreshServer(network, fresh)
         }
 
         LaunchedEffect(Unit) {
@@ -172,11 +227,11 @@ class MainActivity : ComponentActivity() {
         LaunchedEffect(resumeCount) {
             val before = needsPerm
             needsPerm = needsStoragePermission()
-            if (before && !needsPerm) refresh()
+            if (before && !needsPerm) refreshLocal()
         }
 
         val linked by serverLinks
-        LaunchedEffect(linked) { if (linked > 0) refresh() }
+        LaunchedEffect(linked) { if (linked > 0) refresh(network = true) }
 
         val deep by deepLinkGame
         LaunchedEffect(deep, games) {
@@ -212,7 +267,7 @@ class MainActivity : ComponentActivity() {
         if (current != null) {
             GameScreen(current.first, current.second, navigator) {
                 playing = null
-                refresh()
+                refreshLocal()
             }
             return
         }
@@ -233,7 +288,8 @@ class MainActivity : ComponentActivity() {
                 onOpen = { detail = it },
                 onSettings = { showSettings = true },
                 onServer = { showSettings = true },
-                onRefresh = { refresh() },
+                serverLoad = serverLoad,
+                onRefresh = { refresh(network = true, fresh = true) },
                 onPlayers = { showPlayers = true },
             )
             if (showPlayers) {
@@ -252,7 +308,7 @@ class MainActivity : ComponentActivity() {
             }
             if (showSettings) {
                 BackHandler { showSettings = false }
-                SettingsScreen(app, server, onServerChanged = { refresh() }, onRemeasure = { scope.launch { measure(); tick++ } }) {
+                SettingsScreen(app, server, onServerChanged = { serverJob?.cancel(); refreshServer(network = true) }, onRemeasure = { scope.launch { measure(); tick++ } }) {
                     showSettings = false
                     onboarding = !s.onboardingDone
                     tick++

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getSystem, SYSTEMS } from '@couch/systems';
 import { systemAvailability, type HostSettings } from '../host-settings.js';
-import { favourites, recents, type Game } from '../library/library.js';
+import { favourites, recents, type Game, type LibraryProgress } from '../library/library.js';
+import { LibraryLoading, RefreshButton } from './LibraryLoad.js';
 import type { SessionView } from '../net/host-session.js';
 import { Art, PlayerChip, useClock } from './common.js';
 import { Lobby } from './Lobby.js';
@@ -16,6 +17,10 @@ interface Props {
   onOpen: (g: Game) => void;
   onSettings: () => void;
   onImport: (files: File[]) => void;
+  /** Server library load in progress (or just finished), else null. */
+  progress: LibraryProgress | null;
+  libraryAt: number | null;
+  onRefresh: () => void;
 }
 
 /** Console logos (packages/systems/logos, made by scripts/build-logos.mjs), by system id. */
@@ -44,7 +49,7 @@ interface Platform {
  * wheel and a cover wheel along the bottom. The cover wheel comes first in the DOM so its first
  * card is the first focus target; CSS grid areas put everything in place.
  */
-export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImport }: Props) {
+export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImport, progress, libraryAt, onRefresh }: Props) {
   const clock = useClock();
   const [focused, setFocused] = useState<Game | null>(null);
   const [platformKey, setPlatformKey] = useState('all');
@@ -188,6 +193,8 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
         <div className="preview-screen" key={game?.id ?? 'none'}>
           {game ? (
             <Art game={game} online={settings.onlineArt} kind="Named_Snaps" />
+          ) : progress && progress.done < progress.total ? (
+            <LibraryLoading progress={progress} />
           ) : (
             <div className="preview-empty">
               <b>No games yet</b>
@@ -270,9 +277,7 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
         <button className="add" data-nav onClick={() => fileRef.current?.click()}>
           ＋ Add games
         </button>
-        <button className="add" data-nav onClick={() => location.reload()}>
-          ⟳ Refresh
-        </button>
+        <RefreshButton progress={progress} libraryAt={libraryAt} onRefresh={onRefresh} />
         <input
           ref={fileRef}
           type="file"

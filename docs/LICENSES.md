@@ -66,6 +66,7 @@ not GPL-compatible) · ❌ not usable.
 | stream-webrtc-android (libwebrtc) | Apache-2.0 / BSD-3 | host-android-tv | WebRTC DataChannels |
 | ZXing core | Apache-2.0 | host-android-tv | QR code rendering |
 | Coil 3 | Apache-2.0 | host-android-tv | Box art loading |
+| OkHttp 4 | Apache-2.0 | host-android-tv | Couch server library and game downloads (also used by Coil) |
 | androidx.tvprovider | Apache-2.0 | host-android-tv | "Continue playing" on the TV home screen |
 | kotlinx.serialization / coroutines | Apache-2.0 | host-android-tv | JSON, concurrency |
 

@@ -4,11 +4,11 @@ import { createServer as createHttpsServer } from 'node:https';
 import { networkInterfaces } from 'node:os';
 import { extname, join } from 'node:path';
 import { WebSocketServer } from 'ws';
-import type { RTCIceServerLike } from '@couch/protocol';
+import type { ConsoleId, RTCIceServerLike } from '@couch/protocol';
 import { crc32, scanLibrary, type LibraryRoot, type ResolvedRoot, type RomEntry } from './library.js';
-import { MetadataStore } from './metadata.js';
+import { MetadataStore, type Meta } from './metadata.js';
 import { FsStore, type RomStore } from './store.js';
-import { titleFromFilename } from '@couch/systems';
+import { getSystem, SYSTEMS, titleFromFilename } from '@couch/systems';
 import { Rooms } from './rooms.js';
 import { checkStorage, type StorageReport } from './storage-check.js';
 import { findApk, type ApkSource } from './apk.js';
@@ -110,32 +110,32 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
   const mounts = [...(opts.static ?? [])]
     .sort((a, b) => b.prefix.length - a.prefix.length) // longest first so "/c" wins over "/"
     .map((m) => ({ ...m, store: new FsStore(m.dir) }));
-  let libraryCache: { at: number; entries: RomEntry[] } | null = null;
   const crcCache = new Map<string, string>();
 
   const metadata = opts.metadataCacheDir ? new MetadataStore(opts.metadataCacheDir, log) : null;
+  /** Games waiting for a CRC lookup; one background worker drains it. */
+  const pending: { e: RomEntry; store: RomStore; rel: string }[] = [];
   let enriching = false;
   /** Attach cached CRC metadata now; compute the missing ones in the background. */
   const enrich = async (entries: RomEntry[]) => {
     if (!metadata) return;
-    const missing: { e: RomEntry; store: RomStore; rel: string }[] = [];
     for (const e of entries) {
       if (e.source !== 'user') continue;
       const store = roots.find((r) => r.source === e.source)!.store;
       const rel = `${e.system}/${e.file}`;
-      const m = await metadata.peek(store, rel);
-      if (m) {
-        e.crc = m.crc;
-        e.canonical = m.name;
-        if (m.name) e.title = titleFromFilename(m.name);
-      } else missing.push({ e, store, rel });
+      const m = await metadata.peek(store, rel, { size: e.size, mtimeMs: e.mtimeMs });
+      if (m) applyMeta(e, m);
+      else pending.push({ e, store, rel });
     }
-    if (missing.length && !enriching) {
+    if (pending.length && !enriching) {
       enriching = true;
       void (async () => {
-        for (const { e, store, rel } of missing) await metadata.lookup(e.system, store, rel).catch(() => null);
+        // Entries are updated in place, so the cached library picks up the names.
+        for (let job = pending.shift(); job; job = pending.shift()) {
+          const m = await metadata.lookup(job.e.system, job.store, job.rel, { size: job.e.size, mtimeMs: job.e.mtimeMs }).catch(() => null);
+          if (m) applyMeta(job.e, m);
+        }
         enriching = false;
-        libraryCache = null; // next request picks up the names
       })();
     }
   };
@@ -145,26 +145,46 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
   let storage: { at: number; report: Promise<StorageReport> } | null = null;
   const getStorage = (fresh: boolean): Promise<StorageReport> | null => {
     if (!userStore) return null;
-    if (!fresh && storage && Date.now() - storage.at < 30_000) return storage.report;
+    if (!fresh && storage && Date.now() - storage.at < 300_000) return storage.report;
     const report = checkStorage(userStore);
     storage = { at: Date.now(), report };
     return report;
   };
 
-  const getLibrary = async (fresh: boolean) => {
-    if (!fresh && libraryCache && Date.now() - libraryCache.at < 5000) return libraryCache.entries;
-    let scanFailed = false;
-    const entries = await scanLibrary(roots, (root, err) => {
-      if (root.store !== userStore || scanFailed) return;
-      scanFailed = true;
-      log(`library: can't list ${JSON.stringify(root.store.describe())}: ${(err as Error).message}`);
-    });
-    // A failed scan means the last "connected" status may be stale: check again.
-    if (scanFailed && storage) storage.at = 0;
-    await enrich(entries);
-    libraryCache = { at: Date.now(), entries };
-    return libraryCache.entries;
+  /**
+   * The library, one console at a time. Kept until someone asks for a fresh scan (the
+   * Refresh button): the files rarely change, and listing an S3 bucket is slow.
+   * A scan that failed (e.g. S3 down) is not kept, so the next request tries again.
+   */
+  const bySystem = new Map<ConsoleId, Promise<RomEntry[]>>();
+  const getSystemLibrary = (id: ConsoleId, fresh: boolean): Promise<RomEntry[]> => {
+    const cached = bySystem.get(id);
+    if (cached && !fresh) return cached;
+    let scan: Promise<RomEntry[]> | null = null;
+    scan = (async () => {
+      let scanFailed = false;
+      const entries = await scanLibrary(
+        roots,
+        (root, err) => {
+          if (root.store !== userStore) return;
+          scanFailed = true;
+          log(`library: can't list ${id} in ${JSON.stringify(root.store.describe())}: ${(err as Error).message}`);
+        },
+        [id],
+      );
+      if (scanFailed) {
+        if (bySystem.get(id) === scan) bySystem.delete(id);
+        if (storage) storage.at = 0; // the last "connected" status may be stale: check again
+      }
+      await enrich(entries);
+      return entries;
+    })();
+    const p = scan;
+    bySystem.set(id, p);
+    p.catch(() => bySystem.get(id) === p && bySystem.delete(id));
+    return p;
   };
+  const getLibrary = async (fresh: boolean) => (await Promise.all(SYSTEMS.map((s) => getSystemLibrary(s.id, fresh)))).flat();
 
   const handler = async (req: IncomingMessage, res: ServerResponse) => {
     const url = new URL(req.url ?? '/', 'http://x');
@@ -212,7 +232,13 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
         const port = (server.address() as { port: number }).port;
         return json(res, { port, secure: !!opts.tls, addresses: lanAddresses() });
       }
-      if (path === '/api/library') return json(res, { roms: await getLibrary(url.searchParams.has('fresh')) });
+      if (path === '/api/library') {
+        const fresh = url.searchParams.has('fresh');
+        const system = url.searchParams.get('system');
+        if (system === null) return json(res, { roms: await getLibrary(fresh) });
+        if (!getSystem(system as ConsoleId)) return notFound(res);
+        return json(res, { system, roms: await getSystemLibrary(system as ConsoleId, fresh) });
+      }
       if (path === '/api/apk') {
         const found = opts.apk ? await findApk(opts.apk) : null;
         return found ? json(res, found.info) : notFound(res);
@@ -294,6 +320,8 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
     if (r.ok) log(`ROM storage ${where}: connected, ${r.games} game${r.games === 1 ? '' : 's'}${r.misplacedTotal ? `, ${r.misplacedTotal} misplaced file(s)` : ''}`);
     else log(`ROM storage ${where}: NOT CONNECTED: ${r.error} [${r.errorCode}]`);
   });
+  // Warm the library cache so the first TV to connect gets it straight away.
+  void getLibrary(false).catch(() => {});
 
   return {
     server,
@@ -308,6 +336,12 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
         server.closeAllConnections?.();
       }),
   };
+}
+
+function applyMeta(e: RomEntry, m: Meta) {
+  e.crc = m.crc;
+  e.canonical = m.name;
+  if (m.name) e.title = titleFromFilename(m.name);
 }
 
 function readBody(req: IncomingMessage, limit: number): Promise<string> {

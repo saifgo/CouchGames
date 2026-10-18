@@ -38,13 +38,21 @@ export interface ResolvedRoot extends LibraryRoot {
 
 const enc = (s: string) => s.split('/').map(encodeURIComponent).join('/');
 
-/** `onError` hears about folders that could not be listed (e.g. S3 access denied); they count as empty. */
-export async function scanLibrary(roots: ResolvedRoot[], onError?: (root: ResolvedRoot, err: unknown) => void): Promise<RomEntry[]> {
+/**
+ * `onError` hears about folders that could not be listed (e.g. S3 access denied); they count as empty.
+ * `only`: scan just these systems (the TV loads the library one console at a time).
+ */
+export async function scanLibrary(
+  roots: ResolvedRoot[],
+  onError?: (root: ResolvedRoot, err: unknown) => void,
+  only?: readonly ConsoleId[],
+): Promise<RomEntry[]> {
   const out: RomEntry[] = [];
+  const systems = only ? SYSTEMS.filter((s) => only.includes(s.id)) : SYSTEMS;
   for (const root of roots) {
     // Systems in parallel (one LIST each on S3), kept in catalog order.
     const perSystem = await Promise.all(
-      SYSTEMS.map(async (sys) => {
+      systems.map(async (sys) => {
         const files = (
           await root.store.list(sys.id).catch((err: unknown) => {
             onError?.(root, err);

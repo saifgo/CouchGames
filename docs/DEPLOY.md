@@ -96,8 +96,10 @@ instance role, or `AWS_PROFILE`. The key only needs read access:
   { "Effect": "Allow", "Action": "s3:GetObject", "Resource": "arn:aws:s3:::my-games/couch/roms/*" } ] }
 ```
 
-Upload with `aws s3 sync ./roms s3://my-games/couch/roms/`. New objects appear within 5 s, or
-immediately with *Refresh library*. In Coolify, set the variables on the service's
+Upload with `aws s3 sync ./roms s3://my-games/couch/roms/`. New objects appear after you press
+**⟳ Refresh** on the TV page or in the Android app. The library loads one console at a time, and
+both the server and each TV keep the list until someone presses Refresh, because listing a bucket is
+slow and the files rarely change. In Coolify, set the variables on the service's
 **Environment Variables** tab, and mark the secret key as secret. When S3 is on, the `couch-roms`
 volume is not used. With `METADATA=1` the server downloads each cartridge ROM (≤ 64 MB) once to
 compute its CRC. The result is cached in `couch-cache`.

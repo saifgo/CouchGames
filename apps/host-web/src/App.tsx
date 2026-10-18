@@ -4,7 +4,7 @@ import type { ConsoleId } from '@couch/protocol';
 import { startAmbient, stopAmbient } from './ambient.js';
 import { onNav, PhoneNavigator } from './focus/focus.js';
 import { loadHostSettings, saveHostSettings, systemAvailability, type HostSettings } from './host-settings.js';
-import { importLocalFiles, loadLibrary, type Game } from './library/library.js';
+import { cachedServerLibrary, importLocalFiles, loadLocalGames, loadServerLibrary, type Game, type LibraryProgress } from './library/library.js';
 import { HostSession, type SessionView } from './net/host-session.js';
 import { Modal } from './ui/common.js';
 import { GameDetail } from './ui/GameDetail.js';
@@ -46,7 +46,24 @@ function Console() {
   const session = useMemo(() => new HostSession(location.origin, settings.hostName), []);
   const navigator = useMemo(() => new PhoneNavigator(), []);
   const [view, setView] = useState<SessionView>(session.view);
-  const [games, setGames] = useState<Game[]>([]);
+  // Server games come from the saved copy until Refresh; local games are the ones dropped on this page.
+  const [cached] = useState(cachedServerLibrary);
+  const [serverGames, setServerGames] = useState<Game[]>(cached?.roms ?? []);
+  const [libraryAt, setLibraryAt] = useState<number | null>(cached?.at ?? null);
+  const [localGames, setLocalGames] = useState<Game[]>([]);
+  const [progress, setProgress] = useState<LibraryProgress | null>(null);
+  const games = useMemo(() => [...serverGames, ...localGames], [serverGames, localGames]);
+  const loadingRef = useRef(false);
+  const refreshServer = async (fresh: boolean) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    const games = await loadServerLibrary({ fresh, onProgress: setProgress, onGames: setServerGames });
+    setServerGames(games);
+    setLibraryAt(Date.now());
+    loadingRef.current = false;
+    // Leave the finished bar up for a moment so it reads as "done", not "vanished".
+    setTimeout(() => setProgress((p) => (p && p.done === p.total ? null : p)), 1200);
+  };
   const [route, setRoute] = useState<Route>({ name: 'home' });
   const [detail, setDetail] = useState<Game | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -61,7 +78,8 @@ function Console() {
     session.start();
     const off = session.on('change', setView);
     const offIn = session.on('input', (p) => navigator.feed(p.slot, p.input));
-    void loadLibrary().then(setGames);
+    void loadLocalGames().then(setLocalGames);
+    if (!cached) void refreshServer(false);
     void resolveJoinBase().then(setJoinBase);
     return () => {
       off();
@@ -108,7 +126,7 @@ function Console() {
 
   const onImport = async (files: File[]) => {
     const added = await importLocalFiles(files, (file, options) => new Promise((resolve) => setPicker({ file, options, resolve })));
-    if (added.length) setGames(await loadLibrary());
+    if (added.length) setLocalGames(await loadLocalGames());
   };
 
   if (route.name === 'playing') {
@@ -123,7 +141,7 @@ function Console() {
         setNavEnabled={(e) => (navigator.enabled = e)}
         onExit={() => {
           setRoute({ name: 'home' });
-          void loadLibrary().then(setGames);
+          void loadLocalGames().then(setLocalGames);
         }}
       />
     );
@@ -139,6 +157,9 @@ function Console() {
         onOpen={setDetail}
         onSettings={() => setShowSettings(true)}
         onImport={(f) => void onImport(f)}
+        progress={progress}
+        libraryAt={libraryAt}
+        onRefresh={() => void refreshServer(true)}
       />
       {!settings.onboardingDone && !detail && !showSettings && (
         <Onboarding joinUrl={joinUrl} onDone={() => setSettings((s) => ({ ...s, onboardingDone: true }))} />

@@ -275,3 +275,14 @@ code { background: rgba(255, 255, 255, 0.08); padding: 0.1em 0.4em; border-radiu
 .tvapp-how code { word-break: break-all; }
 .hints .add { white-space: nowrap; }
 .hints .hint { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Library loading (LibraryLoad.tsx) */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { width: 1rem; height: 1rem; border-radius: 50%; border: 0.18rem solid rgba(255, 255, 255, 0.2); border-top-color: var(--sys, #4dd8ff); animation: spin 0.8s linear infinite; flex: none; }
+.spinner.big { width: 4rem; height: 4rem; border-width: 0.35rem; }
+.lib-progress { display: inline-flex; align-items: center; gap: 0.6rem; white-space: nowrap; cursor: default; }
+.lib-progress-bar { width: 6rem; height: 0.35rem; border-radius: 1rem; background: rgba(255, 255, 255, 0.15); overflow: hidden; }
+.lib-progress-bar span { display: block; height: 100%; background: var(--sys, #4dd8ff); transition: width 0.3s ease; }
+.lib-progress.finished .lib-progress-bar span { background: #2fa84f; }
+.lib-age { opacity: 0.6; }
+.lib-loading b { font-size: 2.4rem; }

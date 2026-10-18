@@ -32,6 +32,28 @@ class RemoteLibraryTest {
     }
 
     @Test
+    fun triesTheLikelyAddressVariants() {
+        val c = RemoteLibrary::candidates
+        // Coolify's domain field syntax: the public address has no port.
+        assertEquals(listOf("https://couch.example.com:8787", "https://couch.example.com"), c("https://couch.example.com:8787"))
+        assertEquals(listOf("https://couch.example.com", "http://couch.example.com"), c("couch.example.com"))
+        // LAN-style: http first, and an IP never loses its port.
+        assertEquals(listOf("http://192.168.1.20:8787", "https://192.168.1.20:8787"), c("192.168.1.20:8787"))
+        assertEquals(listOf("http://couch.example.com:8787", "https://couch.example.com:8787", "https://couch.example.com"), c("couch.example.com:8787"))
+        assertEquals(listOf("http://192.168.1.20:8787"), c("http://192.168.1.20:8787"))
+        assertEquals(emptyList<String>(), c(""))
+    }
+
+    @Test
+    fun explainsFailures() {
+        val e = RemoteLibrary::explain
+        assertTrue(e(java.net.SocketTimeoutException("connect timed out"), "https://c.example.com:8787").contains("without :8787"))
+        assertTrue(e(java.net.UnknownHostException("c.example.com"), "https://c.example.com").contains("Can't find c.example.com"))
+        assertTrue(e(javax.net.ssl.SSLHandshakeException("bad cert"), "https://c.example.com").contains("certificate"))
+        assertTrue(e(app.couch.tv.library.HttpStatus(404), "https://c.example.com").contains("not a Couch server"))
+    }
+
+    @Test
     fun parsesTheServerLibrary() {
         val body = """
             {"roms":[

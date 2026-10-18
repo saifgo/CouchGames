@@ -100,6 +100,7 @@ fun HomeScreen(
     rows: List<HomeRow>,
     hiddenCount: Int,
     server: app.couch.tv.library.ServerState?,
+    serverLoad: app.couch.tv.library.LoadProgress?,
     view: SessionView,
     joinUrl: String?,
     maxPlayers: Int,
@@ -138,7 +139,7 @@ fun HomeScreen(
                 Modifier.weight(1f).fillMaxWidth().padding(start = 28.dp, end = 28.dp, top = 4.dp, bottom = 10.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Preview(game, onlineArt, accent, Modifier.weight(1f).fillMaxHeight())
+                Preview(game, onlineArt, accent, Modifier.weight(1f).fillMaxHeight(), loading = serverLoad)
                 Details(
                     game = game,
                     recentIndex = game?.let { recents.indexOf(it.id) } ?: -1,
@@ -167,7 +168,7 @@ fun HomeScreen(
                 onOpen = onOpen,
                 onEmpty = if (needsStoragePermission) onGrantStorage else onRefresh,
             )
-            Hints(hiddenCount, needsStoragePermission, accent, view, server, onGrantStorage, onServer, onRefresh, onPlayers)
+            Hints(hiddenCount, needsStoragePermission, accent, view, server, serverLoad, onGrantStorage, onServer, onRefresh, onPlayers)
         }
     }
     LaunchedEffect(rows.isNotEmpty()) { runCatching { firstCard.requestFocus() } }

@@ -48,6 +48,9 @@ export function parseDat(text: string): Map<string, string> {
   return out;
 }
 
+/** Whole seconds: S3 listings and HEAD report mtimes with different precision. */
+const cacheKey = (st: { size: number; mtimeMs: number }) => `${st.size}:${Math.floor(st.mtimeMs / 1000)}`;
+
 export class MetadataStore {
   private dats = new Map<string, Promise<Map<string, string> | null>>();
   private cache: Record<string, Meta & { key: string }> = {};
@@ -112,20 +115,21 @@ export class MetadataStore {
   }
 
   /** Cached metadata, or null if not computed yet (call lookup() to compute). */
-  async peek(store: RomStore, rel: string): Promise<Meta | null> {
+  /** `known`: size/mtime from the listing, which saves one stat (an S3 HEAD) per game. */
+  async peek(store: RomStore, rel: string, known?: { size: number; mtimeMs: number }): Promise<Meta | null> {
     await this.load();
-    const st = await store.stat(rel).catch(() => null);
+    const st = known ?? (await store.stat(rel).catch(() => null));
     if (!st) return null;
     const hit = this.cache[store.id(rel)];
-    return hit && hit.key === `${st.size}:${st.mtimeMs}` ? { crc: hit.crc, name: hit.name } : null;
+    return hit && hit.key === cacheKey(st) ? { crc: hit.crc, name: hit.name } : null;
   }
 
-  async lookup(system: ConsoleId, store: RomStore, rel: string): Promise<Meta | null> {
+  async lookup(system: ConsoleId, store: RomStore, rel: string, known?: { size: number; mtimeMs: number }): Promise<Meta | null> {
     if (!DAT_NAMES[system]) return null;
     await this.load();
-    const st = await store.stat(rel).catch(() => null);
+    const st = known ?? (await store.stat(rel).catch(() => null));
     if (!st || st.size > MAX_BYTES) return null;
-    const key = `${st.size}:${st.mtimeMs}`;
+    const key = cacheKey(st);
     const id = store.id(rel);
     const hit = this.cache[id];
     if (hit && hit.key === key && hit.name !== undefined) return { crc: hit.crc, name: hit.name };

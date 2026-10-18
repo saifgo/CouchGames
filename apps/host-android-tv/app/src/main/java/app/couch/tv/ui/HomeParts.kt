@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -248,7 +249,7 @@ private fun MiniChip(p: PlayerView) {
 
 /** The big "screen": the game's snapshot in a glowing CRT frame. Switches on like an old TV. */
 @Composable
-fun Preview(game: Game?, onlineArt: Boolean, accent: Color, modifier: Modifier) {
+fun Preview(game: Game?, onlineArt: Boolean, accent: Color, modifier: Modifier, loading: app.couch.tv.library.LoadProgress? = null) {
     Box(modifier, contentAlignment = Alignment.Center) {
         val on = remember(game?.id) { Animatable(0.04f) }
         LaunchedEffect(game?.id) { on.animateTo(1f, spring(dampingRatio = .65f, stiffness = 420f)) }
@@ -274,8 +275,17 @@ fun Preview(game: Game?, onlineArt: Boolean, accent: Color, modifier: Modifier) 
                     verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text("No games yet", fontSize = 30.sp, fontWeight = FontWeight.Bold)
-                    Text("Your phones are the controllers. Add a game to get started.", color = Muted, textAlign = TextAlign.Center)
+                    if (loading != null && !loading.finished) {
+                        Spinner(accent, 54.dp, 5.dp)
+                        Text("Loading your library…", fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            "${loading.done} of ${loading.total} consoles" + if (loading.loading.isNotEmpty()) " · now ${loadingNames(loading)}" else "",
+                            color = Muted, textAlign = TextAlign.Center,
+                        )
+                    } else {
+                        Text("No games yet", fontSize = 30.sp, fontWeight = FontWeight.Bold)
+                        Text("Your phones are the controllers. Add a game to get started.", color = Muted, textAlign = TextAlign.Center)
+                    }
                 }
             }
             Box(
@@ -725,6 +735,7 @@ fun Hints(
     accent: Color,
     view: SessionView,
     server: app.couch.tv.library.ServerState?,
+    serverLoad: app.couch.tv.library.LoadProgress?,
     onGrantStorage: () -> Unit,
     onServer: () -> Unit,
     onRefresh: () -> Unit,
@@ -750,9 +761,59 @@ fun Hints(
         Spacer(Modifier.weight(1f))
         val away = view.players.count { !it.connected }
         if (view.players.isNotEmpty()) Pill(if (away > 0) "Players · $away away" else "Players", if (away > 0) Bad else accent, onPlayers)
-        if (server != null) Pill("●  ${server.label}", accent, onServer, dot = if (server.healthy) Good else Bad)
+        if (server != null && serverLoad == null) Pill("●  ${server.label}", accent, onServer, dot = if (server.healthy) Good else Bad)
         if (needsStoragePermission) Pill("Allow USB folders", accent, onGrantStorage)
-        Pill("⟳  Refresh", accent, onRefresh)
+        if (serverLoad != null) LoadingPill(serverLoad, accent) else Pill("⟳  Refresh" + (server?.savedAt?.let { " · ${age(it)}" } ?: ""), accent, onRefresh)
+    }
+}
+
+/** "Loading N64, SNES… 4/13" with a spinner and a bar while the server's consoles load. */
+@Composable
+private fun LoadingPill(p: app.couch.tv.library.LoadProgress, accent: Color) {
+    val fraction by animateFloatAsState(p.done.toFloat() / p.total.coerceAtLeast(1), tween(300), label = "load")
+    val label = when {
+        !p.finished -> "Loading ${loadingNames(p).ifEmpty { "library" }}… ${p.done}/${p.total}"
+        p.failed.isNotEmpty() -> "⚠  ${p.failed.size} console${if (p.failed.size > 1) "s" else ""} did not load"
+        else -> "✓  Library up to date"
+    }
+    Row(
+        Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = .06f))
+            .border(1.dp, Color.White.copy(alpha = .18f), RoundedCornerShape(50))
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (!p.finished) Spinner(accent, 12.dp, 2.dp)
+        Text(label, fontSize = 11.sp, maxLines = 1)
+        Box(Modifier.width(70.dp).height(4.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = .15f))) {
+            Box(Modifier.fillMaxHeight().fillMaxWidth(fraction).background(if (p.finished && p.failed.isEmpty()) Good else accent))
+        }
+    }
+}
+
+/** A turning arc: something is happening, not stuck. */
+@Composable
+fun Spinner(color: Color, size: androidx.compose.ui.unit.Dp, stroke: androidx.compose.ui.unit.Dp) {
+    val angle by rememberInfiniteTransition(label = "spin").animateFloat(
+        0f, 360f, infiniteRepeatable(tween(900, easing = LinearEasing), RepeatMode.Restart), label = "angle",
+    )
+    Canvas(Modifier.size(size)) {
+        val w = stroke.toPx()
+        drawArc(Color.White.copy(alpha = .2f), 0f, 360f, false, style = androidx.compose.ui.graphics.drawscope.Stroke(w))
+        drawArc(color, angle, 100f, false, style = androidx.compose.ui.graphics.drawscope.Stroke(w, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+    }
+}
+
+private fun loadingNames(p: app.couch.tv.library.LoadProgress) =
+    p.loading.joinToString(", ") { app.couch.tv.library.Systems.byId(it)?.shortName ?: it }
+
+private fun age(at: Long): String {
+    val m = (System.currentTimeMillis() - at) / 60_000
+    return when {
+        m < 1 -> "now"
+        m < 60 -> "$m min"
+        m < 60 * 24 -> "${m / 60} h"
+        else -> "${m / 60 / 24} d"
     }
 }
 

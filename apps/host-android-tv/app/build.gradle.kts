@@ -5,7 +5,7 @@ plugins {
 }
 
 val repoRoot = rootDir.resolve("../..")
-val appVersion = "0.4.0"
+val appVersion = "0.4.1"
 
 // APK file name: CoucheTV-<version>-<debug|release>.apk
 base { archivesName.set("CoucheTV-$appVersion") }
@@ -18,7 +18,7 @@ android {
         applicationId = "app.couch.tv"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
+        versionCode = 3
         versionName = appVersion
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
     }
@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.zxing.core)
     implementation(libs.coil.compose)
     implementation(libs.coil.network)
+    implementation(libs.okhttp)
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.serialization.json)
