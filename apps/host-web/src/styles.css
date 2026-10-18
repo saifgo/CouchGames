@@ -261,3 +261,17 @@ code { background: rgba(255, 255, 255, 0.08); padding: 0.1em 0.4em; border-radiu
 .storage-misplaced ul { margin: 0; padding-left: 1.2rem; font-size: 0.95rem; line-height: 1.5; }
 .storage-misplaced code { margin-right: 0.4rem; }
 .storage-actions { display: flex; gap: 0.8rem; justify-content: flex-end; margin-top: 1.2rem; }
+
+/* Android TV app (CoucheTV APK) button + panel */
+.hint-link { background: none; border: 0; padding: 0; text-decoration: underline dotted; cursor: pointer; text-align: left; }
+.hint-link:focus { color: #fff; outline: none; }
+.modal.tvapp { width: min(52rem, 94vw); max-height: 88vh; overflow: auto; }
+.tvapp-lead { font-size: 1.1rem; line-height: 1.5; }
+.tvapp-points { margin: 0.4rem 0 1rem; padding-left: 1.3rem; line-height: 1.7; }
+.tvapp-download { display: flex; gap: 1.4rem; align-items: center; padding: 1rem; border-radius: 0.8rem; background: rgba(255, 255, 255, 0.05); }
+.tvapp-download .qr { flex: none; border-radius: 0.4rem; overflow: hidden; }
+.tvapp-get { display: inline-block; font-size: 1.15rem; font-weight: 700; padding: 0.6rem 1.4rem; text-decoration: none; color: inherit; }
+.tvapp-how { margin: 0.8rem 0 0; font-size: 0.95rem; line-height: 1.5; opacity: 0.85; }
+.tvapp-how code { word-break: break-all; }
+.hints .add { white-space: nowrap; }
+.hints .hint { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

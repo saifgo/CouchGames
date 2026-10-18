@@ -24,6 +24,9 @@ services:
       S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-0}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      # Android TV app download on the TV page: put CoucheTV-*.apk in apps/ of the ROM storage,
+      # or set an external link here.
+      APK_URL: ${APK_URL:-}
     expose:
       - "8787"
     volumes:

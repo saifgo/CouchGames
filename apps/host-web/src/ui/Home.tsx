@@ -6,6 +6,7 @@ import type { SessionView } from '../net/host-session.js';
 import { Art, PlayerChip, useClock } from './common.js';
 import { Lobby } from './Lobby.js';
 import { StorageChip } from './Storage.js';
+import { TvAppButton, TvAppPanel, useApk } from './TvApp.js';
 
 interface Props {
   games: Game[];
@@ -50,6 +51,8 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
   const fileRef = useRef<HTMLInputElement>(null);
   const playable = useMemo(() => games.filter((g) => systemAvailability(getSystem(g.system)!, settings).ok), [games, settings]);
   const hidden = games.length - playable.length;
+  const apk = useApk();
+  const [showApp, setShowApp] = useState(false);
   const recentAt = useMemo(() => new Map(recents().map((r) => [r.id, r.at])), [games]);
   const favs = useMemo(() => favourites(), [games]);
 
@@ -250,12 +253,19 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
         <span>
           <kbd>✚</kbd> Browse
         </span>
-        {hidden > 0 && (
-          <span className="hint">
-            {hidden} game{hidden > 1 ? 's' : ''} hidden: their systems need the Android TV app or a faster device (Settings).
-          </span>
-        )}
+        {hidden > 0 &&
+          (apk ? (
+            <button className="hint hint-link" data-nav onClick={() => setShowApp(true)}>
+              {hidden} game{hidden > 1 ? 's' : ''} hidden: play {hidden > 1 ? 'them' : 'it'} in the Android TV app (get it)
+            </button>
+          ) : (
+            <span className="hint">
+              {hidden} game{hidden > 1 ? 's' : ''} hidden: their systems need the Android TV app or a faster device (Settings).
+            </span>
+          ))}
         <span className="grow" />
+        {apk && <TvAppButton apk={apk} onOpen={() => setShowApp(true)} />}
+        {apk && showApp && <TvAppPanel apk={apk} onClose={() => setShowApp(false)} />}
         <StorageChip />
         <button className="add" data-nav onClick={() => fileRef.current?.click()}>
           ＋ Add games

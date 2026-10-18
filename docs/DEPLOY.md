@@ -66,6 +66,21 @@ is not picked up with the reason. *Test again* re-checks after you change the bu
 report is at `GET /api/storage` (`?fresh` to skip the 30 s cache), and the server logs
 `ROM storage …: connected, N games` or `NOT CONNECTED: …` at startup.
 
+**Offering the Android TV app on the TV page.** Upload the APK to `apps/` in the ROM storage, e.g.
+`s3://couche-roms/apps/CoucheTV-0.4.0-release.apk` (or `roms/apps/` with the volume). The TV page
+then shows an *Android TV app* button with a download link and QR code (`/download/<file>`), and
+the "games hidden" hint links to it. With several APKs it offers the release build with the highest
+version. Or set `APK_URL` to an external link (e.g. a GitHub release). Without either, the button
+is hidden. Local runs from the repo pick up `apps/host-android-tv/app/build/outputs/apk/release/`.
+
+**On the Android TV app.** In the app, open *Settings → Couch server* and enter the address of the
+TV page (e.g. `https://couch.example.com`). The server's games (folder or S3) then show up next to
+the ones on the TV box, and a status chip in the hint bar shows the connection. A game downloads
+through the server into the app's cache the first time it's played (up to 8 GB are kept; the
+least recently played are removed first), and the system's BIOS files from `bios/` come along.
+The TV never gets the S3 keys. Instead of typing on the remote, set the address over adb:
+`adb shell am start -a android.intent.action.VIEW -d "couch://server?url=https://couch.example.com"`.
+
 The TV still loads `/roms/...` from the Couch server, which proxies the bytes (Range requests
 included). The bucket can stay **private** and needs no CORS rules. Every ROM load costs the server
 the egress from S3 to itself and from itself to the TV. A bucket in the same region as the server
@@ -113,6 +128,7 @@ points at the container's internal IP.
 | `S3_ENDPOINT` | unset | S3-compatible endpoint, e.g. `https://<account>.r2.cloudflarestorage.com` |
 | `S3_FORCE_PATH_STYLE` | `0` | `1` for MinIO and other path-style services |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | unset | Read-only credentials (or use an instance role) |
+| `APK_URL` | unset | External download link for the Android TV app, instead of `apps/` in the ROM storage |
 
 | Build arg | Default | |
 |---|---|---|

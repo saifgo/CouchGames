@@ -99,6 +99,7 @@ data class HomeRow(
 fun HomeScreen(
     rows: List<HomeRow>,
     hiddenCount: Int,
+    server: app.couch.tv.library.ServerState?,
     view: SessionView,
     joinUrl: String?,
     maxPlayers: Int,
@@ -109,6 +110,7 @@ fun HomeScreen(
     onGrantStorage: () -> Unit,
     onOpen: (Game) -> Unit,
     onSettings: () -> Unit,
+    onServer: () -> Unit,
     onRefresh: () -> Unit,
     onPlayers: () -> Unit,
 ) {
@@ -165,7 +167,7 @@ fun HomeScreen(
                 onOpen = onOpen,
                 onEmpty = if (needsStoragePermission) onGrantStorage else onRefresh,
             )
-            Hints(hiddenCount, needsStoragePermission, accent, view, onGrantStorage, onRefresh, onPlayers)
+            Hints(hiddenCount, needsStoragePermission, accent, view, server, onGrantStorage, onServer, onRefresh, onPlayers)
         }
     }
     LaunchedEffect(rows.isNotEmpty()) { runCatching { firstCard.requestFocus() } }

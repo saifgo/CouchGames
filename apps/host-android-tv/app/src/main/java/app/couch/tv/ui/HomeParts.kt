@@ -320,7 +320,8 @@ private fun lastPlayed(index: Int) = when {
 }
 
 private fun storedOn(g: Game): String =
-    if (g.root.startsWith(Environment.getExternalStorageDirectory().path) || g.root.startsWith("/data")) "This TV" else "USB drive"
+    if (g.root == app.couch.tv.library.SERVER_ROOT) "Couch server"
+    else if (g.root.startsWith(Environment.getExternalStorageDirectory().path) || g.root.startsWith("/data")) "This TV" else "USB drive"
 
 @Composable
 fun Details(game: Game?, recentIndex: Int, favourite: Boolean, needsStoragePermission: Boolean, accent: Color, modifier: Modifier) {
@@ -723,7 +724,9 @@ fun Hints(
     needsStoragePermission: Boolean,
     accent: Color,
     view: SessionView,
+    server: app.couch.tv.library.ServerState?,
     onGrantStorage: () -> Unit,
+    onServer: () -> Unit,
     onRefresh: () -> Unit,
     onPlayers: () -> Unit,
 ) {
@@ -747,6 +750,7 @@ fun Hints(
         Spacer(Modifier.weight(1f))
         val away = view.players.count { !it.connected }
         if (view.players.isNotEmpty()) Pill(if (away > 0) "Players · $away away" else "Players", if (away > 0) Bad else accent, onPlayers)
+        if (server != null) Pill("●  ${server.label}", accent, onServer, dot = if (server.healthy) Good else Bad)
         if (needsStoragePermission) Pill("Allow USB folders", accent, onGrantStorage)
         Pill("⟳  Refresh", accent, onRefresh)
     }
@@ -761,7 +765,7 @@ private fun Hint(key: String, bg: Color, label: String) {
 }
 
 @Composable
-private fun Pill(label: String, accent: Color, onClick: () -> Unit) {
+private fun Pill(label: String, accent: Color, onClick: () -> Unit, dot: Color? = null) {
     val shape = RoundedCornerShape(50)
     Surface(
         onClick = onClick,
@@ -776,6 +780,20 @@ private fun Pill(label: String, accent: Color, onClick: () -> Unit) {
         ),
         glow = ClickableSurfaceDefaults.glow(focusedGlow = Glow(accent.copy(alpha = .7f), 10.dp)),
     ) {
-        Text(label, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+        if (dot == null) {
+            Text(label, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+        } else {
+            // Coloured status dot (first character of the label) + text.
+            Text(
+                androidx.compose.ui.text.buildAnnotatedString {
+                    pushStyle(androidx.compose.ui.text.SpanStyle(color = dot))
+                    append(label.take(1))
+                    pop()
+                    append(label.drop(1))
+                },
+                fontSize = 11.sp,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            )
+        }
     }
 }

@@ -5,6 +5,10 @@ plugins {
 }
 
 val repoRoot = rootDir.resolve("../..")
+val appVersion = "0.4.0"
+
+// APK file name: CoucheTV-<version>-<debug|release>.apk
+base { archivesName.set("CoucheTV-$appVersion") }
 
 android {
     namespace = "app.couch.tv"
@@ -14,8 +18,8 @@ android {
         applicationId = "app.couch.tv"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.3.0"
+        versionCode = 2
+        versionName = appVersion
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
     }
 

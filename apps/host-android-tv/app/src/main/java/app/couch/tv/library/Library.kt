@@ -15,6 +15,8 @@ data class Game(
     val extra: List<File>,
     val size: Long,
     val root: String,
+    /** Set for games listed by a Couch server: [file] is then the cache path it downloads to. */
+    val remote: RemoteGame? = null,
 )
 
 /**

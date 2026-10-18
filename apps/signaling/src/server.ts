@@ -11,6 +11,7 @@ import { FsStore, type RomStore } from './store.js';
 import { titleFromFilename } from '@couch/systems';
 import { Rooms } from './rooms.js';
 import { checkStorage, type StorageReport } from './storage-check.js';
+import { findApk, type ApkSource } from './apk.js';
 
 export interface StaticMount {
   /** URL prefix, e.g. "/" or "/c". */
@@ -32,6 +33,8 @@ export interface CouchServerOptions {
   /** BIOS files, served under /bios/: a local directory or a store (e.g. S3). */
   biosDir?: string;
   bios?: RomStore;
+  /** Where the Android TV app (APK) offered on the TV page comes from. */
+  apk?: ApkSource;
   static?: StaticMount[];
   /** Send COOP/COEP so pages are cross-origin isolated (needed by threaded WASM cores). */
   crossOriginIsolation?: boolean;
@@ -73,6 +76,7 @@ const MIME: Record<string, string> = {
   '.mp3': 'audio/mpeg',
   '.ogg': 'audio/ogg',
   '.txt': 'text/plain; charset=utf-8',
+  '.apk': 'application/vnd.android.package-archive',
 };
 
 /** LAN IPv4 addresses, Wi-Fi/Ethernet first, virtual adapters (WSL, Hyper-V, Docker) last. */
@@ -209,6 +213,18 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
         return json(res, { port, secure: !!opts.tls, addresses: lanAddresses() });
       }
       if (path === '/api/library') return json(res, { roms: await getLibrary(url.searchParams.has('fresh')) });
+      if (path === '/api/apk') {
+        const found = opts.apk ? await findApk(opts.apk) : null;
+        return found ? json(res, found.info) : notFound(res);
+      }
+      if (path.startsWith('/download/') && opts.apk) {
+        const found = await findApk(opts.apk);
+        const name = path.slice('/download/'.length);
+        // Only the APK the page offers, never other files from the store.
+        if (!found?.store || found.info.file !== name) return notFound(res);
+        res.setHeader('Content-Disposition', `attachment; filename="${name.replace(/"/g, '')}"`);
+        return sendFile(req, res, found.store, name);
+      }
       if (path === '/api/storage') {
         const report = await getStorage(url.searchParams.has('fresh'));
         return report ? json(res, await report) : notFound(res);

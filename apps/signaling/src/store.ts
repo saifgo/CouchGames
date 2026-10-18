@@ -170,16 +170,17 @@ export class S3Store implements RomStore {
   }
 
   async list(dir: string): Promise<StoredFile[]> {
-    const key = this.key(dir);
-    if (!key) return [];
+    // "" lists the store's own root (the prefix itself).
+    const prefix = dir === '' ? this.prefix : this.key(dir) && `${this.key(dir)}/`;
+    if (prefix === null || (dir !== '' && !prefix)) return [];
     const out: StoredFile[] = [];
     let token: string | undefined;
     do {
       const page = await this.client.send(
-        new ListObjectsV2Command({ Bucket: this.bucket, Prefix: `${key}/`, Delimiter: '/', ContinuationToken: token }),
+        new ListObjectsV2Command({ Bucket: this.bucket, Prefix: prefix || undefined, Delimiter: '/', ContinuationToken: token }),
       );
       for (const o of page.Contents ?? []) {
-        const name = o.Key!.slice(key.length + 1);
+        const name = o.Key!.slice(prefix.length);
         if (name) out.push({ name, size: o.Size ?? 0, mtimeMs: o.LastModified?.getTime() ?? 0 });
       }
       token = page.IsTruncated ? page.NextContinuationToken : undefined;

@@ -51,6 +51,8 @@ export function classify(path: string, caseInsensitive = false): { kind: 'game';
   const name = parts[parts.length - 1]!;
   if (name.startsWith('.') || /^readme(\.\w+)?$/i.test(name)) return { kind: 'ignore' };
   const folder = parts[0]!;
+  // apps/: the Android TV app (CoucheTV APK) offered on the TV page, see apk.ts.
+  if (folder === 'apps') return { kind: 'ignore' };
   if (folder === 'bios') return parts.length === 2 ? { kind: 'bios' } : { kind: 'misplaced', reason: 'BIOS files go directly in bios/, not in a sub-folder' };
   if (parts.length === 1) return { kind: 'misplaced', reason: `at the top level: put it in a system folder (${SYSTEM_IDS})` };
   const sys = getSystem(caseInsensitive ? folder.toLowerCase() : folder);

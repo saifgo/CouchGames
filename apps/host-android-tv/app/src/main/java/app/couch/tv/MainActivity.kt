@@ -43,6 +43,9 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Button
 import androidx.tv.material3.Text
 import app.couch.tv.library.Game
+import app.couch.tv.library.RemoteLibrary
+import app.couch.tv.library.SERVER_ROOT
+import app.couch.tv.library.ServerState
 import app.couch.tv.library.Systems
 import app.couch.tv.net.LanServer
 import app.couch.tv.ui.Art
@@ -65,6 +68,8 @@ class MainActivity : ComponentActivity() {
     private val app get() = application as CouchApp
     private lateinit var navigator: PhoneNavigator
     private var deepLinkGame = mutableStateOf<String?>(null)
+    /** Bumped when couch://server?url=… sets the Couch server (e.g. from adb), to rescan. */
+    private val serverLinks = mutableStateOf(0)
     /** Bumped on every resume (e.g. back from the "All files access" settings page). */
     private val resumes = mutableStateOf(0)
 
@@ -77,7 +82,7 @@ class MainActivity : ComponentActivity() {
             navigator.feed(p.slot, p.input)
         }
         (getSystemService(INPUT_SERVICE) as InputManager).registerInputDeviceListener(app.gamepads, null)
-        deepLinkGame.value = intent?.data?.takeIf { it.scheme == "couch" }?.lastPathSegment
+        handleLink(intent)
         setContent { CouchTheme { Root() } }
     }
 
@@ -93,7 +98,18 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        deepLinkGame.value = intent.data?.takeIf { it.scheme == "couch" }?.lastPathSegment
+        handleLink(intent)
+    }
+
+    /** couch://game/<id> (TV home "Continue playing") or couch://server?url=<couch server>. */
+    private fun handleLink(intent: Intent?) {
+        val data = intent?.data?.takeIf { it.scheme == "couch" } ?: return
+        if (data.host == "server") {
+            app.settings.serverUrl = RemoteLibrary.normalizeServer(data.getQueryParameter("url").orEmpty())
+            serverLinks.value++
+        } else {
+            deepLinkGame.value = data.lastPathSegment
+        }
     }
 
     private fun needsStoragePermission(): Boolean =
@@ -113,6 +129,7 @@ class MainActivity : ComponentActivity() {
     private fun Root() {
         val scope = rememberCoroutineScope()
         var games by remember { mutableStateOf<List<Game>>(emptyList()) }
+        var server by remember { mutableStateOf<ServerState?>(null) }
         var playing by remember { mutableStateOf<Pair<Game, Boolean>?>(null) }
         var detail by remember { mutableStateOf<Game?>(null) }
         var showSettings by remember { mutableStateOf(false) }
@@ -126,12 +143,23 @@ class MainActivity : ComponentActivity() {
 
         fun refresh() = scope.launch {
             needsPerm = needsStoragePermission()
-            games = withContext(Dispatchers.IO) {
+            val local = withContext(Dispatchers.IO) {
                 runCatching { app.library.scan() }
                     .onFailure { Log.e("Couch", "library scan failed", it) }
                     .getOrDefault(emptyList())
             }
-            Log.i("Couch", "library: ${games.size} games in ${app.library.roots().map { it.path }}")
+            // Games from the Couch server (its roms/ folder or S3 bucket), downloaded on first play.
+            val url = app.settings.serverUrl
+            val remote = if (url.isEmpty()) null else app.remote.fetch(url).onFailure { Log.w("Couch", "server library $url: ${it.message}") }
+            server = if (url.isEmpty()) null else ServerState(
+                url = url,
+                reachable = remote!!.isSuccess,
+                games = remote.getOrNull()?.size ?: 0,
+                error = remote.exceptionOrNull()?.let { it.message ?: it.javaClass.simpleName },
+                storage = if (remote.isSuccess) app.remote.storage(url) else null,
+            )
+            games = local + remote?.getOrNull().orEmpty()
+            Log.i("Couch", "library: ${local.size} local games in ${app.library.roots().map { it.path }}, ${server?.games ?: 0} from ${url.ifEmpty { "no server" }}")
             tick++
         }
 
@@ -146,6 +174,9 @@ class MainActivity : ComponentActivity() {
             needsPerm = needsStoragePermission()
             if (before && !needsPerm) refresh()
         }
+
+        val linked by serverLinks
+        LaunchedEffect(linked) { if (linked > 0) refresh() }
 
         val deep by deepLinkGame
         LaunchedEffect(deep, games) {
@@ -190,6 +221,7 @@ class MainActivity : ComponentActivity() {
             HomeScreen(
                 rows = rows,
                 hiddenCount = games.size - playable.size,
+                server = server,
                 view = view,
                 joinUrl = joinUrl,
                 maxPlayers = s.maxPlayers,
@@ -200,6 +232,7 @@ class MainActivity : ComponentActivity() {
                 onGrantStorage = { requestStorage() },
                 onOpen = { detail = it },
                 onSettings = { showSettings = true },
+                onServer = { showSettings = true },
                 onRefresh = { refresh() },
                 onPlayers = { showPlayers = true },
             )
@@ -219,7 +252,7 @@ class MainActivity : ComponentActivity() {
             }
             if (showSettings) {
                 BackHandler { showSettings = false }
-                SettingsScreen(app, onRemeasure = { scope.launch { measure(); tick++ } }) {
+                SettingsScreen(app, server, onServerChanged = { refresh() }, onRemeasure = { scope.launch { measure(); tick++ } }) {
                     showSettings = false
                     onboarding = !s.onboardingDone
                     tick++
@@ -294,7 +327,12 @@ private fun GameDetail(game: Game, onlineArt: Boolean, hasAuto: Boolean, onPlay:
                 Text(sys.name.uppercase(), color = hexColor(sys.accent), fontWeight = FontWeight.Bold)
                 Text(game.title, fontSize = 38.sp, fontWeight = FontWeight.ExtraBold)
                 Text("${sys.maker} · ${sys.year} · up to ${sys.maxPlayers} players · ${"%.1f".format(game.size / 1048576.0)} MB", color = Muted)
-                Text(game.file.path, color = Muted, fontSize = 13.sp)
+                Text(
+                    if (game.root == SERVER_ROOT) "From the Couch server ${game.remote?.server} · " + (if (game.file.length() == game.size) "downloaded" else "downloads when you play")
+                    else game.file.path,
+                    color = Muted,
+                    fontSize = 13.sp,
+                )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 10.dp)) {
                     if (hasAuto) Button(onClick = { onPlay(true) }, modifier = Modifier.focusRequester(first)) { Text("▶  Continue", fontSize = 20.sp) }
                     Button(onClick = { onPlay(false) }, modifier = if (hasAuto) Modifier else Modifier.focusRequester(first)) {

@@ -30,6 +30,10 @@ class Settings(context: Context) {
     var latencyOverlay: Boolean
         get() = p.getBoolean("latencyOverlay", false)
         set(v) = p.edit { putBoolean("latencyOverlay", v) }
+    /** Couch server whose library (roms/ folder or S3 bucket) this TV also shows; "" = none. */
+    var serverUrl: String
+        get() = p.getString("serverUrl", "")!!
+        set(v) = p.edit { putString("serverUrl", v) }
     var onlineArt: Boolean
         get() = p.getBoolean("onlineArt", true)
         set(v) = p.edit { putBoolean("onlineArt", v) }

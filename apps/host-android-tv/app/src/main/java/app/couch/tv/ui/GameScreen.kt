@@ -91,6 +91,8 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
     val core = app.settings.core(sys.id)?.takeIf { it in sys.android.cores } ?: sys.android.cores.first()
     var corePath by remember { mutableStateOf<String?>(null) }
     var progress by remember { mutableStateOf(0f) }
+    /** True while a Couch-server game is being downloaded (before the core step). */
+    var downloading by remember { mutableStateOf(game.remote != null) }
     var error by remember { mutableStateOf<String?>(null) }
     var view by remember { mutableStateOf<GLRetroView?>(null) }
     var menu by remember { mutableStateOf<Page?>(null) }
@@ -155,8 +157,21 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
         onExit()
     }
 
-    // 1) Make sure the core is installed (first use downloads it from the libretro buildbot).
+    // 1) Server games: download the ROM (and the system's BIOS) into the cache on first play.
+    // 2) Make sure the core is installed (first use downloads it from the libretro buildbot).
     LaunchedEffect(core) {
+        game.remote?.let { r ->
+            val got = runCatching {
+                app.remote.ensureLocal(game) { progress = it }
+                app.remote.ensureBios(r.server, sys.id, app.library.systemDir())
+            }
+            if (got.isFailure) {
+                error = "Could not download ${game.title} from the Couch server ${r.server}: ${got.exceptionOrNull()?.message}. Check that the server is running and this TV is online."
+                return@LaunchedEffect
+            }
+            downloading = false
+            progress = 0f
+        }
         runCatching { app.cores.ensure(core) { progress = it } }
             .onSuccess { corePath = it }
             .onFailure { error = "Could not get the $core core: ${it.message}. Connect the TV to the internet once, or side-load the core (see roms/README.md)." }
@@ -285,7 +300,7 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
         }
         if (path == null && error == null) {
             Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Getting the ${sys.shortName} emulator ($core)…", fontSize = 22.sp)
+                Text(if (downloading) "Downloading ${game.title} from the Couch server…" else "Getting the ${sys.shortName} emulator ($core)…", fontSize = 22.sp)
                 Text("${(progress * 100).toInt()} %  · licence: see Settings → About", color = Muted)
             }
         }

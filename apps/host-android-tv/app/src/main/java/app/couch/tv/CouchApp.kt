@@ -5,6 +5,7 @@ import app.couch.tv.emu.Cores
 import app.couch.tv.emu.Gamepads
 import app.couch.tv.emu.InputBridge
 import app.couch.tv.library.Library
+import app.couch.tv.library.RemoteLibrary
 import app.couch.tv.library.Systems
 import app.couch.tv.net.HostSession
 import app.couch.tv.net.LanServer
@@ -15,6 +16,7 @@ class CouchApp : Application() {
     lateinit var session: HostSession
     lateinit var server: LanServer
     lateinit var library: Library
+    lateinit var remote: RemoteLibrary
     lateinit var cores: Cores
     lateinit var saves: Saves
     lateinit var diagnostics: Diagnostics
@@ -30,6 +32,7 @@ class CouchApp : Application() {
         session = HostSession(this, settings.hostName).also { it.maxPlayers = settings.maxPlayers }
         server = LanServer(this, session)
         library = Library(this).also { it.ensureAppFolders() }
+        remote = RemoteLibrary(this)
         cores = Cores(this)
         saves = Saves(this)
         server.start()

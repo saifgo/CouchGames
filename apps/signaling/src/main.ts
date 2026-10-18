@@ -15,6 +15,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { lanAddresses, startCouchServer } from './server.js';
 import { FsStore, S3Store, type RomStore } from './store.js';
+import type { ApkSource } from './apk.js';
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
 const env = process.env;
@@ -32,6 +33,14 @@ const roms: RomStore = env.S3_BUCKET
     })
   : new FsStore(env.ROMS_DIR ?? `${repo}roms`);
 const bios: RomStore = roms instanceof S3Store ? roms.sub('bios') : new FsStore(env.BIOS_DIR ?? `${repo}roms/bios`);
+// Android TV app download (see apk.ts): APK_URL, else apps/ next to the ROMs, else the local Gradle build.
+const apk: ApkSource = {
+  ...(env.APK_URL ? { url: env.APK_URL } : {}),
+  stores: [
+    roms instanceof S3Store ? roms.sub('apps') : new FsStore(`${env.ROMS_DIR ?? `${repo}roms`}/apps`),
+    new FsStore(`${repo}apps/host-android-tv/app/build/outputs/apk/release`),
+  ],
+};
 
 const srv = await startCouchServer({
   port: Number(env.PORT ?? 8787),
@@ -43,6 +52,7 @@ const srv = await startCouchServer({
     { dir: env.TEST_ROMS_DIR ?? `${repo}test-roms`, source: 'homebrew', urlPrefix: '/test-roms' },
   ],
   bios,
+  apk,
   crossOriginIsolation: env.COI === '1',
   metadataCacheDir: env.METADATA === '0' ? undefined : `${repo}.cache/metadata`,
   diagnosticsDir: `${repo}.cache/logs`,

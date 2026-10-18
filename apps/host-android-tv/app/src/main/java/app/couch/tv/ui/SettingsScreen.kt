@@ -30,16 +30,29 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.Text
 import app.couch.tv.CouchApp
+import app.couch.tv.library.RemoteLibrary
+import app.couch.tv.library.ServerState
 import app.couch.tv.library.Systems
+import androidx.compose.foundation.border
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 
 private val TV_NAMES = listOf("Living room", "Bedroom", "Game room", "Couch")
 private val TIER_LABELS = listOf("Auto", "1 · 8-bit", "2 · 16-bit", "3 · +PS1", "4 · +N64/PSP/NDS", "5 · +PS2")
 
 @Composable
-fun SettingsScreen(app: CouchApp, onRemeasure: () -> Unit, onClose: () -> Unit) {
+fun SettingsScreen(app: CouchApp, server: ServerState?, onServerChanged: () -> Unit, onRemeasure: () -> Unit, onClose: () -> Unit) {
     val s = app.settings
     var version by remember { mutableIntStateOf(0) } // bump to recompose after a change
     val first = remember { FocusRequester() }
+    var editServer by remember { mutableStateOf(false) }
 
     @Composable
     fun Row2(label: String, value: String, hint: String? = null, focus: Boolean = false, onClick: () -> Unit) {
@@ -70,6 +83,13 @@ fun SettingsScreen(app: CouchApp, onRemeasure: () -> Unit, onClose: () -> Unit) 
                     s.hostName = TV_NAMES[(TV_NAMES.indexOf(s.hostName) + 1) % TV_NAMES.size]
                     app.session.hostName = s.hostName
                 }
+            }
+            item("${version}server") {
+                Row2(
+                    "Couch server",
+                    s.serverUrl.ifEmpty { "Off" },
+                    server?.detail ?: "Also show the games of a Couch server (its roms/ folder or S3 bucket). Select to set the address.",
+                ) { editServer = true }
             }
             item(version + 2) {
                 Row2("Players", "${s.maxPlayers}") {
@@ -126,5 +146,62 @@ fun SettingsScreen(app: CouchApp, onRemeasure: () -> Unit, onClose: () -> Unit) 
             }
         }
     }
+    if (editServer) {
+        ServerDialog(
+            initial = s.serverUrl,
+            onSave = { url ->
+                s.serverUrl = RemoteLibrary.normalizeServer(url)
+                editServer = false
+                version++
+                onServerChanged()
+            },
+            onCancel = { editServer = false },
+        )
+    }
     LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
+}
+
+/** Address entry for the Couch server (TV keyboard or a USB/Bluetooth keyboard). */
+@Composable
+private fun ServerDialog(initial: String, onSave: (String) -> Unit, onCancel: () -> Unit) {
+    var text by remember { mutableStateOf(initial.ifEmpty { "https://" }) }
+    var focused by remember { mutableStateOf(false) }
+    val field = remember { FocusRequester() }
+    androidx.activity.compose.BackHandler { onCancel() }
+    Box(Modifier.fillMaxSize().background(Color(0xE004060A)), contentAlignment = Alignment.Center) {
+        Column(
+            Modifier.width(760.dp).clip(RoundedCornerShape(24.dp)).background(Panel).padding(28.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text("Couch server", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "The address of the TV page you open in a browser, e.g. https://couch.example.com or http://192.168.1.20:8787. " +
+                    "Its games (roms/ folder or S3 bucket) appear here and download the first time you play them. Leave empty to turn it off.",
+                color = Muted,
+                fontSize = 14.sp,
+            )
+            BasicTextField(
+                value = text,
+                onValueChange = { text = it },
+                singleLine = true,
+                textStyle = TextStyle(color = Color.White, fontSize = 22.sp),
+                cursorBrush = SolidColor(Color.White),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done, autoCorrectEnabled = false),
+                keyboardActions = KeyboardActions(onDone = { onSave(text) }),
+                modifier = Modifier.fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White.copy(alpha = .08f))
+                    .border(2.dp, if (focused) Color.White else Color.White.copy(alpha = .2f), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .focusRequester(field)
+                    .onFocusChanged { focused = it.isFocused },
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = { onSave(text) }) { Text("Save & connect") }
+                Button(onClick = { onSave("") }) { Text("Turn off") }
+                Button(onClick = onCancel) { Text("Cancel") }
+            }
+        }
+    }
+    LaunchedEffect(Unit) { runCatching { field.requestFocus() } }
 }

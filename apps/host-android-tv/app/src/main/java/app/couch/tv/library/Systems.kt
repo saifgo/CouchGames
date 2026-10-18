@@ -34,9 +34,12 @@ object Systems {
     lateinit var all: List<SystemDef>
         private set
 
-    fun load(context: Context) {
+    fun load(context: Context) = loadJson(context.assets.open("systems.json").bufferedReader().readText())
+
+    /** Also used by unit tests (no Android assets there). */
+    fun loadJson(text: String) {
         val json = Json { ignoreUnknownKeys = true }
-        all = json.decodeFromString(SystemsFile.serializer(), context.assets.open("systems.json").bufferedReader().readText()).systems
+        all = json.decodeFromString(SystemsFile.serializer(), text).systems
     }
 
     fun byId(id: String): SystemDef? = all.firstOrNull { it.id == id }

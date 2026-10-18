@@ -26,7 +26,9 @@
         android:label="@string/app_name"
         android:largeHeap="true"
         android:requestLegacyExternalStorage="true"
-        android:theme="@style/Theme.Couch">
+        android:theme="@style/Theme.Couch"
+        android:usesCleartextTraffic="true">
+        <!-- Cleartext: a Couch server on the LAN is usually plain http://<laptop>:8787. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -45,6 +47,13 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="couch" android:host="game" />
+            </intent-filter>
+            <!-- couch://server?url=https://couch.example.com sets the Couch server (adb, or a link). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="couch" android:host="server" />
             </intent-filter>
         </activity>
     </application>
