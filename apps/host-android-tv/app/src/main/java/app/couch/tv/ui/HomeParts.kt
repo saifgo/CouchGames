@@ -1,8 +1,8 @@
 package app.couch.tv.ui
 
 import android.os.Build
-import android.os.Environment
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -18,6 +18,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import app.couch.tv.ProRules
 import app.couch.tv.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -36,6 +37,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -44,8 +46,22 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.core.snap
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.SportsEsports
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material.icons.rounded.WifiOff
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -93,6 +109,7 @@ import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Glow
 import androidx.tv.material3.Icon
+import androidx.compose.ui.graphics.Shape
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
@@ -104,12 +121,23 @@ import app.couch.tv.protocol.PLAYER_COLORS
 import java.util.Date
 import kotlinx.coroutines.delay
 
-private val Mono = FontFamily.Monospace
-private val Script = FontFamily.Cursive
 private val Line = Color.White.copy(alpha = .1f)
-private val BtnA = Color(0xFF2FA84F)
-private val BtnB = Color(0xFFD23A3A)
+/** Button caps are neutral: the label says which button, colour is kept for state. */
+private val BtnKey = Color(0xFF2A303C)
 private val PanelShape = RoundedCornerShape(10.dp)
+/** Digits that don't jump around as they change (clock, counters). */
+private val Tabular = TextStyle(fontFeatureSettings = "tnum")
+
+/**
+ * TV overscan safe area (Android TV guidance: 48 dp at the sides, 27 dp top and bottom).
+ * Backgrounds may bleed into it; text and controls stay inside.
+ */
+val SafeX = 48.dp
+val SafeY = 27.dp
+
+/** 10-foot type: nothing a guest reads is smaller than this. */
+private val Small = 14.sp
+private val Body = 16.sp
 
 /** Wheels keep the focused item in the middle, like the web host's centred scroll. */
 @OptIn(ExperimentalFoundationApi::class)
@@ -118,72 +146,35 @@ private val CenterSpec = object : BringIntoViewSpec {
         offset - (containerSize - size) / 2f
 }
 
-private fun glow(c: Color, alpha: Float = .6f, blur: Float = 22f) = TextStyle(shadow = Shadow(c.copy(alpha = alpha), Offset.Zero, blur))
-
-/** 2-px dark lines every 4 px, like a CRT. */
-private fun DrawScope.scanlines(alpha: Float) = drawRect(
-    Brush.verticalGradient(
-        0f to Color.Black.copy(alpha = alpha), .5f to Color.Black.copy(alpha = alpha),
-        .5f to Color.Transparent, 1f to Color.Transparent,
-        startY = 0f, endY = 4f, tileMode = TileMode.Repeated,
-    ),
-)
-
 // ---------- backdrop ----------
 
+/** The background: near-black, lit from the top in the focused system's colour, with the game's snapshot faint behind. */
 @Composable
 fun Backdrop(game: Game?, onlineArt: Boolean, accent: Color) {
     Box(
         Modifier.fillMaxSize().drawBehind {
+            drawRect(Bg)
             drawRect(
                 Brush.radialGradient(
-                    0f to lerp(Color(0xFF1A0B33), accent, .22f), .55f to Color(0xFF0B0618), 1f to Color(0xFF05030B),
-                    center = Offset(size.width / 2, 0f), radius = size.maxDimension,
+                    0f to accent.copy(alpha = .16f), 1f to Color.Transparent,
+                    center = Offset(size.width / 2, 0f), radius = size.maxDimension * .7f,
                 ),
             )
         },
     ) {
+        val reduce = rememberReduceMotion()
         if (game != null && onlineArt && thumbnailUrl(game) != null) {
             androidx.compose.runtime.key(game.id) {
-                val fade = remember { Animatable(0f) }
+                val fade = remember { Animatable(if (reduce) 1f else 0f) }
                 LaunchedEffect(Unit) { fade.animateTo(1f, tween(800)) }
                 // blur() needs Android 12; older devices get a fainter, sharp image instead.
-                val strength = if (Build.VERSION.SDK_INT >= 31) .35f else .14f
+                val strength = if (Build.VERSION.SDK_INT >= 31) .2f else .1f
                 Art(
                     game, onlineArt,
                     Modifier.fillMaxSize().graphicsLayer { alpha = fade.value * strength }.blur(28.dp),
                     kind = "Named_Snaps", shape = RectangleShape,
                 )
             }
-        }
-        PerspectiveGrid(accent)
-        Box(Modifier.fillMaxSize().drawBehind { scanlines(.12f) })
-    }
-}
-
-/** The synthwave floor: a perspective grid that runs toward the viewer. */
-@Composable
-private fun PerspectiveGrid(accent: Color) {
-    val t = rememberInfiniteTransition(label = "grid")
-    val phase by t.animateFloat(0f, 1f, infiniteRepeatable(tween(3000, easing = LinearEasing)), label = "phase")
-    val line = lerp(accent, Color(0xFFFF2FD0), .45f)
-    // Own layer, so the animation only redraws the grid.
-    Canvas(Modifier.fillMaxSize().graphicsLayer()) {
-        val top = size.height * .52f
-        val h = size.height - top
-        val cx = size.width / 2
-        val stroke = 1.5.dp.toPx()
-        val n = 9
-        for (i in 0 until n) {
-            val p = (i + phase) / n
-            val y = top + h * p * p
-            drawLine(line.copy(alpha = .24f * p), Offset(0f, y), Offset(size.width, y), stroke)
-        }
-        val fade = Brush.verticalGradient(listOf(Color.Transparent, line.copy(alpha = .24f)), top, size.height)
-        for (k in -14..14) {
-            val xb = cx + k * size.width / 9f
-            val xt = cx + k * size.width / 9f * .18f
-            drawLine(fade, Offset(xt, top), Offset(xb, size.height), stroke)
         }
     }
 }
@@ -204,253 +195,337 @@ private fun rememberClock(): String {
 }
 
 @Composable
-fun TopBar(title: String, position: String, view: SessionView, accent: Color, onSettings: () -> Unit) {
+fun TopBar(onSettings: () -> Unit) {
     val clock = rememberClock()
+    // Logo, clock, settings. The console you're on shows in the platform wheel, players in the lobby.
     Row(
-        Modifier.fillMaxWidth().padding(start = 28.dp, end = 20.dp, top = 8.dp, bottom = 2.dp),
+        Modifier.fillMaxWidth().padding(start = SafeX, end = SafeX - 8.dp, top = SafeY, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("▲● ", color = Accent, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-            Text("Couch", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-        }
-        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
-            Text(
-                title, fontSize = 22.sp, fontWeight = FontWeight.Light, letterSpacing = .04.em,
-                maxLines = 1, overflow = TextOverflow.Ellipsis, style = glow(accent),
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            Text("  $position", fontSize = 11.sp, fontFamily = Mono, color = Muted, modifier = Modifier.padding(bottom = 4.dp))
-        }
-        view.players.forEach { MiniChip(it) }
-        Text(clock, fontSize = 15.sp, fontFamily = Mono)
+        Logo()
+        Spacer(Modifier.weight(1f))
+        Text(clock, fontSize = Body, style = Tabular)
         IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, contentDescription = "Settings") }
-    }
-}
-
-@Composable
-private fun MiniChip(p: PlayerView) {
-    val c = hexColor(p.color)
-    Row(
-        Modifier.clip(RoundedCornerShape(50)).background(Color(0x990A0614)).padding(start = 3.dp, end = 9.dp, top = 3.dp, bottom = 3.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(Modifier.size(20.dp).shadow(6.dp, CircleShape, ambientColor = c, spotColor = c).clip(CircleShape).background(c), contentAlignment = Alignment.Center) {
-            Text(p.name.take(1).uppercase(), fontWeight = FontWeight.Black, fontSize = 11.sp, color = Color.White)
-        }
-        Text(p.name, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, color = if (p.connected) Color.White else Muted)
-        Box(Modifier.size(7.dp).clip(CircleShape).background(quality(p)))
     }
 }
 
 // ---------- preview, details, players ----------
 
-/** The big "screen": the game's snapshot in a glowing CRT frame. Switches on like an old TV. */
+/** The big screen: the focused game's snapshot, fading in when the focus moves. */
 @Composable
-fun Preview(game: Game?, onlineArt: Boolean, accent: Color, modifier: Modifier, loading: app.couch.tv.library.LoadProgress? = null) {
+fun Preview(
+    game: Game?,
+    onlineArt: Boolean,
+    accent: Color,
+    modifier: Modifier,
+    loading: app.couch.tv.library.LoadProgress? = null,
+    needsStoragePermission: Boolean = false,
+) {
     Box(modifier, contentAlignment = Alignment.Center) {
-        val on = remember(game?.id) { Animatable(0.04f) }
-        LaunchedEffect(game?.id) { on.animateTo(1f, spring(dampingRatio = .65f, stiffness = 420f)) }
-        val shape = RoundedCornerShape(6.dp)
+        val reduce = rememberReduceMotion()
+        val shape = RoundedCornerShape(8.dp)
         Box(
             Modifier
                 .aspectRatio(4f / 3f, matchHeightConstraintsFirst = true)
-                .graphicsLayer {
-                    scaleY = on.value
-                    scaleX = .9f + .1f * on.value
-                    alpha = on.value.coerceIn(0f, 1f)
-                }
-                .shadow(26.dp, shape, ambientColor = accent, spotColor = accent)
-                .border(2.dp, lerp(accent, Color.White, .3f), shape)
+                .shadow(16.dp, shape)
+                .border(1.dp, Color.White.copy(alpha = .14f), shape)
                 .clip(shape)
                 .background(Color.Black),
         ) {
             if (game != null) {
-                Art(game, onlineArt, Modifier.fillMaxSize(), kind = "Named_Snaps", shape = RectangleShape, pixelated = true)
+                androidx.compose.runtime.key(game.id) {
+                    val fade = remember { Animatable(if (reduce) 1f else 0f) }
+                    LaunchedEffect(Unit) { fade.animateTo(1f, tween(260, easing = EaseOut)) }
+                    Art(
+                        game, onlineArt, Modifier.fillMaxSize().graphicsLayer { alpha = fade.value },
+                        kind = "Named_Snaps", shape = RectangleShape, pixelated = true,
+                    )
+                }
             } else {
                 Column(
-                    Modifier.fillMaxSize().padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
+                    Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     if (loading != null && !loading.finished) {
-                        Spinner(accent, 54.dp, 5.dp)
-                        Text("Loading your library…", fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                        Spinner(accent, 48.dp, 5.dp)
+                        Text("Loading your library…", fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                         Text(
-                            "${loading.done} of ${loading.total} consoles" + if (loading.loading.isNotEmpty()) " · now ${loadingNames(loading)}" else "",
-                            color = Muted, textAlign = TextAlign.Center,
+                            "${loading.done} of ${loading.total} consoles" + if (loading.loading.isNotEmpty()) " · now ${loadingNames(loading.loading)}" else "",
+                            fontSize = Small, color = Muted, textAlign = TextAlign.Center,
                         )
                     } else {
-                        Text("No games yet", fontSize = 30.sp, fontWeight = FontWeight.Bold)
-                        Text("Your phones are the controllers. Add a game to get started.", color = Muted, textAlign = TextAlign.Center)
+                        // The only setup text on the screen, so it lives in one place.
+                        Text("No games yet", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            if (needsStoragePermission) "Put your own ROMs in roms/<system>/ folders (for example roms/snes/) on a USB drive. Then choose \"Add game folder\" at the bottom of the screen and pick the roms folder."
+                            else "Copy your own ROMs into roms/<system>/ (for example roms/snes/) in your game folder. Then choose Refresh. More folders: Settings → Add game folder.",
+                            fontSize = Small, lineHeight = 20.sp, color = Muted, textAlign = TextAlign.Center,
+                        )
                     }
                 }
             }
-            Box(
-                Modifier.fillMaxSize().drawBehind {
-                    scanlines(.22f)
-                    drawRect(Brush.radialGradient(.55f to Color.Transparent, 1f to Color.Black.copy(alpha = .55f), center = center, radius = size.maxDimension * .62f))
-                },
-            )
         }
     }
 }
 
 @Composable
-private fun GlassPanel(accent: Color, modifier: Modifier, content: @Composable ColumnScope.() -> Unit) {
+private fun InfoPanel(modifier: Modifier, content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier
-            .shadow(18.dp, PanelShape)
             .clip(PanelShape)
-            .background(Brush.linearGradient(listOf(Color(0xD1140A26), Color(0xE0080412))))
-            .border(1.dp, accent.copy(alpha = .35f), PanelShape)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(5.dp),
+            .background(Panel.copy(alpha = .92f))
+            .border(1.dp, Line, PanelShape)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
         content = content,
     )
 }
 
+/** Game title in the details panel: the same heavy upright sans as the logo. */
 @Composable
-private fun ScriptTitle(text: String, accent: Color) {
-    Column {
-        Text(
-            text, fontFamily = Script, fontSize = 30.sp, lineHeight = 32.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
-            color = lerp(accent, Color(0xFFFF3D6E), .25f), style = glow(accent, .55f, 18f),
-        )
-        Box(Modifier.fillMaxWidth().padding(top = 3.dp, bottom = 4.dp).height(1.dp).background(Line))
-    }
+private fun PanelTitle(text: String, maxLines: Int = 3) {
+    Text(
+        text, fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.ExtraBold,
+        maxLines = maxLines, overflow = TextOverflow.Ellipsis,
+    )
 }
 
-private fun lastPlayed(index: Int) = when {
-    index == 0 -> "Most recent"
-    index > 0 -> "Recently"
-    else -> "Never"
-}
-
-private fun storedOn(g: Game): String =
-    if (g.root == app.couch.tv.library.SERVER_ROOT) "Couch server"
-    else if (g.root.startsWith(Environment.getExternalStorageDirectory().path) || g.root.startsWith("/data")) "This TV" else "USB drive"
-
+/**
+ * What a guest needs to pick a game: its name, its console, how many can play.
+ * Maker, size and where the file lives are in the game's detail dialog.
+ */
 @Composable
-fun Details(game: Game?, recentIndex: Int, favourite: Boolean, needsStoragePermission: Boolean, accent: Color, modifier: Modifier) {
+fun Details(game: Game?, favourite: Boolean, gamepad: Boolean, accent: Color, modifier: Modifier) {
     val sys = game?.let { Systems.byId(it.system) }
-    GlassPanel(accent, modifier) {
+    val reduce = rememberReduceMotion()
+    InfoPanel(modifier) {
         if (game != null && sys != null) {
             androidx.compose.runtime.key(game.id) {
-                val slide = remember { Animatable(1f) }
+                val slide = remember { Animatable(if (reduce) 0f else 1f) }
                 LaunchedEffect(Unit) { slide.animateTo(0f, tween(350)) }
                 Column(
                     Modifier.weight(1f).graphicsLayer {
                         translationX = slide.value * 18.dp.toPx()
                         alpha = 1f - slide.value
                     },
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    ScriptTitle(game.title, accent)
-                    Fact("Platform", sys.name)
-                    Fact("Maker", "${sys.maker}, ${sys.year}")
-                    Fact("Play Mode", if (sys.maxPlayers > 1) "Multiplayer (1–${sys.maxPlayers})" else "Single Player")
-                    Fact("Stored on", storedOn(game))
-                    Fact("Last Played", lastPlayed(recentIndex))
-                    Fact("Size", "%.1f MB".format(game.size / 1024.0 / 1024.0))
-                    if (favourite) Fact("Favourite", "★★★★★", Accent)
+                    PanelTitle(game.title)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            sys.name, fontSize = Body, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold,
+                            color = lerp(accent, Color.White, .3f), maxLines = 2, overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        if (favourite) Icon(Icons.Rounded.Star, contentDescription = "Favourite", tint = Accent, modifier = Modifier.size(18.dp))
+                    }
+                    Text(if (sys.maxPlayers > 1) "1 to ${sys.maxPlayers} players" else "1 player", fontSize = Body, color = Muted)
                     Spacer(Modifier.weight(1f))
-                    PressPlay(accent)
+                    PressPlay(gamepad)
                 }
             }
         } else {
-            ScriptTitle("Welcome", accent)
-            Text(
-                if (needsStoragePermission) "Couch needs your permission to read ROM folders. Choose \"Allow USB folders\" at the bottom of the screen."
-                else "Copy your own ROMs into roms/<system>/ (for example roms/snes/) on a USB drive, or in Documents or Download on this device. Then choose Refresh.",
-                fontFamily = Mono, fontSize = 12.sp, lineHeight = 19.sp, color = Muted,
-            )
+            PanelTitle("Welcome")
+            Text("Your phones are the controllers. Add a game to get started.", fontSize = Body, lineHeight = 22.sp, color = Muted)
         }
     }
 }
 
 @Composable
-private fun Fact(label: String, value: String, color: Color = Color.White) {
-    Row(Modifier.padding(vertical = 1.dp)) {
-        Text("$label:", fontFamily = Mono, fontSize = 12.sp, color = Muted, modifier = Modifier.width(92.dp))
-        Text(value, fontFamily = Mono, fontSize = 12.sp, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    }
-}
-
-@Composable
-private fun PressPlay(accent: Color) {
-    val t = rememberInfiniteTransition(label = "press")
-    val a by t.animateFloat(1f, .45f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "a")
+private fun PressPlay(gamepad: Boolean) {
     Row(
-        Modifier.fillMaxWidth().graphicsLayer { alpha = a },
-        horizontalArrangement = Arrangement.Center,
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val style = glow(accent, .9f, 14f)
-        Text("PRESS ", fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 13.sp, letterSpacing = .2.em, color = accent, style = style)
-        Kbd("A", BtnA, 20.dp, 11.sp)
-        Text(" TO PLAY", fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 13.sp, letterSpacing = .2.em, color = accent, style = style)
+        Text("Press", fontWeight = FontWeight.SemiBold, fontSize = Body)
+        // A TV remote has OK, not A. A/B only once a game controller has joined.
+        Kbd(if (gamepad) "A" else "OK", Accent, Color(0xFF1A1405))
+        Text("to play", fontWeight = FontWeight.SemiBold, fontSize = Body)
+    }
+}
+
+/** A button cap: a circle for one letter, a pill for "OK". */
+@Composable
+private fun Kbd(label: String, bg: Color = BtnKey, fg: Color = Color.White, size: Dp = 26.dp, fontSize: TextUnit = 13.sp) {
+    Box(
+        Modifier.height(size).widthIn(min = size).clip(RoundedCornerShape(50)).background(bg).padding(horizontal = 6.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(label, fontWeight = FontWeight.ExtraBold, fontSize = fontSize, color = fg)
     }
 }
 
 @Composable
-private fun Kbd(label: String, bg: Color, size: Dp = 20.dp, fontSize: TextUnit = 11.sp) {
-    Box(Modifier.size(size).shadow(6.dp, CircleShape, ambientColor = bg, spotColor = bg).clip(CircleShape).background(bg), contentAlignment = Alignment.Center) {
-        Text(label, fontFamily = Mono, fontWeight = FontWeight.ExtraBold, fontSize = fontSize, color = Color.White)
+private fun KeyIcon(icon: ImageVector, bg: Color = BtnKey, size: Dp = 26.dp) {
+    Box(Modifier.size(size).clip(CircleShape).background(bg), contentAlignment = Alignment.Center) {
+        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(size * .65f))
     }
 }
 
 @Composable
-fun PlayersPanel(view: SessionView, joinUrl: String?, maxPlayers: Int, accent: Color, modifier: Modifier) {
-    GlassPanel(accent, modifier) {
-        ScriptTitle("Players", accent)
-        Lobby(view, joinUrl, maxPlayers, accent)
+fun PlayersPanel(view: SessionView, joinUrl: String?, maxPlayers: Int, accent: Color, modifier: Modifier, free: Boolean = false) {
+    InfoPanel(modifier) {
+        Lobby(view, joinUrl, maxPlayers, accent, free)
     }
 }
 
-/** Join panel: QR + room code + player slots. */
+/**
+ * Join panel. While slots are open the QR code takes all the height it can, so a phone can scan
+ * it from the sofa. Once the room is full it shrinks and the players' names take over.
+ */
 @Composable
-fun ColumnScope.Lobby(view: SessionView, joinUrl: String?, maxPlayers: Int, accent: Color) {
+fun ColumnScope.Lobby(view: SessionView, joinUrl: String?, maxPlayers: Int, accent: Color, free: Boolean = false) {
     val qr = remember(joinUrl) { joinUrl?.let { qrBitmap(it) } }
-    val joined = view.players.size
-    val pulse by rememberInfiniteTransition(label = "live").animateFloat(1f, .35f, infiniteRepeatable(tween(800), RepeatMode.Reverse), label = "p")
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-        Box(Modifier.size(7.dp).graphicsLayer { alpha = pulse }.clip(CircleShape).background(Good))
-        Text(
-            if (joined > 0) "$joined/$maxPlayers players ready" else "SCAN TO JOIN",
-            fontFamily = Mono, fontSize = 11.sp, letterSpacing = .08.em, maxLines = 1,
-        )
+    val full = view.players.size >= maxPlayers
+    when {
+        full && maxPlayers > 4 -> {
+            // Eight players in: nobody else can join, so the room needs names, not a QR code.
+            JoinHeader("Room full")
+            RoomCode(view.room, 28.sp)
+            Spacer(Modifier.weight(1f))
+            SlotGrid(view, maxPlayers)
+        }
+        full -> {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                QrBox(qr, accent, Modifier.size(88.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    JoinHeader("Room full")
+                    RoomCode(view.room, 28.sp)
+                }
+            }
+            Spacer(Modifier.weight(1f))
+            SlotGrid(view, maxPlayers)
+            // Couch Free: the seats Pro adds, faded and locked.
+            if (free && maxPlayers < ProRules.PRO_PLAYERS) {
+                Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    for (slot in maxPlayers until ProRules.PRO_PLAYERS) LockedSlot(Modifier.weight(1f))
+                }
+            }
+        }
+        else -> {
+            Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                QrBox(qr, accent, Modifier.fillMaxHeight())
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    JoinHeader("Scan to join")
+                    // No labels: the code and the address explain themselves.
+                    Box(Modifier.padding(top = 2.dp)) { RoomCode(view.room, 36.sp) }
+                    if (joinUrl != null) {
+                        Text(
+                            joinUrl.removePrefix("http://").substringBefore("?"),
+                            fontSize = Small, fontWeight = FontWeight.SemiBold, lineHeight = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        )
+                    } else {
+                        Text("No network. Connect this TV to Wi-Fi or Ethernet.", fontSize = Small, lineHeight = 18.sp, color = Bad, maxLines = 3)
+                    }
+                }
+            }
+            Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
+                // Couch Free shows all 8 seats: its own, then the ones Pro adds, faded and locked.
+                val seats = if (free) maxOf(maxPlayers, ProRules.PRO_PLAYERS) else maxPlayers
+                val named = seats <= 4
+                for (slot in 0 until maxPlayers) Slot(slot, view.players.firstOrNull { it.slot == slot }, named, Modifier.weight(1f))
+                for (slot in maxPlayers until seats) LockedSlot(Modifier.weight(1f))
+                if (named && seats < 4) Spacer(Modifier.weight((4 - seats).toFloat()))
+            }
+        }
     }
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+}
+
+@Composable
+private fun JoinHeader(text: String) {
+    Text(text, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+}
+
+@Composable
+private fun RoomCode(room: String, size: TextUnit) {
+    Text(
+        room.ifEmpty { "····" }, fontWeight = FontWeight.Black, fontSize = size,
+        letterSpacing = .08.em, color = Accent, maxLines = 1,
+    )
+}
+
+@Composable
+private fun QrBox(qr: androidx.compose.ui.graphics.ImageBitmap?, accent: Color, modifier: Modifier) {
+    val shape = RoundedCornerShape(6.dp)
+    Box(
+        modifier.aspectRatio(1f, matchHeightConstraintsFirst = true)
+            .clip(shape).background(Color.White).padding(4.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (qr != null) Image(qr, contentDescription = "QR code to join", Modifier.fillMaxSize())
+        else Icon(Icons.Rounded.WifiOff, contentDescription = "No network", tint = Color(0xFF555555), modifier = Modifier.size(32.dp))
+    }
+}
+
+/** A seat Couch Pro adds: a faded circle with a lock. */
+@Composable
+private fun LockedSlot(modifier: Modifier) {
+    Box(modifier, contentAlignment = Alignment.TopCenter) {
         Box(
-            Modifier.size(84.dp).shadow(14.dp, RoundedCornerShape(6.dp), ambientColor = accent, spotColor = accent)
-                .clip(RoundedCornerShape(6.dp)).background(Color.White).padding(3.dp),
+            Modifier.size(28.dp).graphicsLayer { alpha = .35f }.clip(CircleShape).background(Color.White.copy(alpha = .12f)),
             contentAlignment = Alignment.Center,
         ) {
-            if (qr != null) Image(qr, contentDescription = "QR code to join", Modifier.fillMaxSize()) else Text("…", color = Color.DarkGray)
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            Text("Scan with your phone or open", fontFamily = Mono, fontSize = 9.sp, color = Muted, lineHeight = 11.sp)
-            Text(
-                joinUrl?.removePrefix("http://")?.substringBefore("?") ?: "no network",
-                fontFamily = Mono, fontSize = 11.sp, lineHeight = 13.sp, modifier = Modifier.padding(bottom = 3.dp),
-            )
-            Text("room code", fontFamily = Mono, fontSize = 9.sp, color = Muted)
-            Text(
-                view.room.ifEmpty { "····" }, fontFamily = Mono, fontWeight = FontWeight.Black, fontSize = 26.sp,
-                letterSpacing = .18.em, color = Accent, style = glow(Accent, .6f, 20f), maxLines = 1,
-            )
-            Text("🎮 or press a button on a controller", fontFamily = Mono, fontSize = 9.sp, color = Muted, lineHeight = 11.sp)
+            Icon(Icons.Rounded.Lock, contentDescription = "Locked: Couch Pro", tint = Color.White, modifier = Modifier.size(14.dp))
         }
     }
-    Spacer(Modifier.weight(1f))
-    val perRow = 4
+}
+
+@Composable
+private fun SlotAvatar(slot: Int, p: PlayerView?, size: Dp) {
+    val c = hexColor(p?.color ?: PLAYER_COLORS[slot % PLAYER_COLORS.size])
+    if (p != null) {
+        Box(Modifier.size(size).clip(CircleShape).background(c), contentAlignment = Alignment.Center) {
+            DeviceIcon(p, size * .6f)
+        }
+    } else {
+        Box(
+            Modifier.size(size).drawBehind {
+                drawCircle(c.copy(alpha = .7f), style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))))
+            },
+            contentAlignment = Alignment.Center,
+        ) { Text("${slot + 1}", fontWeight = FontWeight.Black, fontSize = Small, color = c) }
+    }
+}
+
+/** One open or taken seat while the room is filling: avatar, connection dot, name. */
+@Composable
+private fun Slot(slot: Int, p: PlayerView?, named: Boolean, modifier: Modifier) {
+    val reduce = rememberReduceMotion()
+    val pop = remember(p != null) { Animatable(if (p != null && !reduce) .6f else 1f) }
+    LaunchedEffect(p != null) { pop.animateTo(1f, spring(dampingRatio = .45f, stiffness = 500f)) }
+    Column(
+        modifier.graphicsLayer {
+            scaleX = pop.value
+            scaleY = pop.value
+            alpha = if (p != null && !p.connected) .55f else 1f
+        },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Box {
+            SlotAvatar(slot, p, 28.dp)
+            if (p != null) Box(Modifier.align(Alignment.TopEnd).size(8.dp).clip(CircleShape).background(quality(p)))
+        }
+        if (named) {
+            Text(
+                p?.name ?: "", fontSize = Small, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                color = if (p?.connected == true) Color.White else Muted,
+            )
+        }
+    }
+}
+
+/** The full room: two columns of name chips. */
+@Composable
+private fun SlotGrid(view: SessionView, maxPlayers: Int) {
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        for (start in 0 until maxPlayers step perRow) {
+        for (start in 0 until maxPlayers step 2) {
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                for (slot in start until start + perRow) {
-                    if (slot < maxPlayers) Slot(slot, view.players.firstOrNull { it.slot == slot }, Modifier.weight(1f))
+                for (slot in start until start + 2) {
+                    if (slot < maxPlayers) SlotChip(slot, view.players.firstOrNull { it.slot == slot }, Modifier.weight(1f))
                     else Spacer(Modifier.weight(1f))
                 }
             }
@@ -459,44 +534,20 @@ fun ColumnScope.Lobby(view: SessionView, joinUrl: String?, maxPlayers: Int, acce
 }
 
 @Composable
-private fun Slot(slot: Int, p: PlayerView?, modifier: Modifier) {
-    val c = hexColor(p?.color ?: PLAYER_COLORS[slot % PLAYER_COLORS.size])
-    val shape = RoundedCornerShape(7.dp)
-    val pop = remember(p != null) { Animatable(if (p != null) .6f else 1f) }
-    LaunchedEffect(p != null) { pop.animateTo(1f, spring(dampingRatio = .45f, stiffness = 500f)) }
-    Box(
-        modifier
-            .graphicsLayer {
-                scaleX = pop.value
-                scaleY = pop.value
-                alpha = when {
-                    p == null -> .5f
-                    !p.connected -> .55f
-                    else -> 1f
-                }
-            }
-            .clip(shape)
-            .background(if (p != null) c.copy(alpha = .14f) else Color.White.copy(alpha = .04f))
-            .border(1.dp, if (p != null) c.copy(alpha = .55f) else Line, shape)
-            .padding(vertical = 4.dp, horizontal = 2.dp),
+private fun SlotChip(slot: Int, p: PlayerView?, modifier: Modifier) {
+    Row(
+        modifier.graphicsLayer { alpha = if (p != null && !p.connected) .55f else 1f }
+            .clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = .06f))
+            .padding(start = 3.dp, end = 10.dp, top = 3.dp, bottom = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            val avatar = Modifier.size(22.dp)
-            if (p != null) {
-                Box(avatar.shadow(8.dp, CircleShape, ambientColor = c, spotColor = c).clip(CircleShape).background(c), contentAlignment = Alignment.Center) {
-                    DeviceIcon(p, 14.dp)
-                }
-            } else {
-                Box(
-                    avatar.drawBehind {
-                        drawCircle(c, style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))))
-                    },
-                    contentAlignment = Alignment.Center,
-                ) { Text("${slot + 1}", fontWeight = FontWeight.Black, fontSize = 11.sp, color = c) }
-            }
-            Text(p?.name ?: "P${slot + 1}", fontSize = 9.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        if (p != null) Box(Modifier.align(Alignment.TopEnd).padding(1.dp).size(5.dp).clip(CircleShape).background(quality(p)))
+        SlotAvatar(slot, p, 26.dp)
+        Text(
+            p?.name ?: "P${slot + 1}", fontSize = Small, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            color = if (p?.connected == true) Color.White else Muted, modifier = Modifier.weight(1f),
+        )
+        if (p != null) Box(Modifier.size(8.dp).clip(CircleShape).background(quality(p)))
     }
 }
 
@@ -506,14 +557,13 @@ private fun Slot(slot: Int, p: PlayerView?, modifier: Modifier) {
 @Composable
 fun PlatformWheel(rows: List<HomeRow>, activeKey: String?, accent: Color, onPick: (String) -> Unit) {
     if (rows.isEmpty()) return
-    val edge = lerp(accent, Color.White.copy(alpha = .2f), .6f).copy(alpha = .5f)
     BoxWithConstraints(
         Modifier.fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(Color(0xBF06030E), Color(0xE606030E))))
+            .background(Bg.copy(alpha = .78f))
             .drawBehind {
                 val w = 1.dp.toPx()
-                drawLine(edge, Offset(0f, 0f), Offset(size.width, 0f), w)
-                drawLine(edge, Offset(0f, size.height), Offset(size.width, size.height), w)
+                drawLine(Line, Offset(0f, 0f), Offset(size.width, 0f), w)
+                drawLine(Line, Offset(0f, size.height), Offset(size.width, size.height), w)
             },
     ) {
         val itemW = 132.dp
@@ -556,29 +606,29 @@ private fun PlatformItem(r: HomeRow, active: Boolean, modifier: Modifier, onPick
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             val logo = systemLogo(r.key)
-            if (logo != null) {
-                // Console logo; a soft glow in the console's colour when focused or selected.
-                Image(
-                    painterResource(logo),
-                    contentDescription = r.title,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.size(width = 118.dp, height = 30.dp).drawBehind {
-                        if (focused || active) {
-                            drawCircle(
-                                Brush.radialGradient(listOf(c.copy(alpha = if (focused) .45f else .25f), Color.Transparent), radius = size.width * .55f),
-                                radius = size.width * .55f,
-                            )
-                        }
-                    },
-                )
-            } else {
-                Text(
-                    r.label.uppercase(), fontSize = 20.sp, fontWeight = FontWeight.Black, fontStyle = FontStyle.Italic,
-                    letterSpacing = .04.em, color = c, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    style = if (focused || active) glow(c, .8f, 20f) else TextStyle.Default,
-                )
+            Box {
+                if (logo != null) {
+                    Image(
+                        painterResource(logo),
+                        contentDescription = r.title,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.size(width = 118.dp, height = 30.dp),
+                    )
+                } else {
+                    Text(r.label, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = c, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                if (r.locked) {
+                    Icon(
+                        Icons.Rounded.Lock, contentDescription = "Needs Couch Pro", tint = Accent,
+                        modifier = Modifier.align(Alignment.TopEnd).offset(x = 6.dp, y = (-4).dp).size(14.dp),
+                    )
+                }
             }
-            Text(r.sub, fontFamily = Mono, fontSize = 9.sp, color = if (focused) Color.White else Muted, maxLines = 1)
+            // The selected stop gets a short bar in its colour: where you are, without a glow.
+            Box(
+                Modifier.padding(top = 4.dp).width(28.dp).height(3.dp).clip(RoundedCornerShape(50))
+                    .background(if (active) c else Color.Transparent),
+            )
         }
     }
 }
@@ -601,6 +651,25 @@ fun systemLogo(id: String): Int? = when (id) {
     else -> null
 }
 
+/** The console's default Couch cover (packages/systems/scripts/build-covers.ts), or null for an unknown system. */
+@DrawableRes
+fun systemCover(id: String): Int? = when (id) {
+    "nes" -> R.drawable.cover_nes
+    "snes" -> R.drawable.cover_snes
+    "genesis" -> R.drawable.cover_genesis
+    "gb" -> R.drawable.cover_gb
+    "gbc" -> R.drawable.cover_gbc
+    "gba" -> R.drawable.cover_gba
+    "psx" -> R.drawable.cover_psx
+    "n64" -> R.drawable.cover_n64
+    "psp" -> R.drawable.cover_psp
+    "nds" -> R.drawable.cover_nds
+    "ps2" -> R.drawable.cover_ps2
+    "atari2600" -> R.drawable.cover_atari2600
+    "pce" -> R.drawable.cover_pce
+    else -> null
+}
+
 // ---------- cover wheel ----------
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -616,21 +685,27 @@ fun CoverWheel(
     onFocus: (Game) -> Unit,
     onOpen: (Game) -> Unit,
     onEmpty: () -> Unit,
+    /** Bumped to re-centre the wheel on [current] (after games were added). */
+    jump: Int = 0,
+    /** Just-added games: they get a "New" badge and a pulsing frame. */
+    newIds: Set<String> = emptySet(),
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val cardW = 80.dp
+        // Smaller covers leave the height to the lobby's QR code. The focused game's title is
+        // shown large in the details panel instead of at caption size under every cover.
+        val cardW = 72.dp
         val side = ((maxWidth - cardW) / 2).coerceAtLeast(0.dp)
-        val state = remember(key) { LazyListState(games.indexOf(current).coerceAtLeast(0)) }
+        val state = remember(key, jump) { LazyListState(games.indexOf(current).coerceAtLeast(0)) }
         CompositionLocalProvider(LocalBringIntoViewSpec provides CenterSpec) {
             LazyRow(
                 state = state,
-                contentPadding = PaddingValues(start = side, end = side, top = 28.dp, bottom = 6.dp),
+                contentPadding = PaddingValues(start = side, end = side, top = 26.dp, bottom = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(18.dp),
                 verticalAlignment = Alignment.Bottom,
             ) {
                 if (games.isEmpty()) {
                     item(key = "empty") {
-                        EmptyCard(if (needsStoragePermission) "Allow folders" else "Refresh", cardW, Modifier.focusRequester(firstCard), onEmpty)
+                        EmptyCard(if (needsStoragePermission) "Add game folder" else "Refresh", cardW, Modifier.focusRequester(firstCard), onEmpty)
                     }
                 }
                 itemsIndexed(games, key = { _, g -> g.id }) { _, g ->
@@ -639,6 +714,7 @@ fun CoverWheel(
                         g, isCurrent, onlineArt, accent, cardW,
                         if (isCurrent) Modifier.focusRequester(firstCard) else Modifier,
                         onFocus, onOpen,
+                        isNew = g.id in newIds,
                     )
                 }
             }
@@ -656,11 +732,17 @@ private fun CoverCard(
     modifier: Modifier,
     onFocus: (Game) -> Unit,
     onOpen: (Game) -> Unit,
+    isNew: Boolean = false,
 ) {
     var focused by remember { mutableStateOf(false) }
     val c = Systems.byId(g.system)?.accent?.let(::hexColor) ?: accent
     // Grow from the bottom edge, like the web host (Card's own scale grows from the centre).
-    val scale by animateFloatAsState(if (focused) 1.3f else 1f, spring(dampingRatio = .55f, stiffness = 500f), label = "scale")
+    val reduce = rememberReduceMotion()
+    val scale by animateFloatAsState(
+        if (focused) 1.28f else 1f,
+        if (reduce) snap() else spring(dampingRatio = .55f, stiffness = 500f),
+        label = "scale",
+    )
     val shape = RoundedCornerShape(4.dp)
     Column(Modifier.width(width), horizontalAlignment = Alignment.CenterHorizontally) {
         Card(
@@ -681,20 +763,54 @@ private fun CoverCard(
             shape = CardDefaults.shape(shape),
             colors = CardDefaults.colors(containerColor = Color(0xFF111111)),
             scale = CardDefaults.scale(focusedScale = 1f),
-            border = CardDefaults.border(focusedBorder = Border(BorderStroke(2.dp, lerp(c, Color.White, .2f)), shape = shape)),
-            glow = CardDefaults.glow(focusedGlow = Glow(c.copy(alpha = .75f), 14.dp)),
+            border = CardDefaults.border(focusedBorder = Border(BorderStroke(3.dp, Accent), shape = shape)),
+            glow = CardDefaults.glow(focusedGlow = Glow.None),
         ) {
             Box(Modifier.fillMaxSize()) {
                 Art(g, onlineArt, Modifier.fillMaxSize(), shape = shape)
                 if (!focused && !current) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .4f)))
+                if (isNew) NewMark(c, shape)
             }
         }
-        Text(
-            g.title, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
-            fontWeight = if (focused) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (focused) Color.White else Muted,
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-        )
+    }
+}
+
+/** Pulsing frame and "New" badge on a just-added cover. */
+@Composable
+private fun NewMark(color: Color, shape: Shape) {
+    val reduce = rememberReduceMotion()
+    val pulse by rememberInfiniteTransition(label = "new").animateFloat(
+        initialValue = 1f,
+        targetValue = if (reduce) 1f else .25f,
+        animationSpec = infiniteRepeatable(tween(550), RepeatMode.Reverse),
+        label = "newPulse",
+    )
+    Box(Modifier.fillMaxSize().border(3.dp, color.copy(alpha = pulse), shape))
+    Text(
+        "NEW",
+        color = Color.Black,
+        fontSize = 8.sp,
+        fontWeight = FontWeight.ExtraBold,
+        modifier = Modifier
+            .padding(3.dp)
+            .background(color, RoundedCornerShape(50))
+            .padding(horizontal = 5.dp, vertical = 1.dp),
+    )
+}
+
+/** Short "Added …" banner shown at the top of the home screen after adding games. */
+@Composable
+fun AddedBanner(text: String, accent: Color, modifier: Modifier = Modifier) {
+    Row(
+        modifier
+            .background(Color(0xE60A0C12), RoundedCornerShape(50))
+            .border(2.dp, accent, RoundedCornerShape(50))
+            .padding(horizontal = 18.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(Icons.Rounded.Check, contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
+        Text(text, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
     }
 }
 
@@ -720,9 +836,13 @@ private fun EmptyCard(label: String, width: Dp, modifier: Modifier, onClick: () 
                     )
                 },
                 contentAlignment = Alignment.Center,
-            ) { Text("＋", fontSize = 34.sp) }
+            ) {
+                Column(Modifier.padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(30.dp))
+                    Text(label, fontSize = Small, lineHeight = 17.sp, textAlign = TextAlign.Center, maxLines = 3)
+                }
+            }
         }
-        Text(label, fontSize = 10.sp, color = Muted, modifier = Modifier.padding(top = 6.dp))
     }
 }
 
@@ -740,30 +860,48 @@ fun Hints(
     onServer: () -> Unit,
     onRefresh: () -> Unit,
     onPlayers: () -> Unit,
+    gamepad: Boolean = false,
+    slotsOpen: Boolean = true,
 ) {
     Row(
         Modifier.fillMaxWidth()
-            .background(Color(0xD904020A))
+            .background(Bg.copy(alpha = .85f))
             .drawBehind { drawLine(Line, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) }
-            .padding(horizontal = 28.dp, vertical = 5.dp),
+            // The bar's background runs to the screen edge; its content stays inside the overscan margin.
+            .padding(start = SafeX, end = SafeX, top = 6.dp, bottom = SafeY),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        Hint("A", BtnA, "Select")
-        Hint("B", BtnB, "Back")
-        Hint("✚", Color(0xFF444444), "Browse")
-        if (hiddenCount > 0) {
-            Text(
-                "$hiddenCount game${if (hiddenCount > 1) "s" else ""} hidden: this device is too slow for their system (Settings).",
-                fontSize = 11.sp, color = Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
-            )
+        // A TV remote has OK and Back; show A/B only once a game controller is in the room.
+        if (gamepad) {
+            Hint({ Kbd("A") }, "Select")
+            Hint({ Kbd("B") }, "Back")
+        } else {
+            Hint({ Kbd("OK") }, "Select")
+            Hint({ KeyIcon(Icons.AutoMirrored.Rounded.ArrowBack) }, "Back")
         }
-        Spacer(Modifier.weight(1f))
+        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (slotsOpen) {
+                Hint({ KeyIcon(Icons.Rounded.SportsEsports) }, "Controller? Press any button to join", Modifier.weight(1f, fill = false))
+            }
+            if (hiddenCount > 0) {
+                Text(
+                    "$hiddenCount game${if (hiddenCount > 1) "s" else ""} hidden: this device is too slow for their system (Settings).",
+                    fontSize = Small, color = Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
+                )
+            }
+        }
         val away = view.players.count { !it.connected }
         if (view.players.isNotEmpty()) Pill(if (away > 0) "Players · $away away" else "Players", if (away > 0) Bad else accent, onPlayers)
-        if (server != null && serverLoad == null) Pill("●  ${server.label}", accent, onServer, dot = if (server.healthy) Good else Bad)
-        if (needsStoragePermission) Pill("Allow USB folders", accent, onGrantStorage)
-        if (serverLoad != null) LoadingPill(serverLoad, accent) else Pill("⟳  Refresh" + (server?.savedAt?.let { " · ${age(it)}" } ?: ""), accent, onRefresh)
+        if (server != null && serverLoad == null) Pill(server.label, accent, onServer, dot = if (server.healthy) Good else Bad)
+        if (needsStoragePermission) Pill("Add game folder", accent, onGrantStorage)
+        when {
+            serverLoad == null -> Pill("Refresh" + (server?.savedAt?.let { " · ${age(it)}" } ?: ""), accent, onRefresh, icon = Icons.Rounded.Refresh)
+            // A failed load says which consoles, and pressing it tries again.
+            serverLoad.finished && serverLoad.failed.isNotEmpty() ->
+                Pill("${loadingNames(serverLoad.failed)} did not load · Retry", Bad, onRefresh, icon = Icons.Rounded.Warning)
+            else -> LoadingPill(serverLoad, accent)
+        }
     }
 }
 
@@ -771,20 +909,16 @@ fun Hints(
 @Composable
 private fun LoadingPill(p: app.couch.tv.library.LoadProgress, accent: Color) {
     val fraction by animateFloatAsState(p.done.toFloat() / p.total.coerceAtLeast(1), tween(300), label = "load")
-    val label = when {
-        !p.finished -> "Loading ${loadingNames(p).ifEmpty { "library" }}… ${p.done}/${p.total}"
-        p.failed.isNotEmpty() -> "⚠  ${p.failed.size} console${if (p.failed.size > 1) "s" else ""} did not load"
-        else -> "✓  Library up to date"
-    }
+    val label = if (!p.finished) "Loading ${loadingNames(p.loading).ifEmpty { "library" }}… ${p.done}/${p.total}" else "Library up to date"
     Row(
         Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = .06f))
             .border(1.dp, Color.White.copy(alpha = .18f), RoundedCornerShape(50))
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+            .padding(horizontal = 14.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        if (!p.finished) Spinner(accent, 12.dp, 2.dp)
-        Text(label, fontSize = 11.sp, maxLines = 1)
+        if (!p.finished) Spinner(accent, 14.dp, 2.dp) else Icon(Icons.Rounded.Check, contentDescription = null, tint = Good, modifier = Modifier.size(16.dp))
+        Text(label, fontSize = Small, maxLines = 1)
         Box(Modifier.width(70.dp).height(4.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = .15f))) {
             Box(Modifier.fillMaxHeight().fillMaxWidth(fraction).background(if (p.finished && p.failed.isEmpty()) Good else accent))
         }
@@ -804,8 +938,8 @@ fun Spinner(color: Color, size: androidx.compose.ui.unit.Dp, stroke: androidx.co
     }
 }
 
-private fun loadingNames(p: app.couch.tv.library.LoadProgress) =
-    p.loading.joinToString(", ") { app.couch.tv.library.Systems.byId(it)?.shortName ?: it }
+private fun loadingNames(ids: List<String>) =
+    ids.joinToString(", ") { app.couch.tv.library.Systems.byId(it)?.shortName ?: it }
 
 private fun age(at: Long): String {
     val m = (System.currentTimeMillis() - at) / 60_000
@@ -818,15 +952,15 @@ private fun age(at: Long): String {
 }
 
 @Composable
-private fun Hint(key: String, bg: Color, label: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Kbd(key, bg, 18.dp, 10.sp)
-        Text(label, fontSize = 12.sp)
+private fun Hint(key: @Composable () -> Unit, label: String, modifier: Modifier = Modifier) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+        key()
+        Text(label, fontSize = Small, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
 @Composable
-private fun Pill(label: String, accent: Color, onClick: () -> Unit, dot: Color? = null) {
+private fun Pill(label: String, accent: Color, onClick: () -> Unit, dot: Color? = null, icon: ImageVector? = null) {
     val shape = RoundedCornerShape(50)
     Surface(
         onClick = onClick,
@@ -839,22 +973,16 @@ private fun Pill(label: String, accent: Color, onClick: () -> Unit, dot: Color? 
             border = Border(BorderStroke(1.dp, Color.White.copy(alpha = .18f)), shape = shape),
             focusedBorder = Border(BorderStroke(1.dp, Color.White), shape = shape),
         ),
-        glow = ClickableSurfaceDefaults.glow(focusedGlow = Glow(accent.copy(alpha = .7f), 10.dp)),
     ) {
-        if (dot == null) {
-            Text(label, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
-        } else {
-            // Coloured status dot (first character of the label) + text.
-            Text(
-                androidx.compose.ui.text.buildAnnotatedString {
-                    pushStyle(androidx.compose.ui.text.SpanStyle(color = dot))
-                    append(label.take(1))
-                    pop()
-                    append(label.drop(1))
-                },
-                fontSize = 11.sp,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-            )
+        Row(
+            Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+        ) {
+            // A status dot (server health) or an icon, then the label.
+            if (dot != null) Box(Modifier.size(9.dp).clip(CircleShape).background(dot))
+            if (icon != null) Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
+            Text(label, fontSize = Small, maxLines = 1)
         }
     }
 }

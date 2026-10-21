@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800" font-family="'Segoe UI', system-ui, -apple-system, Roboto, sans-serif">
+  <rect width="600" height="800" fill="#11151d"/>
+  <rect width="600" height="16" fill="#e0561f"/>
+  <text x="300" y="196" text-anchor="middle" font-size="64" font-weight="800" fill="#eef2f8">PC Engine</text>
+  <g transform="translate(60 322) scale(10.9)" fill="#4f291e"><path d="M10 2.5 19 18H1z"/><circle cx="33" cy="10.5" r="7.5"/></g>
+  <rect x="60" y="626" width="480" height="2" fill="#2c3037"/>
+  <g transform="translate(60 682) scale(1.8)" fill="#ffd166"><path d="M10 2.5 19 18H1z"/><circle cx="33" cy="10.5" r="7.5"/></g>
+  <text x="152" y="714" font-size="38" font-weight="800" fill="#eef2f8">Couch</text>
+  <text x="540" y="712" text-anchor="end" font-size="26" font-weight="700" letter-spacing="2" fill="#e69c81">PCE</text>
+</svg>

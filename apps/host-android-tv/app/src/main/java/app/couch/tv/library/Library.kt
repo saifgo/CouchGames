@@ -17,15 +17,20 @@ data class Game(
     val root: String,
     /** Set for games listed by a Couch server: [file] is then the cache path it downloads to. */
     val remote: RemoteGame? = null,
+    /** Set for games in a picked folder: [file] is then the cache path it is copied to. */
+    val folder: FolderGame? = null,
 )
 
 /**
  * Finds ROMs in the same `roms/<system>/` layout as the web host:
- *  - <USB or SD volume>/roms
- *  - internal storage Documents/roms, Download/roms, roms
- *  - the app's own external files dir (no permission needed; adb push target)
+ *  - folders picked with the system folder picker ([Folders]; Android 11+ needs no permission for these)
+ *  - the app's own folder on internal storage and on each USB drive: Android/data/<package>/files/roms
+ *    (no permission needed; adb push target)
+ *  - Android 8–10 only (storage permission): <USB or SD volume>/roms, internal storage Documents/roms,
+ *    Download/roms, roms
  */
 class Library(private val context: Context) {
+    val folders = Folders(context)
 
     /** The app's own roms/<system>/ folders (no permission needed): created so the layout is ready for copying. */
     fun ensureAppFolders(): File? {
@@ -37,7 +42,8 @@ class Library(private val context: Context) {
 
     fun roots(): List<File> {
         val roots = linkedSetOf<File>()
-        context.getExternalFilesDir(null)?.let { roots += File(it, "roms") }
+        // The app's own folder on every volume (internal, USB, SD): readable without any permission.
+        context.getExternalFilesDirs(null).filterNotNull().forEach { roots += File(it, "roms") }
         val ext = Environment.getExternalStorageDirectory()
         roots += File(ext, "roms")
         roots += File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "roms")
@@ -62,13 +68,15 @@ class Library(private val context: Context) {
                     if (!f.isFile) continue
                     val ext = "." + f.extension.lowercase()
                     if (ext !in sys.extensions) continue
-                    val id = sha1("${sys.id}/${f.name}/${f.length()}").take(12)
+                    val id = gameId(sys.id, f.name, f.length())
                     if (!seen.add(id)) continue // same game on two volumes
                     val extra = if (ext == ".cue") cueTracks(f) else emptyList()
                     out += Game(id, sys.id, titleFromFilename(f.name), f, extra, f.length(), root.path)
                 }
             }
         }
+        // Same id as a file-path copy of the game, so saves carry over.
+        for (g in folders.scan(systemDir())) if (seen.add(g.id)) out += g
         return out
     }
 
@@ -98,6 +106,11 @@ class Library(private val context: Context) {
                 .toList()
         }.getOrDefault(emptyList())
 
-    private fun sha1(s: String): String =
-        MessageDigest.getInstance("SHA-1").digest(s.toByteArray()).joinToString("") { "%02x".format(it) }
+    companion object {
+        /** Stable game id: also names the save files, so it must not change between versions. */
+        fun gameId(system: String, fileName: String, size: Long): String = sha1("$system/$fileName/$size").take(12)
+
+        private fun sha1(s: String): String =
+            MessageDigest.getInstance("SHA-1").digest(s.toByteArray()).joinToString("") { "%02x".format(it) }
+    }
 }

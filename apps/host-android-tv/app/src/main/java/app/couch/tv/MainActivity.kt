@@ -1,11 +1,9 @@
 package app.couch.tv
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
-import android.provider.Settings as AndroidSettings
 import android.util.Log
 import android.hardware.input.InputManager
 import android.view.KeyEvent
@@ -14,6 +12,7 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,6 +37,16 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.StarBorder
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Button
@@ -52,12 +61,14 @@ import app.couch.tv.net.LanServer
 import app.couch.tv.ui.Art
 import app.couch.tv.ui.CouchTheme
 import app.couch.tv.ui.GameScreen
+import app.couch.tv.ui.FreeReminder
 import app.couch.tv.ui.HomeRow
 import app.couch.tv.ui.HomeScreen
 import app.couch.tv.ui.Muted
 import app.couch.tv.ui.Panel
 import app.couch.tv.ui.PhoneNavigator
 import app.couch.tv.ui.PlayersDialog
+import app.couch.tv.ui.ProDialog
 import app.couch.tv.ui.SettingsScreen
 import app.couch.tv.ui.hexColor
 import app.couch.tv.ui.homeHandler
@@ -73,8 +84,15 @@ class MainActivity : ComponentActivity() {
     private var deepLinkGame = mutableStateOf<String?>(null)
     /** Bumped when couch://server?url=… sets the Couch server (e.g. from adb), to rescan. */
     private val serverLinks = mutableStateOf(0)
-    /** Bumped on every resume (e.g. back from the "All files access" settings page). */
+    /** Bumped on every resume (e.g. back from the storage permission dialog). */
     private val resumes = mutableStateOf(0)
+    /** Bumped when a game folder is added with the folder picker, to rescan. */
+    private val folderAdds = mutableStateOf(0)
+    /** This device has no system folder picker (some Android TV builds): explain the alternatives. */
+    private val noPicker = mutableStateOf(false)
+    private val pickFolder = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null && runCatching { app.library.folders.add(uri) }.isSuccess) folderAdds.value++
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,16 +133,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Android 8–10: the storage permission is missing. Android 11+: no game folder picked yet. */
     private fun needsStoragePermission(): Boolean =
-        if (Build.VERSION.SDK_INT >= 30) !Environment.isExternalStorageManager()
+        if (Build.VERSION.SDK_INT >= 30) app.library.folders.list().isEmpty()
         else checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != android.content.pm.PackageManager.PERMISSION_GRANTED
 
     private fun requestStorage() {
-        if (Build.VERSION.SDK_INT >= 30) {
-            val i = Intent(AndroidSettings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:$packageName"))
-            runCatching { startActivity(i) }.onFailure { runCatching { startActivity(Intent(AndroidSettings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)) } }
-        } else {
-            requestPermissions(arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE), 1)
+        if (Build.VERSION.SDK_INT >= 30) addGameFolder()
+        else requestPermissions(arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE), 1)
+    }
+
+    /** Opens the system folder picker (also used from Settings). */
+    fun addGameFolder() {
+        try {
+            pickFolder.launch(null)
+        } catch (_: ActivityNotFoundException) {
+            noPicker.value = true
         }
     }
 
@@ -146,6 +170,11 @@ class MainActivity : ComponentActivity() {
         var crashed by remember { mutableStateOf(app.diagnostics.takeUncleanExit()) }
         var onboarding by remember { mutableStateOf(!app.settings.onboardingDone) }
         val view by app.session.view.collectAsState()
+        val isPro by app.pro.active.collectAsState()
+        /** Couch Pro screen: the reason shown on top ("" = opened from Settings), null = closed. */
+        var proPrompt by remember { mutableStateOf<String?>(null) }
+        /** Game waiting behind the once-a-day Couch Free reminder. */
+        var pendingPlay by remember { mutableStateOf<Pair<Game, Boolean>?>(null) }
         val joinUrl = remember(view.room) { LanServer.lanAddress()?.let { "http://$it:${app.server.port}/c/?r=${view.room}" } }
 
         /** USB / internal storage folders: cheap, rescanned whenever we come back home. */
@@ -167,7 +196,8 @@ class MainActivity : ComponentActivity() {
          */
         fun refreshServer(network: Boolean, fresh: Boolean = false) {
             val saved = app.settings.serverUrl
-            if (saved.isEmpty()) {
+            // The Couch server library is a Pro feature.
+            if (saved.isEmpty() || !ProRules.remoteLibrary(app.pro.isPro)) {
                 serverJob?.cancel()
                 server = null
                 serverGames = emptyList()
@@ -229,6 +259,37 @@ class MainActivity : ComponentActivity() {
             needsPerm = needsStoragePermission()
             if (before && !needsPerm) refreshLocal()
         }
+        // A folder was picked: rescan, then show the user where the new games went.
+        var justAdded by remember { mutableStateOf<Pair<Long, List<Game>>?>(null) }
+        val added by folderAdds
+        LaunchedEffect(added) {
+            if (added == 0) return@LaunchedEffect
+            val before = localGames.mapTo(HashSet()) { it.id }
+            refreshLocal().join()
+            val fresh = localGames.filter { it.id !in before }
+            if (fresh.isNotEmpty()) {
+                showSettings = false
+                justAdded = System.currentTimeMillis() to fresh
+            }
+        }
+
+        // Pro turned on (bought) or off (refunded): show or hide the server library.
+        LaunchedEffect(isPro) { refreshServer(network = false) }
+
+        /** Starts a game, or explains what needs Couch Pro / shows the daily Free reminder first. */
+        fun start(g: Game, resume: Boolean) {
+            if (!ProRules.systemAllowed(isPro, g.system)) {
+                proPrompt = "${Systems.byId(g.system)?.name ?: g.system} games need Couch Pro"
+                return
+            }
+            val now = System.currentTimeMillis()
+            if (ProRules.shouldNag(isPro, app.settings.lastProNag, now)) {
+                app.settings.lastProNag = now
+                pendingPlay = g to resume
+                return
+            }
+            playing = g to resume
+        }
 
         val linked by serverLinks
         LaunchedEffect(linked) { if (linked > 0) refresh(network = true) }
@@ -236,7 +297,7 @@ class MainActivity : ComponentActivity() {
         val deep by deepLinkGame
         LaunchedEffect(deep, games) {
             val id = deep ?: return@LaunchedEffect
-            games.firstOrNull { it.id == id }?.let { playing = it to app.saves.hasAuto(it.id); deepLinkGame.value = null }
+            games.firstOrNull { it.id == id }?.let { start(it, app.saves.hasAuto(it.id)); deepLinkGame.value = null }
         }
 
         val s = app.settings
@@ -247,7 +308,7 @@ class MainActivity : ComponentActivity() {
         val recents = remember(tick) { s.recents() }
         val favs = remember(tick) { s.favourites() }
         // Platform wheel stops: every game, recents, favourites, then one per system (same as the web host).
-        val rows = remember(playable, tick) {
+        val rows = remember(playable, tick, isPro) {
             val byId = playable.associateBy { it.id }
             val byTitle = compareBy<Game> { it.title.lowercase() }
             buildList {
@@ -258,7 +319,8 @@ class MainActivity : ComponentActivity() {
                 if (fav.isNotEmpty()) add(HomeRow("fav", "Favourites", "Favourites", "${fav.size} games", Color(0xFFFFD166), fav))
                 for (sys in Systems.all) {
                     val list = playable.filter { it.system == sys.id }.sortedWith(byTitle)
-                    if (list.isNotEmpty()) add(HomeRow(sys.id, sys.shortName, sys.name, "${sys.maker} · ${sys.year}", hexColor(sys.accent), list))
+                    val locked = !ProRules.systemAllowed(isPro, sys.id)
+                    if (list.isNotEmpty()) add(HomeRow(sys.id, sys.shortName, sys.name, "${sys.maker} · ${sys.year}", hexColor(sys.accent), list, locked))
                 }
             }
         }
@@ -279,7 +341,8 @@ class MainActivity : ComponentActivity() {
                 server = server,
                 view = view,
                 joinUrl = joinUrl,
-                maxPlayers = s.maxPlayers,
+                maxPlayers = ProRules.players(isPro, s.maxPlayers),
+                free = !isPro,
                 onlineArt = s.onlineArt,
                 recents = recents,
                 favourites = favs,
@@ -291,24 +354,33 @@ class MainActivity : ComponentActivity() {
                 serverLoad = serverLoad,
                 onRefresh = { refresh(network = true, fresh = true) },
                 onPlayers = { showPlayers = true },
+                justAdded = justAdded,
+                overlayOpen = onboarding || showSettings || showPlayers || detail != null || proPrompt != null || pendingPlay != null || noPicker.value || crashed != null,
             )
             if (showPlayers) {
                 PlayersDialog(
                     view = view,
-                    maxPlayers = s.maxPlayers,
+                    maxPlayers = ProRules.players(isPro, s.maxPlayers),
                     onSwap = { a, b -> app.session.swapSlots(a, b) },
                     onRemove = { app.session.removePlayer(it) },
                     onTidy = { app.session.tidySlots() },
                 ) { showPlayers = false }
             }
             detail?.let { g ->
-                GameDetail(g, s.onlineArt, app.saves.hasAuto(g.id), onPlay = { resume -> detail = null; playing = g to resume }, onFav = { s.toggleFavourite(g.id); tick++ }) {
+                GameDetail(g, s.onlineArt, app.saves.hasAuto(g.id), locked = !ProRules.systemAllowed(isPro, g.system), onPlay = { resume -> detail = null; start(g, resume) }, favourite = g.id in favs, onFav = { s.toggleFavourite(g.id); tick++ }) {
                     detail = null
                 }
             }
             if (showSettings) {
                 BackHandler { showSettings = false }
-                SettingsScreen(app, server, onServerChanged = { serverJob?.cancel(); refreshServer(network = true) }, onRemeasure = { scope.launch { measure(); tick++ } }) {
+                SettingsScreen(
+                    app, server,
+                    onServerChanged = { serverJob?.cancel(); refreshServer(network = true) },
+                    onRemeasure = { scope.launch { measure(); tick++ } },
+                    onPro = { proPrompt = it.orEmpty() },
+                    onAddFolder = { addGameFolder() },
+                    onFoldersChanged = { refreshLocal() },
+                ) {
                     showSettings = false
                     onboarding = !s.onboardingDone
                     tick++
@@ -331,12 +403,27 @@ class MainActivity : ComponentActivity() {
             if (crashed == null && onboarding && !showSettings) {
                 Notice(
                     title = "Welcome to Couch",
-                    text = "1 · Copy your games into roms/<system>/ on a USB drive or in Documents (this device creates the folders for you).\n" +
+                    text = "1 · Put your games in roms/<system>/ folders (for example roms/snes/) on a USB drive, then choose \"Add game folder\" and pick the roms folder.\n" +
                         "2 · Scan the QR code with each phone: it becomes the controller, no app needed. Game controllers paired with this TV join with any button.\n" +
                         "3 · In a game, press Home on your phone for save states, controller swaps and quit. If a player leaves, use Players (bottom bar) or Controllers (in-game menu) to swap or remove them.",
                     primary = "Let's play",
                     onPrimary = { s.onboardingDone = true; onboarding = false },
                 ) { s.onboardingDone = true; onboarding = false }
+            }
+            pendingPlay?.let { p ->
+                FreeReminder(onPlay = { pendingPlay = null; playing = p }, onSeePro = { pendingPlay = null; proPrompt = "" })
+            }
+            proPrompt?.let { reason -> ProDialog(reason.ifEmpty { null }) { proPrompt = null } }
+            if (noPicker.value) {
+                Notice(
+                    title = "No folder picker on this TV",
+                    text = "This TV has no system folder picker. You can still add games:\n" +
+                        "· On a USB drive, put them in Android/data/$packageName/files/roms/<system>/ (Couch creates this folder when the drive is plugged in).\n" +
+                        "· Or copy them over adb into the same folder on this TV.\n" +
+                        "· Or play from a Couch server (Couch Pro).",
+                    primary = "Refresh",
+                    onPrimary = { noPicker.value = false; refreshLocal() },
+                ) { noPicker.value = false }
             }
         }
     }
@@ -372,33 +459,55 @@ private fun Notice(title: String, text: String, primary: String, onPrimary: () -
 }
 
 @Composable
-private fun GameDetail(game: Game, onlineArt: Boolean, hasAuto: Boolean, onPlay: (Boolean) -> Unit, onFav: () -> Unit, onClose: () -> Unit) {
+private fun GameDetail(game: Game, onlineArt: Boolean, hasAuto: Boolean, locked: Boolean, favourite: Boolean, onPlay: (Boolean) -> Unit, onFav: () -> Unit, onClose: () -> Unit) {
     val sys = Systems.byId(game.system)!!
     val first = remember { FocusRequester() }
     BackHandler { onClose() }
     Box(Modifier.fillMaxSize().background(Color(0xB804060A)), contentAlignment = Alignment.Center) {
-        Row(Modifier.width(980.dp).clip(RoundedCornerShape(26.dp)).background(Panel).padding(32.dp), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+        Row(Modifier.width(880.dp).clip(RoundedCornerShape(26.dp)).background(Panel).padding(32.dp), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
             Art(game, onlineArt, Modifier.width(260.dp).padding(0.dp))
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(sys.name.uppercase(), color = hexColor(sys.accent), fontWeight = FontWeight.Bold)
-                Text(game.title, fontSize = 38.sp, fontWeight = FontWeight.ExtraBold)
-                Text("${sys.maker} · ${sys.year} · up to ${sys.maxPlayers} players · ${"%.1f".format(game.size / 1048576.0)} MB", color = Muted)
+                Text(game.title, fontSize = 38.sp, lineHeight = 44.sp, fontWeight = FontWeight.ExtraBold)
                 Text(
-                    if (game.root == SERVER_ROOT) "From the Couch server ${game.remote?.server} · " + (if (game.file.length() == game.size) "downloaded" else "downloads when you play")
-                    else game.file.path,
+                    buildAnnotatedString {
+                        withStyle(SpanStyle(color = lerp(hexColor(sys.accent), Color.White, .3f), fontWeight = FontWeight.Bold)) { append(sys.name) }
+                        append("  ·  ${sys.maker} · ${sys.year} · up to ${sys.maxPlayers} players · ${"%.1f".format(game.size / 1048576.0)} MB")
+                    },
+                    color = Muted, fontSize = 17.sp,
+                )
+                Text(
+                    when {
+                        game.root == SERVER_ROOT -> "From the Couch server ${game.remote?.server} · " + (if (game.file.length() == game.size) "downloaded" else "downloads when you play")
+                        game.folder != null -> "From a game folder · " + (if (game.file.length() == game.size) "ready" else "copied to this TV when you play")
+                        else -> game.file.path
+                    },
                     color = Muted,
-                    fontSize = 13.sp,
+                    fontSize = 15.sp,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 10.dp)) {
-                    if (hasAuto) Button(onClick = { onPlay(true) }, modifier = Modifier.focusRequester(first)) { Text("▶  Continue", fontSize = 20.sp) }
-                    Button(onClick = { onPlay(false) }, modifier = if (hasAuto) Modifier else Modifier.focusRequester(first)) {
-                        Text(if (hasAuto) "Start over" else "▶  Play", fontSize = 20.sp)
+                    if (locked) {
+                        Button(onClick = { onPlay(false) }, modifier = Modifier.focusRequester(first)) { ButtonIcon(Icons.Rounded.Lock); Text("Unlock with Couch Pro", fontSize = 20.sp) }
+                    } else {
+                        if (hasAuto) Button(onClick = { onPlay(true) }, modifier = Modifier.focusRequester(first)) { ButtonIcon(Icons.Rounded.PlayArrow); Text("Continue", fontSize = 20.sp) }
+                        Button(onClick = { onPlay(false) }, modifier = if (hasAuto) Modifier else Modifier.focusRequester(first)) {
+                            if (!hasAuto) ButtonIcon(Icons.Rounded.PlayArrow)
+                            Text(if (hasAuto) "Start over" else "Play", fontSize = 20.sp)
+                        }
                     }
-                    Button(onClick = onFav) { Text("☆ Favourite") }
+                    Button(onClick = onFav) {
+                        ButtonIcon(if (favourite) Icons.Rounded.Star else Icons.Rounded.StarBorder)
+                        Text("Favourite")
+                    }
                     Button(onClick = onClose) { Text("Back") }
                 }
             }
         }
     }
     LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
+}
+
+/** Leading icon in a button, sized to its label. */
+@Composable
+private fun ButtonIcon(icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    androidx.tv.material3.Icon(icon, contentDescription = null, modifier = Modifier.padding(end = 8.dp).size(22.dp))
 }

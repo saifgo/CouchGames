@@ -35,8 +35,12 @@ export interface SystemDef {
     /** Measured too heavy for phone/TV-class SoCs in WASM (ADR-001): desktop CPUs only. */
     desktopOnly?: boolean;
   } | null;
-  /** Android TV host cores (LibretroDroid, libretro buildbot arm64-v8a names), preferred first. */
-  android: { cores: string[]; experimental?: boolean };
+  /**
+   * Android TV host cores (LibretroDroid, libretro buildbot arm64-v8a names), preferred first.
+   * The Android app is sold (Couch Pro), so only licences that allow commercial use belong here
+   * (ADR-004, DEVIATIONS #10). `byExtension` overrides the list for some file types.
+   */
+  android: { cores: string[]; experimental?: boolean; byExtension?: Record<string, string[]> };
   bios: BiosFile[];
 }
 
@@ -68,7 +72,7 @@ export const SYSTEMS: readonly SystemDef[] = [
     tier: 2,
     accent: '#7b5fc7',
     web: { cores: ['snes9x'], backend: 'retroarch', analog: false },
-    android: { cores: ['snes9x', 'bsnes_mercury_performance', 'bsnes'] },
+    android: { cores: ['bsnes_mercury_performance', 'bsnes'] },
     bios: [],
   },
   {
@@ -83,7 +87,8 @@ export const SYSTEMS: readonly SystemDef[] = [
     tier: 1,
     accent: '#1f6fd1',
     web: { cores: ['genesis_plus_gx'], backend: 'retroarch', analog: false },
-    android: { cores: ['genesis_plus_gx', 'clownmdemu', 'picodrive'] },
+    // clownmdemu has no Master System / Game Gear: those files go to Gearsystem (GPL-3).
+    android: { cores: ['clownmdemu'], byExtension: { '.sms': ['gearsystem'], '.gg': ['gearsystem'] } },
     bios: [],
   },
   {

@@ -60,7 +60,6 @@
       },
       "android": {
         "cores": [
-          "snes9x",
           "bsnes_mercury_performance",
           "bsnes"
         ]
@@ -95,10 +94,16 @@
       },
       "android": {
         "cores": [
-          "genesis_plus_gx",
-          "clownmdemu",
-          "picodrive"
-        ]
+          "clownmdemu"
+        ],
+        "byExtension": {
+          ".sms": [
+            "gearsystem"
+          ],
+          ".gg": [
+            "gearsystem"
+          ]
+        }
       },
       "bios": []
     },

@@ -83,14 +83,15 @@ Real phone with the real product (S21, 5 GHz, SNES game): **one-way p50 5 ms, p9
   (desktop Chrome ↔ Android P2P verified), HostSession port.
 - **UI:** phone → D-pad key injection for navigating Compose for TV; LibretroDroid InputBridge; Compose for TV UI
   (home, lobby, detail, settings, in-game menu, latency overlay).
-- **Cores:** downloaded on first use (ADR-004), side-load path.
-- **Library:** ROM scan of the app folder, USB, Documents and Download.
+- **Cores:** bundled in the APK (Play policy, see ADR-004 update); side-load path in debug builds.
+- **Library:** game folders picked with the system folder picker (copied to the cache on first play), the app folder on
+  every volume, and on Android 8–10 USB, Documents and Download.
 - **TV launcher integration:** Watch Next "Continue playing" with the `couch://game/<id>` deep link, leanback
   banner, device-tier benchmark.
 
 **Demo**
 1. Build and install (README).
-2. `adb push` games into `Android/data/app.couch.tv/files/roms/<system>/`, or use a USB drive.
+2. `adb push` games into `Android/data/com.tunisolutions.couch/files/roms/<system>/`, or use a USB drive.
 3. Scan the QR code shown on the TV.
 
 **Test results (S21):**
@@ -174,7 +175,7 @@ available homebrew ELF without a BIOS.
 | Cheap Mali TV box / Google TV / Shield numbers | No device | Run the Android app; Settings shows the tier; `latency-lab/scripts/android-systems.ts` gives fps per system |
 | iOS Safari controller | No iPhone | Verify WebRTC from a LAN HTTP page, the switch-haptics workaround and the gyro permission |
 | 4 real phones at once on Wi-Fi | Loopback only | Run 4 phones with the TV overlay on |
-| Public HTTPS mode (cloud signaling + relay) | Needs a domain + hosting choice | **Owner decision** (ADR-002): Cloudflare Workers + Durable Objects (recommended) or a small VPS |
+| Public HTTPS mode (cloud signaling + relay) | Domain chosen: **couchpad.tv** (2026-10-21) | **Owner decision** (ADR-002): Cloudflare Workers + Durable Objects (recommended) or a small VPS |
 | Monetisation | Changes core defaults | **Owner decision** (ADR-004): switch SNES/Genesis to bsnes/clownmdemu first |
 | Bluetooth HID companion app | Breaks zero-install | **Owner decision**; deferred |
 | Separate emulator process on Android | Isolates core crashes, may fix mupen64plus | Engineering, next iteration |

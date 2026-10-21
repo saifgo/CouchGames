@@ -132,16 +132,61 @@ export async function removeLocal(id: string): Promise<void> {
   await del(id, romStore);
 }
 
-/** Files to hand to the emulator for a game. */
-export async function gameFiles(g: Game): Promise<{ name: string; data: Blob | string }[]> {
+/** Bytes downloaded so far for a server game; `total` is 0 while unknown. */
+export interface DownloadProgress {
+  loaded: number;
+  total: number;
+}
+
+/**
+ * Files to hand to the emulator for a game. Server games (roms/ folder or S3, streamed by
+ * the server) are downloaded here rather than by the emulator, so [onProgress] can drive
+ * a progress bar.
+ */
+export async function gameFiles(g: Game, onProgress?: (p: DownloadProgress) => void, signal?: AbortSignal): Promise<{ name: string; data: Blob | string }[]> {
   if (g.source === 'local') {
     const v = await get<{ meta: Game; blob: Blob }>(g.id, romStore);
     if (!v) throw new Error('This game was removed from the browser storage');
     return [{ name: g.file, data: v.blob }];
   }
-  const main = { name: g.file, data: new URL(g.url!, location.origin).toString() };
-  const extra = (g.extra ?? []).map((u) => ({ name: decodeURIComponent(u.split('/').pop()!), data: new URL(u, location.origin).toString() }));
-  return [main, ...extra];
+  const files = [
+    { name: g.file, url: g.url! },
+    ...(g.extra ?? []).map((u) => ({ name: decodeURIComponent(u.split('/').pop()!), url: u })),
+  ];
+  // Start every request first (resolves on headers) so the total size is known up front.
+  const responses = await Promise.all(
+    files.map(async (f) => {
+      const res = await fetch(new URL(f.url, location.origin), signal ? { signal } : {});
+      if (!res.ok) throw new Error(`Could not download ${f.name} from the server (HTTP ${res.status})`);
+      return res;
+    }),
+  );
+  const lengths = responses.map((r) => Number(r.headers.get('content-length')) || 0);
+  const total = lengths.every((n) => n > 0) ? lengths.reduce((a, b) => a + b, 0) : 0;
+  let loaded = 0;
+  onProgress?.({ loaded, total });
+  const out: { name: string; data: Blob }[] = [];
+  for (let i = 0; i < files.length; i++) {
+    const res = responses[i]!;
+    const chunks: BlobPart[] = [];
+    const reader = res.body?.getReader();
+    if (!reader) {
+      const b = await res.blob();
+      loaded += b.size;
+      chunks.push(b);
+    } else {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        loaded += value.byteLength;
+        onProgress?.({ loaded, total });
+      }
+    }
+    out.push({ name: files[i]!.name, data: new Blob(chunks) });
+  }
+  onProgress?.({ loaded, total: total || loaded });
+  return out;
 }
 
 export async function biosFiles(system: ConsoleId): Promise<{ name: string; data: string }[]> {

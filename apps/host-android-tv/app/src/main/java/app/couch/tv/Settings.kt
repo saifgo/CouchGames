@@ -45,6 +45,19 @@ class Settings(context: Context) {
         get() = p.getBoolean("onboardingDone", false)
         set(v) = p.edit { putBoolean("onboardingDone", v) }
 
+    /** Last answer from Google Play about Couch Pro (kept so Pro works offline). */
+    var proOwned: Boolean
+        get() = p.getBoolean("proOwned", false)
+        set(v) = p.edit { putBoolean("proOwned", v) }
+    /** Debug builds: Pro without a purchase, for testing. */
+    var proDebug: Boolean
+        get() = p.getBoolean("proDebug", false)
+        set(v) = p.edit { putBoolean("proDebug", v) }
+    /** When the "Go Pro" card last showed before a game. */
+    var lastProNag: Long
+        get() = p.getLong("lastProNag", 0L)
+        set(v) = p.edit { putLong("lastProNag", v) }
+
     fun core(system: String): String? = p.getString("core.$system", null)
     fun setCore(system: String, core: String) = p.edit { putString("core.$system", core) }
 

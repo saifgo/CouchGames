@@ -18,7 +18,8 @@
     "test-roms": "node scripts/fetch-test-roms.mjs",
     "cores": "node scripts/fetch-cores.mjs",
     "logos": "node scripts/build-logos.mjs",
-    "setup": "pnpm install && pnpm test-roms && pnpm cores && pnpm build"
+    "setup": "pnpm install && pnpm test-roms && pnpm cores && pnpm build",
+    "covers": "pnpm --filter @couch/systems covers"
   },
   "devDependencies": {
     "7zip-bin": "5.2.0",

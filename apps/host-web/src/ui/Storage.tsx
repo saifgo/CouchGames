@@ -154,7 +154,7 @@ function StoragePanel({ state, onRetest, onClose }: { state: State; onRetest: ()
       )}
       <div className="storage-actions">
         <button className="add" data-nav data-nav-default disabled={busy} onClick={() => void retest()}>
-          {busy ? 'Testing…' : '⟳ Test again'}
+          {busy ? 'Testing…' : 'Test again'}
         </button>
         <button className="add" data-nav onClick={onClose}>
           Close

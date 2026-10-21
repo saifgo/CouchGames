@@ -1,6 +1,7 @@
 # Third-party licenses
 
-Couch Emulation itself is **GPL-3.0-or-later** (owner decision, 2026-10-16: free / open source).
+Couch Emulation itself is **GPL-3.0-or-later**. Since 2026-10-19 the Android TV app is sold (Couch Pro, ADR-005), so it
+only uses cores whose licence allows commercial use.
 Every core and library we ship or download at build time is listed here. Licenses were
 verified on 2026-10-16 against each project's LICENSE file (GitHub API `spdx_id`, plus the
 file text where GitHub reports `NOASSERTION`).
@@ -14,11 +15,13 @@ not GPL-compatible) · ❌ not usable.
 |---|---|---|---|---|
 | fceumm | NES | GPL-2.0-or-later | ✅ | web + Android |
 | nestopia | NES | GPL-2.0 | ✅ | fallback |
-| snes9x | SNES | Snes9x license: "non-commercial purposes… freeware for PERSONAL USE only" | ⚠️ | web + Android default (see ADR-004) |
-| bsnes | SNES | GPL-3.0-only | ✅ | Android alternative (heavier) |
-| genesis_plus_gx | Genesis/MD, SMS, GG | Custom: "may not be sold, nor used in a commercial product or activity" | ⚠️ | web + Android default |
-| picodrive | Genesis/MD, 32X | Custom (same MAME-style non-commercial clause) | ⚠️ | fallback |
-| clownmdemu | Genesis/MD | AGPL-3.0 | ✅ | GPL-clean MD option (web build exists) |
+| snes9x | SNES | Snes9x license: "non-commercial purposes… freeware for PERSONAL USE only" | ⚠️ | web only (removed from Android, ADR-005) |
+| bsnes_mercury_performance | SNES | GPL-3.0 (bsnes fork) | ✅ | Android default |
+| bsnes | SNES | GPL-3.0-only | ✅ | Android fallback (heavier) |
+| genesis_plus_gx | Genesis/MD, SMS, GG | Custom: "may not be sold, nor used in a commercial product or activity" | ⚠️ | web only (removed from Android, ADR-005) |
+| picodrive | Genesis/MD, 32X | Custom (same MAME-style non-commercial clause) | ⚠️ | not used |
+| clownmdemu | Genesis/MD | AGPL-3.0 | ✅ | Android default for Genesis |
+| gearsystem | Master System, Game Gear | GPL-3.0 | ✅ | Android, `.sms` / `.gg` files |
 | gambatte | GB/GBC | GPL-2.0 | ✅ | web + Android |
 | mgba | GB/GBC/GBA | MPL-2.0 | ✅ | web + Android |
 | vba_next | GBA | GPL-2.0 | ✅ | fallback |
@@ -43,7 +46,8 @@ not GPL-compatible) · ❌ not usable.
 - **EmulatorJS core builds**: `@emulatorjs/core-*` 4.2.3 on npm. These are built from EmulatorJS's GPL-3.0 RetroArch
   fork. Each package ships the core's own license file, which `scripts/fetch-cores.mjs` copies next to the
   core as `<core>_LICENSE.txt`.
-- **Android cores**: libretro buildbot `android/latest/arm64-v8a/<core>_libretro_android.so.zip`.
+- **Android cores**: libretro buildbot `android/latest/<abi>/<core>_libretro_android.so.zip` (arm64-v8a, armeabi-v7a,
+  x86_64), fetched at build time and bundled in the APK (`fetchCores` in `app/build.gradle.kts`). All are GPL/MPL/BSD-licensed (table above).
 
 ## Libraries
 
@@ -52,6 +56,7 @@ not GPL-compatible) · ❌ not usable.
 | Nostalgist.js | MIT | host-web | Thin launcher API over RetroArch Emscripten builds |
 | EmulatorJS (core builds only) | GPL-3.0 | host-web (N64/PSP/NDS cores) | Only WASM builds of those cores that exist |
 | LibretroDroid | GPL-3.0 | host-android-tv | libretro frontend for Android (powers Lemuroid) |
+| Google Play Billing Library 8 | Android SDK License (proprietary) | host-android-tv | ⚠️ Couch Pro purchase (ADR-005). Linking a proprietary library into an app that includes GPL-3 LibretroDroid is a licence question: see ADR-005 "Open question" |
 | ws | MIT | signaling | WebSocket server |
 | tsx | MIT | signaling | Run TypeScript in Node without a build step |
 | @aws-sdk/client-s3 (+ @smithy/* deps) | Apache-2.0 | signaling | Optional ROM library in an S3 / S3-compatible bucket |
@@ -107,6 +112,10 @@ turned white for the dark UI; nothing else changes.
 | Nintendo DS | Nintendo DS Logo.svg |
 | PlayStation 2 | PlayStation 2 logo.svg |
 | Atari 2600 | Atari 2600 logo.svg |
+
+The same logos also appear on the **default Couch covers** (shown when a game has no box art):
+`packages/systems/covers/*.svg` and `res/drawable-nodpi/cover_*.png`, made by
+`packages/systems/scripts/build-covers.ts` (`pnpm covers`). The rest of each cover is Couch's own artwork.
 
 ⚠️ Public domain covers copyright only. These logos are **trademarks** of Nintendo, Sega, Sony Interactive
 Entertainment and Atari. They're fine for personal use. Before publishing or selling the app, replace them, or

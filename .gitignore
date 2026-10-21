@@ -27,9 +27,13 @@ apps/host-android-tv/build/
 apps/host-android-tv/app/build/
 apps/host-android-tv/local.properties
 apps/host-android-tv/app/src/main/jniLibs/
+apps/host-android-tv/.cores-cache/
 apps/host-android-tv/app/src/main/assets/controller/
 *.apk
+*.aab
 *.keystore
+*.jks
+apps/host-android-tv/keystore.properties
 packages/latency-lab/dist/
 docs/img/skins/*.png.tmp
 e2e/test-results/

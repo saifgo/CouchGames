@@ -9,7 +9,12 @@ import kotlinx.serialization.json.Json
 data class BiosFile(val file: String, val required: Boolean, val note: String)
 
 @Serializable
-data class AndroidCores(val cores: List<String>, val experimental: Boolean = false)
+data class AndroidCores(
+    val cores: List<String>,
+    val experimental: Boolean = false,
+    /** Some file types need another core (e.g. Master System files on the Genesis shelf). */
+    val byExtension: Map<String, List<String>> = emptyMap(),
+)
 
 @Serializable
 data class SystemDef(
@@ -25,7 +30,11 @@ data class SystemDef(
     val accent: String,
     val android: AndroidCores,
     val bios: List<BiosFile>,
-)
+) {
+    /** Cores that can run [fileName], preferred first. */
+    fun coresFor(fileName: String): List<String> =
+        android.byExtension["." + fileName.substringAfterLast('.', "").lowercase()] ?: android.cores
+}
 
 @Serializable
 private data class SystemsFile(val version: Int, val systems: List<SystemDef>)

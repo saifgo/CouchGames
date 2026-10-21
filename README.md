@@ -44,9 +44,12 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 - The app is its own server: phones open `http://<tv-ip>:8787/c/` (shown as a QR code on screen). No computer or
   internet is needed while playing.
-- Games: `roms/<system>/` on a USB drive, in Documents or Download (grant "All files access"), or in
-  `Android/data/app.couch.tv/files/roms/` (no permission needed, `adb push` works).
-- Emulator cores download from the libretro buildbot the first time you play each system.
+- Games: pick a folder with `roms/<system>/` inside ("Add game folder", system folder picker; no "All files access",
+  Play policy). Picked-folder games are copied to the cache on first play. Also scanned without any permission:
+  `Android/data/com.tunisolutions.couch/files/roms/` on internal storage and on each USB drive (`adb push` works).
+  Android 8–10 still scans `roms/` on USB, Documents and Download with the storage permission.
+- Emulator cores are bundled in the app (Play does not allow downloading code). The build fetches them from the
+  libretro buildbot into `apps/host-android-tv/.cores-cache/` (git-ignored); `-PrefreshCores` re-downloads.
 - Systems are shown according to the device's measured performance tier (Settings → Performance tier).
 
 ### 3. Hosted on a server (Docker / Coolify, public HTTPS mode)
@@ -84,5 +87,6 @@ cd apps/host-android-tv && ./gradlew :app:testDebugUnitTest   # Kotlin codec vs 
 ## Licence
 
 GPL-3.0-or-later. Emulator cores are separate programs with their own licences ([docs/LICENSES.md](docs/LICENSES.md)).
-snes9x and Genesis Plus GX are **non-commercial**. Read [ADR-004](docs/decisions/ADR-004-core-licensing.md) before
-any monetisation. No ROMs or BIOS files are included or downloaded, except freely distributable homebrew on request.
+The Android TV app is sold as Couch Free + a one-time Couch Pro unlock ([ADR-005](docs/decisions/ADR-005-couch-pro.md)),
+so it only uses cores that allow commercial use. snes9x and Genesis Plus GX (**non-commercial**) remain on the free web host only
+([ADR-004](docs/decisions/ADR-004-core-licensing.md)). No ROMs or BIOS files are included or downloaded, except freely distributable homebrew on request.

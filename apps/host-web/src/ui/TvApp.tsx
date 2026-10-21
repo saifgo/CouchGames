@@ -3,7 +3,7 @@
  * and offers the APK the couch server has (/api/apk), with a QR code for phones.
  */
 import { useEffect, useState } from 'react';
-import { Modal, QR } from './common.js';
+import { Icon, Modal, QR } from './common.js';
 
 export interface ApkInfo {
   file: string;
@@ -27,7 +27,7 @@ export function useApk(): ApkInfo | null {
 export function TvAppButton({ apk, onOpen }: { apk: ApkInfo; onOpen: () => void }) {
   return (
     <button className="add tvapp-chip" data-nav onClick={onOpen} title={apk.file}>
-      📺 Android TV app
+      <Icon name="tv" /> Android TV app
     </button>
   );
 }

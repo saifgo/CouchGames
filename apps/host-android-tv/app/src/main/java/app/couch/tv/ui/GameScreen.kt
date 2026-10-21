@@ -2,6 +2,8 @@ package app.couch.tv.ui
 
 import android.view.KeyEvent
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -9,8 +11,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,6 +46,7 @@ import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.Text
 import app.couch.tv.CouchApp
 import app.couch.tv.Diagnostics
+import app.couch.tv.ProRules
 import app.couch.tv.library.Game
 import app.couch.tv.library.Systems
 import app.couch.tv.protocol.MenuAction
@@ -88,11 +93,12 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val sys = Systems.byId(game.system)!!
-    val core = app.settings.core(sys.id)?.takeIf { it in sys.android.cores } ?: sys.android.cores.first()
+    val choices = sys.coresFor(game.file.name)
+    val core = app.settings.core(sys.id)?.takeIf { it in choices } ?: choices.first()
     var corePath by remember { mutableStateOf<String?>(null) }
     var progress by remember { mutableStateOf(0f) }
     /** True while a Couch-server game is being downloaded (before the core step). */
-    var downloading by remember { mutableStateOf(game.remote != null) }
+    var downloading by remember { mutableStateOf(game.remote != null || (game.folder != null && game.file.length() != game.size)) }
     var error by remember { mutableStateOf<String?>(null) }
     var view by remember { mutableStateOf<GLRetroView?>(null) }
     var menu by remember { mutableStateOf<Page?>(null) }
@@ -131,6 +137,11 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
 
     suspend fun save(slot: String) {
         val v = view ?: return
+        val n = slot.removePrefix("slot").toIntOrNull()
+        if (n != null && !ProRules.saveSlotAllowed(app.pro.isPro, n)) {
+            flash("Slots 2–4 need Couch Pro · Couch Free has slot 1")
+            return
+        }
         val paused = menu != null
         val bytes = withContext(Dispatchers.IO) { runCatching { v.serializeState(useEmulationThread = !paused) }.getOrNull() }
         if (bytes == null) {
@@ -157,8 +168,8 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
         onExit()
     }
 
-    // 1) Server games: download the ROM (and the system's BIOS) into the cache on first play.
-    // 2) Make sure the core is installed (first use downloads it from the libretro buildbot).
+    // 1) Server games are downloaded, picked-folder games copied, into the cache on first play.
+    // 2) Find the core (bundled in the app).
     LaunchedEffect(core) {
         game.remote?.let { r ->
             val got = runCatching {
@@ -172,9 +183,18 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
             downloading = false
             progress = 0f
         }
-        runCatching { app.cores.ensure(core) { progress = it } }
+        if (game.folder != null) {
+            val got = runCatching { app.library.folders.ensureLocal(game) { progress = it } }
+            if (got.isFailure) {
+                error = "Could not read ${game.title} from its game folder: ${got.exceptionOrNull()?.message}. If it is on a USB drive, check that the drive is plugged in."
+                return@LaunchedEffect
+            }
+            downloading = false
+            progress = 0f
+        }
+        runCatching { app.cores.ensure(core) }
             .onSuccess { corePath = it }
-            .onFailure { error = "Could not get the $core core: ${it.message}. Connect the TV to the internet once, or side-load the core (see roms/README.md)." }
+            .onFailure { error = "${it.message}. Try another core in Settings → Cores." }
     }
 
     // 2) Phones → emulator, Home button → menu, phone menu actions.
@@ -241,7 +261,7 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
                         gameFilePath = game.file.absolutePath
                         systemDirectory = app.library.systemDir().absolutePath
                         savesDirectory = app.saves.sramFile(game.id).parentFile!!.absolutePath
-                        variables = coreVariables(sys.id, app.settings.maxPlayers)
+                        variables = coreVariables(sys.id, app.players)
                         saveRAMState = app.saves.sramFile(game.id).takeIf { it.exists() }?.readBytes()
                         shader = ShaderConfig.Default
                         preferLowLatencyAudio = true
@@ -299,9 +319,26 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
             }
         }
         if (path == null && error == null) {
-            Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(if (downloading) "Downloading ${game.title} from the Couch server…" else "Getting the ${sys.shortName} emulator ($core)…", fontSize = 22.sp)
-                Text("${(progress * 100).toInt()} %  · licence: see Settings → About", color = Muted)
+            Column(
+                Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Text(if (downloading) (if (game.folder != null) "Copying ${game.title} to this TV…" else "Downloading ${game.title}…") else "Starting the ${sys.shortName} emulator ($core)…", fontSize = 22.sp)
+                val shown by animateFloatAsState(progress, tween(150), label = "download")
+                Box(Modifier.width(520.dp).height(10.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = .15f))) {
+                    Box(Modifier.fillMaxHeight().fillMaxWidth(shown.coerceIn(0f, 1f)).clip(RoundedCornerShape(50)).background(Accent))
+                }
+                val pct = "${(progress * 100).toInt()} %"
+                Text(
+                    when {
+                        // Size is the main file's: exact unless the game has extra tracks (cue/bin).
+                        downloading && game.extra.isEmpty() && game.size > 0 -> "$pct  ·  ${mb((progress * game.size).toLong())} of ${mb(game.size)}"
+                        downloading -> pct
+                        else -> "$pct  ·  licence: see Settings → About"
+                    },
+                    color = Muted,
+                )
             }
         }
 
@@ -349,7 +386,7 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
                     }
                     when (page) {
                         Page.MAIN -> {
-                            item("▶  Resume", true, true) { closeMenu() }
+                            item("Resume", true, true) { closeMenu() }
                             item("Save state", false, true) { menu = Page.SAVE }
                             item("Load state", false, slots.isNotEmpty()) { menu = Page.LOAD }
                             item("Controllers", false, true) { menu = Page.PLAYERS }
@@ -359,12 +396,13 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
                         }
                         Page.SAVE, Page.LOAD -> for (i in 0 until 4) {
                             val at = slots[i]
-                            val label = "Slot ${i + 1}" + (at?.let { "  ·  " + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it)) } ?: "  ·  empty")
+                            val locked = page == Page.SAVE && !ProRules.saveSlotAllowed(app.pro.isPro, i)
+                            val label = "Slot ${i + 1}" + (at?.let { "  ·  " + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it)) } ?: "  ·  empty") + (if (locked) "  ·  Pro" else "")
                             item(label, i == 0, page == Page.SAVE || at != null) { scope.launch { if (page == Page.SAVE) save("slot$i") else load(i) } }
                         }
                         Page.PLAYERS -> PlayerManager(
                             view = session,
-                            maxPlayers = app.settings.maxPlayers,
+                            maxPlayers = app.players,
                             onSwap = { a, b -> app.session.swapSlots(a, b) },
                             onRemove = { app.session.removePlayer(it) },
                             onTidy = { app.session.tidySlots() },
@@ -395,3 +433,5 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
 var homeHandler: (() -> Unit)? = null
 
 private fun fmt(v: Double) = if (v.isNaN()) "–" else "%.1f".format(v)
+
+private fun mb(bytes: Long) = if (bytes < 10L shl 20) "%.1f MB".format(bytes / 1048576.0) else "${bytes shr 20} MB"

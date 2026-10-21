@@ -54,7 +54,7 @@ adb('shell', 'settings', 'put', 'system', 'user_rotation', '1');
 adb('shell', 'svc', 'power', 'stayon', 'usb');
 adb('shell', 'input', 'keyevent', 'KEYCODE_WAKEUP');
 adb('shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', `'http://${lan.address}:8787/c/?r=${room}&autojoin=1&name=${model}'`, 'com.android.chrome');
-await host.waitForFunction(() => document.querySelectorAll('.topbar-players .chip').length > 0, null, { timeout: 30_000 });
+await host.waitForFunction(() => document.querySelectorAll('.lobby .slot.filled').length > 0, null, { timeout: 30_000 });
 console.log('phone joined');
 
 await host.locator('.card', { hasText: game }).first().click();

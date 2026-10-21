@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { SYSTEMS } from '@couch/systems';
 import type { HostSettings } from '../host-settings.js';
 import { isDesktopClass } from '../host-settings.js';
@@ -41,14 +42,11 @@ export function SettingsModal({ settings, onChange, onClose }: { settings: HostS
         {toggle('latencyOverlay', 'Latency overlay in game', 'Also: press L, or open it from the phone menu')}
         {toggle('showAllSystems', 'Show heavy systems on this device', isDesktopClass() ? 'This looks like a desktop: already shown' : 'PS1 / NDS / PSP may stutter here')}
         {toggle('experimentalPsp', 'PSP (experimental)', self.crossOriginIsolated ? 'Cross-origin isolated: OK' : 'Needs COI=1 and localhost')}
-        {SYSTEMS.filter((sys) => (sys.web?.cores.length ?? 0) > 1).map((sys) =>
-          cycle(
-            `${sys.shortName} core`,
-            sys.web!.cores,
-            s.cores[sys.id] ?? sys.web!.cores[0]!,
-            (v) => onChange({ cores: { ...s.cores, [sys.id]: v } }),
-          ),
-        )}
+        {SYSTEMS.filter((sys) => (sys.web?.cores.length ?? 0) > 1).map((sys) => (
+          <Fragment key={sys.id}>
+            {cycle(`${sys.shortName} core`, sys.web!.cores, s.cores[sys.id] ?? sys.web!.cores[0]!, (v) => onChange({ cores: { ...s.cores, [sys.id]: v } }))}
+          </Fragment>
+        ))}
       </div>
       <p className="hint">
         Licences: docs/LICENSES.md · Cores are downloaded separately (pnpm cores) · Your ROMs never leave this computer.

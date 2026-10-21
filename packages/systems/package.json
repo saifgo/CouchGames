@@ -12,7 +12,8 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "export-json": "tsx scripts/export-json.ts"
+    "export-json": "tsx scripts/export-json.ts",
+    "covers": "tsx scripts/build-covers.ts"
   },
   "dependencies": {
     "@couch/protocol": "workspace:*"

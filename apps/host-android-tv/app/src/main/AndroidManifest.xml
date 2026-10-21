@@ -14,9 +14,8 @@
     <!-- Rumble on game controllers paired with the TV. -->
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="com.android.providers.tv.permission.WRITE_EPG_DATA" />
-    <!-- ROM folders on internal storage / USB drives. -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
+    <!-- ROM folders on Android 8-10. Android 11+ uses the system folder picker (no permission). -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
 
     <application
         android:name=".CouchApp"

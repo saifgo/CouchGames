@@ -4,7 +4,7 @@ import { systemAvailability, type HostSettings } from '../host-settings.js';
 import { favourites, recents, type Game, type LibraryProgress } from '../library/library.js';
 import { LibraryLoading, RefreshButton } from './LibraryLoad.js';
 import type { SessionView } from '../net/host-session.js';
-import { Art, PlayerChip, useClock } from './common.js';
+import { Art, Icon, Logo, useClock } from './common.js';
 import { Lobby } from './Lobby.js';
 import { StorageChip } from './Storage.js';
 import { TvAppButton, TvAppPanel, useApk } from './TvApp.js';
@@ -21,6 +21,8 @@ interface Props {
   progress: LibraryProgress | null;
   libraryAt: number | null;
   onRefresh: () => void;
+  /** Games from the last import: the wheel jumps to the first one and highlights them all. */
+  justAdded?: { ids: string[]; at: number } | null;
 }
 
 /** Console logos (packages/systems/logos, made by scripts/build-logos.mjs), by system id. */
@@ -35,7 +37,7 @@ const LOGOS: Record<string, string> = Object.fromEntries(
 interface Platform {
   key: string;
   label: string;
-  /** Full name for the header. */
+  /** Full name (logo alt text). */
   title: string;
   sub: string;
   accent?: string;
@@ -49,7 +51,9 @@ interface Platform {
  * wheel and a cover wheel along the bottom. The cover wheel comes first in the DOM so its first
  * card is the first focus target; CSS grid areas put everything in place.
  */
-export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImport, progress, libraryAt, onRefresh }: Props) {
+const byTitle = (a: Game, b: Game) => a.title.localeCompare(b.title);
+
+export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImport, progress, libraryAt, onRefresh, justAdded }: Props) {
   const clock = useClock();
   const [focused, setFocused] = useState<Game | null>(null);
   const [platformKey, setPlatformKey] = useState('all');
@@ -62,7 +66,6 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
   const favs = useMemo(() => favourites(), [games]);
 
   const platforms: Platform[] = useMemo(() => {
-    const byTitle = (a: Game, b: Game) => a.title.localeCompare(b.title);
     const byId = new Map(playable.map((g) => [g.id, g]));
     const out: Platform[] = [{ key: 'all', label: 'All Games', title: 'All Games', sub: `${playable.length} games`, games: [...playable].sort(byTitle) }];
     const recent = recents()
@@ -92,6 +95,41 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
     }
   }, [platforms.length]);
 
+  // After an import: open the added game's console, focus its cover and say what was added.
+  const [added, setAdded] = useState<{ ids: Set<string>; text: string } | null>(null);
+  const revealId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!justAdded) return;
+    const ids = new Set(justAdded.ids);
+    const all = games.filter((g) => ids.has(g.id));
+    const shown = playable.filter((g) => ids.has(g.id)).sort(byTitle);
+    const what = all.length === 1 ? `“${all[0]!.title}”` : `${all.length} games`;
+    const first = shown[0];
+    let text: string;
+    if (first) {
+      const oneSystem = shown.every((g) => g.system === first.system);
+      setPlatformKey(oneSystem ? first.system : 'all');
+      setFocused(first);
+      revealId.current = first.id;
+      text = `Added ${what} to ${oneSystem ? getSystem(first.system)!.name : 'your library'}`;
+    } else {
+      text = `Added ${what}, but ${all.length === 1 ? 'its system is' : 'their systems are'} hidden on this device (see Settings)`;
+    }
+    setAdded({ ids, text });
+    const t = setTimeout(() => setAdded(null), 4500);
+    return () => clearTimeout(t);
+  }, [justAdded]);
+  // Runs after the wheel has re-rendered on the new console, so the cover exists.
+  useEffect(() => {
+    const id = revealId.current;
+    if (!id) return;
+    const card = document.querySelector<HTMLElement>(`.wheel [data-game-id="${CSS.escape(id)}"]`);
+    if (!card) return;
+    revealId.current = null;
+    card.focus({ preventScroll: true });
+    card.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+  });
+
   const pickPlatform = (key: string) => {
     if (key === platform.key) return;
     setPlatformKey(key);
@@ -111,22 +149,27 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
     >
+      {added && (
+        <div className="toast added-toast" role="status" key={justAdded?.at}>
+          <Icon name="plus" /> {added.text}
+        </div>
+      )}
+
       <div className="backdrop" aria-hidden>
         {game && (
           <div className="backdrop-art" key={game.id}>
             <Art game={game} online={settings.onlineArt} kind="Named_Snaps" />
           </div>
         )}
-        <div className="backdrop-grid" />
-        <div className="backdrop-scan" />
       </div>
 
       <section className="wheel" key={platform.key}>
         {platform.games.map((g, i) => (
           <button
             key={g.id}
-            className={`card ${g === game ? 'current' : ''}`}
+            className={`card ${g === game ? 'current' : ''} ${added?.ids.has(g.id) ? 'just-added' : ''}`}
             style={{ ['--glow' as string]: getSystem(g.system)?.accent }}
+            data-game-id={g.id}
             data-nav
             data-nav-default={i === 0 ? '' : undefined}
             onFocus={() => setFocused(g)}
@@ -134,13 +177,16 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
           >
             <span className="card-frame">
               <Art game={g} online={settings.onlineArt} />
+              {added?.ids.has(g.id) && <span className="new-badge">New</span>}
             </span>
             <span className="card-title">{g.title}</span>
           </button>
         ))}
         {!platform.games.length && (
           <button className="card add-card" data-nav onClick={() => fileRef.current?.click()}>
-            <span className="card-frame">＋</span>
+            <span className="card-frame">
+              <Icon name="plus" />
+            </span>
             <span className="card-title">Add games</span>
           </button>
         )}
@@ -167,24 +213,11 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
       </nav>
 
       <header className="topbar">
-        <div className="logo">
-          <span>▲●</span> Couch
-        </div>
-        <div className="crumb">
-          {platform.title}
-          <small>
-            {game ? platform.games.indexOf(game) + 1 : 0} / {platform.games.length}
-          </small>
-        </div>
-        <div className="topbar-players">
-          {view.players.map((p) => (
-            <PlayerChip key={p.slot} p={p} />
-          ))}
-        </div>
+        <Logo />
         <div className="topbar-right">
           <span className="clock">{clock}</span>
           <button className="icon-btn" data-nav onClick={onSettings} aria-label="Settings">
-            ⚙
+            <Icon name="settings" />
           </button>
         </div>
       </header>
@@ -207,28 +240,28 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
       <aside className="details">
         {game && sys ? (
           <div className="details-game" key={game.id}>
-            <h1 className="script">{game.title}</h1>
+            <h1 className="details-title">
+              {game.title}
+              {favs.has(game.id) && (
+                <span className="details-fav" title="Favourite">
+                  <Icon name="starFilled" />
+                </span>
+              )}
+            </h1>
+            <p className="details-system">{sys.name}</p>
             <dl className="facts">
-              <dt>Platform</dt>
-              <dd>{sys.name}</dd>
-              <dt>Maker</dt>
+              <dt>Made by</dt>
               <dd>
                 {sys.maker}, {sys.year}
               </dd>
-              <dt>Play Mode</dt>
-              <dd>{sys.maxPlayers > 1 ? `Multiplayer (1–${sys.maxPlayers})` : 'Single Player'}</dd>
-              <dt>Status</dt>
-              <dd>{game.source === 'homebrew' ? 'Free Homebrew' : game.source === 'local' ? 'Stored on this TV' : 'Imported ROM'}</dd>
-              <dt>Last Played</dt>
+              <dt>Players</dt>
+              <dd>{sys.maxPlayers > 1 ? `1 to ${sys.maxPlayers}` : '1'}</dd>
+              <dt>Source</dt>
+              <dd>{game.source === 'homebrew' ? 'Free homebrew' : game.source === 'local' ? 'Stored on this TV' : 'Imported ROM'}</dd>
+              <dt>Last played</dt>
               <dd>{recentAt.has(game.id) ? ago(recentAt.get(game.id)!) : 'Never'}</dd>
               <dt>Size</dt>
               <dd>{(game.size / 1024 / 1024).toFixed(1)} MB</dd>
-              {favs.has(game.id) && (
-                <>
-                  <dt>Favourite</dt>
-                  <dd className="fav">★★★★★</dd>
-                </>
-              )}
             </dl>
             <p className="press-play">
               Press <kbd>A</kbd> to play
@@ -236,7 +269,7 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
           </div>
         ) : (
           <div className="details-game">
-            <h1 className="script">Welcome</h1>
+            <h1 className="details-title">Welcome</h1>
             <p className="facts-text">
               Put your own ROM files in the <code>roms/&lt;system&gt;/</code> folders next to the server (for example <code>roms/snes/</code>), then refresh. Or
               drop files anywhere on this screen. Want something to try right now? Run <code>pnpm test-roms</code>.
@@ -246,19 +279,21 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
       </aside>
 
       <aside className="players-panel">
-        <h2 className="script">Players</h2>
         <Lobby view={view} joinUrl={joinUrl} maxPlayers={settings.maxPlayers} />
       </aside>
 
       <footer className="hints">
         <span>
-          <kbd className="btn-a">A</kbd> Select
+          <kbd>A</kbd> Select
         </span>
         <span>
-          <kbd className="btn-b">B</kbd> Back
+          <kbd>B</kbd> Back
         </span>
         <span>
-          <kbd>✚</kbd> Browse
+          <kbd className="pad">
+            <Icon name="dpad" />
+          </kbd>{' '}
+          Browse
         </span>
         {hidden > 0 &&
           (apk ? (
@@ -275,7 +310,7 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
         {apk && showApp && <TvAppPanel apk={apk} onClose={() => setShowApp(false)} />}
         <StorageChip />
         <button className="add" data-nav onClick={() => fileRef.current?.click()}>
-          ＋ Add games
+          <Icon name="plus" /> Add games
         </button>
         <RefreshButton progress={progress} libraryAt={libraryAt} onRefresh={onRefresh} />
         <input

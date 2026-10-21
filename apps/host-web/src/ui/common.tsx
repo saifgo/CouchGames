@@ -33,11 +33,34 @@ export function thumbnailUrl(g: Game, kind: 'Named_Boxarts' | 'Named_Snaps' | 'N
 
 const failed = new Set<string>();
 
-/** Box art: online thumbnail when allowed and found, else generated art in the system's colours. */
-export function Art({ game, online, kind = 'Named_Boxarts', className }: { game: Game; online: boolean; kind?: 'Named_Boxarts' | 'Named_Snaps' | 'Named_Titles'; className?: string }) {
+/** Default Couch covers, one per console (packages/systems/covers, made by `pnpm covers`), by system id. */
+const COVERS: Record<string, string> = Object.fromEntries(
+  Object.entries(import.meta.glob<string>('../../../../packages/systems/covers/*.svg', { eager: true, query: '?url', import: 'default' })).map(([path, url]) => [
+    path.slice(path.lastIndexOf('/') + 1, -4),
+    url,
+  ]),
+);
+
+/**
+ * Box art: online thumbnail when allowed and found, else the console's default Couch cover.
+ * Screenshot slots (4:3) show the cover whole, centred on the cover's own background.
+ */
+export function Art({
+  game,
+  online,
+  kind = 'Named_Boxarts',
+  className,
+  fallback = true,
+}: {
+  game: Game;
+  online: boolean;
+  kind?: 'Named_Boxarts' | 'Named_Snaps' | 'Named_Titles';
+  className?: string;
+  /** false: render nothing instead of the default cover (where the cover is already shown). */
+  fallback?: boolean;
+}) {
   const url = online ? thumbnailUrl(game, kind) : null;
   const [ok, setOk] = useState(!!url && !failed.has(url));
-  const sys = getSystem(game.system);
   useEffect(() => setOk(!!url && !failed.has(url)), [url]);
   if (url && ok) {
     return (
@@ -54,25 +77,19 @@ export function Art({ game, online, kind = 'Named_Boxarts', className }: { game:
       />
     );
   }
-  const hue = hash(game.title) % 360;
+  if (!fallback) return null;
+  const cover = COVERS[game.system];
+  const fit = kind === 'Named_Boxarts' ? '' : 'contain';
+  if (cover) return <img className={`art default-cover ${fit} ${className ?? ''}`} src={cover} alt="" decoding="async" draggable={false} />;
   return (
-    <div
-      className={`art generated ${className ?? ''}`}
-      style={{ background: `linear-gradient(150deg, ${sys?.accent ?? '#333'} 0%, hsl(${hue} 45% 22%) 70%, #07090d 100%)` }}
-    >
-      <span className="art-system">{sys?.shortName}</span>
-      <span className="art-title">{game.title}</span>
+    <div className={`art default-cover ${className ?? ''}`}>
+      <span className="art-system">{getSystem(game.system)?.shortName}</span>
     </div>
   );
 }
 
-function hash(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-  return h >>> 0;
-}
-
-export function QR({ text, size = 220 }: { text: string; size?: number }) {
+/** QR code. Without a size it fills its container (CSS sets the width). */
+export function QR({ text, size }: { text: string; size?: number }) {
   const [svg, setSvg] = useState('');
   useEffect(() => {
     let alive = true;
@@ -83,7 +100,7 @@ export function QR({ text, size = 220 }: { text: string; size?: number }) {
       alive = false;
     };
   }, [text]);
-  return <div className="qr" style={{ width: size, height: size }} dangerouslySetInnerHTML={{ __html: svg }} />;
+  return <div className="qr" style={size ? { width: size, height: size } : undefined} dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
 export function quality(p: PlayerView): 'good' | 'ok' | 'bad' | 'off' {
@@ -169,4 +186,56 @@ export function useClock(): string {
     return () => clearInterval(i);
   }, []);
   return t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+const ICONS = {
+  settings: (
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+    </>
+  ),
+  plus: <path d="M12 5v14M5 12h14" />,
+  refresh: (
+    <>
+      <path d="M20 11a8 8 0 0 0-14.3-4.9L4 8" />
+      <path d="M4 3v5h5" />
+      <path d="M4 13a8 8 0 0 0 14.3 4.9L20 16" />
+      <path d="M20 21v-5h-5" />
+    </>
+  ),
+  tv: (
+    <>
+      <rect x="2.5" y="5" width="19" height="13" rx="2" />
+      <path d="M8 21h8M12 18v3" />
+    </>
+  ),
+  dpad: <path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z" />,
+  play: <path d="M7 4.5v15l12-7.5z" fill="currentColor" />,
+  star: <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />,
+  starFilled: <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" fill="currentColor" />,
+} as const;
+
+export type IconName = keyof typeof ICONS;
+
+/** Line icons on a 24px grid, 2px stroke, sized by the font (1em). */
+export function Icon({ name, className }: { name: IconName; className?: string }) {
+  return (
+    <svg className={`icon ${className ?? ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {ICONS[name]}
+    </svg>
+  );
+}
+
+/** The Couch mark: a triangle and a circle, the A and B of a pad. */
+export function Logo({ className }: { className?: string }) {
+  return (
+    <div className={`logo ${className ?? ''}`}>
+      <svg className="logo-mark" viewBox="0 0 44 20" aria-hidden>
+        <path d="M10 2.5 19 18H1z" fill="currentColor" />
+        <circle cx="33" cy="10.5" r="7.5" fill="currentColor" />
+      </svg>
+      Couch
+    </div>
+  );
 }

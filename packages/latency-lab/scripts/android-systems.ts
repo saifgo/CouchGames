@@ -24,7 +24,7 @@ for (const [sys, file] of games) {
   const size = statSync(`${repo}test-roms/${sys}/${file}`).size;
   const id = createHash('sha1').update(`${sys}/${file}/${size}`).digest('hex').slice(0, 12);
   adb('logcat', '-c');
-  adb('shell', 'am', 'start', '-S', '-a', 'android.intent.action.VIEW', '-d', `couch://game/${id}`, '-n', 'app.couch.tv/.MainActivity');
+  adb('shell', 'am', 'start', '-S', '-a', 'android.intent.action.VIEW', '-d', `couch://game/${id}`, '-n', 'com.tunisolutions.couch/app.couch.tv.MainActivity');
   process.stdout.write(`${sys.padEnd(8)} ${file.padEnd(26)} `);
   await new Promise((r) => setTimeout(r, 45_000)); // core download + boot + two 5 s fps windows
   const log = adb('logcat', '-d', '-s', 'Couch', 'libretrodroid', 'AndroidRuntime');
@@ -39,4 +39,4 @@ for (const [sys, file] of games) {
 }
 const model = adb('shell', 'getprop', 'ro.product.model').trim();
 writeFileSync(`${repo}packages/latency-lab/results/android-systems-${model}.json`, JSON.stringify({ date: new Date().toISOString(), model, results }, null, 1));
-adb('shell', 'am', 'force-stop', 'app.couch.tv');
+adb('shell', 'am', 'force-stop', 'com.tunisolutions.couch');

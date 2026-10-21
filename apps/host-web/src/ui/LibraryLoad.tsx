@@ -4,6 +4,7 @@
  */
 import { getSystem } from '@couch/systems';
 import type { LibraryProgress } from '../library/library.js';
+import { Icon } from './common.js';
 
 const names = (p: LibraryProgress) => p.loading.map((id) => getSystem(id)?.shortName ?? id).join(', ');
 
@@ -13,8 +14,8 @@ export function RefreshButton({ progress, libraryAt, onRefresh }: { progress: Li
     const pct = Math.round((progress.done / Math.max(1, progress.total)) * 100);
     const label = finished
       ? progress.failed.length
-        ? `⚠ ${progress.failed.length} console${progress.failed.length > 1 ? 's' : ''} failed`
-        : '✓ Library up to date'
+        ? `${progress.failed.length} console${progress.failed.length > 1 ? 's' : ''} failed`
+        : 'Library up to date'
       : `Loading ${names(progress) || 'library'}… ${progress.done}/${progress.total}`;
     return (
       <span className={`add lib-progress${finished ? ' finished' : ''}`} role="status" aria-live="polite">
@@ -28,7 +29,7 @@ export function RefreshButton({ progress, libraryAt, onRefresh }: { progress: Li
   }
   return (
     <button className="add" data-nav onClick={onRefresh} title={libraryAt ? `Library loaded ${new Date(libraryAt).toLocaleString()}. Press to check the server for new games.` : undefined}>
-      ⟳ Refresh{libraryAt ? <small className="lib-age"> · {age(libraryAt)}</small> : null}
+      <Icon name="refresh" /> Refresh{libraryAt ? <small className="lib-age"> · {age(libraryAt)}</small> : null}
     </button>
   );
 }

@@ -145,3 +145,20 @@ describe('library API', () => {
     expect((await (await fetch(`${srv.url}/api/library`)).json() as Lib).roms).toHaveLength(3);
   });
 });
+
+describe('static pages', () => {
+  it('serves /privacy from privacy.html and keeps the SPA fallback', async () => {
+    const web = mkdtempSync(join(tmpdir(), 'couch-web-'));
+    writeFileSync(join(web, 'index.html'), 'app');
+    writeFileSync(join(web, 'privacy.html'), 'policy');
+    const s = await startCouchServer({ port: 0, host: '127.0.0.1', log: () => {}, static: [{ prefix: '/', dir: web, spa: true }] });
+    try {
+      expect(await (await fetch(`${s.url}/privacy`)).text()).toBe('policy');
+      expect(await (await fetch(`${s.url}/privacy.html`)).text()).toBe('policy');
+      expect(await (await fetch(`${s.url}/`)).text()).toBe('app');
+      expect(await (await fetch(`${s.url}/lobby`)).text()).toBe('app');
+    } finally {
+      await s.close();
+    }
+  });
+});

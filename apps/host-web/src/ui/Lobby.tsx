@@ -2,29 +2,24 @@ import { PLAYER_COLORS } from '@couch/protocol';
 import type { SessionView } from '../net/host-session.js';
 import { DeviceIcon, QR, quality } from './common.js';
 
-/** Join panel: QR + room code + player slots, under the game details on the home screen. */
+/**
+ * Join panel on the home screen: a QR code big enough to scan from the sofa, the room code and
+ * address for typing it in, then the player slots. No labels: the code and the address explain themselves.
+ */
 export function Lobby({ view, joinUrl, maxPlayers, compact = false }: { view: SessionView; joinUrl: string | null; maxPlayers: number; compact?: boolean }) {
   const slots = Array.from({ length: maxPlayers }, (_, i) => view.players.find((p) => p.slot === i) ?? null);
   const joined = view.players.length;
+  const address = joinUrl ? joinUrl.replace(/^https?:\/\//, '').replace(/\?r=.*/, '') : null;
   return (
-    <aside className={`lobby ${compact ? 'compact' : ''}`}>
-      <div className="lobby-head">
-        <span className="lobby-live" />
-        <b>{joined ? `${joined}/${maxPlayers} players ready` : 'Scan to join'}</b>
+    <section className={`lobby ${compact ? 'compact' : ''}`} aria-label="Join with your phone">
+      <h2 className="lobby-head">{joined ? `${joined} of ${maxPlayers} players in` : 'Scan to join'}</h2>
+      <div className="lobby-qr">{joinUrl ? <QR text={joinUrl} /> : <div className="qr placeholder">Starting…</div>}</div>
+      <div className="lobby-code">
+        <span className="code">{view.room ?? '····'}</span>
       </div>
-      <div className="lobby-main">
-        <div className="lobby-qr">
-          {joinUrl ? <QR text={joinUrl} size={compact ? 116 : 164} /> : <div className="qr placeholder">…</div>}
-        </div>
-        <div className="lobby-code">
-          <small>Scan with your phone or open</small>
-          <div className="lobby-url">{joinUrl ? joinUrl.replace(/^https?:\/\//, '').replace(/\?r=.*/, '') : 'starting…'}</div>
-          <small>room code</small>
-          <div className="code">{view.room ?? '····'}</div>
-          {view.state !== 'open' && <div className="lobby-state">{view.state === 'reconnecting' ? 'Reconnecting to server…' : 'Starting…'}</div>}
-        </div>
-      </div>
-      <div className="slots">
+      <div className="lobby-url">{address ?? ' '}</div>
+      {view.state !== 'open' && <div className="lobby-state">{view.state === 'reconnecting' ? 'Reconnecting to the server…' : 'Starting…'}</div>}
+      <div className={`slots ${maxPlayers > 4 ? 'many' : ''}`}>
         {slots.map((p, i) => (
           <div
             key={i}
@@ -38,6 +33,6 @@ export function Lobby({ view, joinUrl, maxPlayers, compact = false }: { view: Se
           </div>
         ))}
       </div>
-    </aside>
+    </section>
   );
 }

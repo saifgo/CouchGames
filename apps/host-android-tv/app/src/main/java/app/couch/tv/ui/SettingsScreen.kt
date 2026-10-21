@@ -30,6 +30,8 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.Text
 import app.couch.tv.CouchApp
+import app.couch.tv.ProRules
+import androidx.compose.runtime.collectAsState
 import app.couch.tv.library.RemoteLibrary
 import kotlinx.coroutines.launch
 import app.couch.tv.library.ServerState
@@ -49,8 +51,19 @@ private val TV_NAMES = listOf("Living room", "Bedroom", "Game room", "Couch")
 private val TIER_LABELS = listOf("Auto", "1 · 8-bit", "2 · 16-bit", "3 · +PS1", "4 · +N64/PSP/NDS", "5 · +PS2")
 
 @Composable
-fun SettingsScreen(app: CouchApp, server: ServerState?, onServerChanged: () -> Unit, onRemeasure: () -> Unit, onClose: () -> Unit) {
+fun SettingsScreen(
+    app: CouchApp,
+    server: ServerState?,
+    onServerChanged: () -> Unit,
+    onRemeasure: () -> Unit,
+    onPro: (String?) -> Unit,
+    onAddFolder: () -> Unit,
+    onFoldersChanged: () -> Unit,
+    onClose: () -> Unit,
+) {
     val s = app.settings
+    val isPro by app.pro.active.collectAsState()
+    val price by app.pro.price.collectAsState()
     var version by remember { mutableIntStateOf(0) } // bump to recompose after a change
     val first = remember { FocusRequester() }
     var editServer by remember { mutableStateOf(false) }
@@ -66,7 +79,7 @@ fun SettingsScreen(app: CouchApp, server: ServerState?, onServerChanged: () -> U
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(label, fontSize = 18.sp)
-                    if (hint != null) Text(hint, fontSize = 13.sp, color = Muted)
+                    if (hint != null) Text(hint, fontSize = 15.sp, lineHeight = 20.sp, color = androidx.tv.material3.LocalContentColor.current.copy(alpha = .72f))
                 }
                 Text(value, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
@@ -79,23 +92,50 @@ fun SettingsScreen(app: CouchApp, server: ServerState?, onServerChanged: () -> U
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item(version) { Text("Settings", fontSize = 32.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp)) }
+            item("${version}pro$isPro") {
+                Row2(
+                    "Couch Pro",
+                    if (isPro) "On" else price ?: "Upgrade",
+                    if (isPro) "Up to 8 players, every console, 4 save slots, Couch server library" else "One purchase: up to 8 players, every console, more save slots, Couch server library",
+                    focus = true,
+                ) { onPro(null) }
+            }
+            if (app.pro.debuggable) item("${version}prodebug$isPro") {
+                Row2("Pro test switch (debug build)", if (s.proDebug) "On" else "Off", "Turns Pro on without buying. Release builds don't have this row") { app.pro.setDebug(!s.proDebug) }
+            }
             item(version + 1) {
-                Row2("TV name", s.hostName, "Shown on phones", focus = true) {
+                Row2("TV name", s.hostName, "Shown on phones") {
                     s.hostName = TV_NAMES[(TV_NAMES.indexOf(s.hostName) + 1) % TV_NAMES.size]
                     app.session.hostName = s.hostName
                 }
+            }
+            for (tree in app.library.folders.list()) {
+                item("${version}folder$tree") {
+                    Row2("Game folder", "Remove", app.library.folders.label(tree)) {
+                        app.library.folders.remove(tree)
+                        onFoldersChanged()
+                    }
+                }
+            }
+            item("${version}addfolder") {
+                Row2("Add game folder", "Add", "Pick a roms folder (with nes/, snes/… inside) on a USB drive or this TV") { onAddFolder() }
             }
             item("${version}server") {
                 Row2(
                     "Couch server",
                     s.serverUrl.ifEmpty { "Off" },
-                    server?.detail ?: "Also show the games of a Couch server (its roms/ folder or S3 bucket). Select to set the address.",
-                ) { editServer = true }
+                    if (!isPro) "Couch Pro: also show the games of a Couch server (its roms/ folder or S3 bucket)"
+                    else server?.detail ?: "Also show the games of a Couch server (its roms/ folder or S3 bucket). Select to set the address.",
+                ) { if (isPro) editServer = true else onPro("Games from a Couch server need Couch Pro") }
             }
-            item(version + 2) {
-                Row2("Players", "${s.maxPlayers}") {
-                    s.maxPlayers = if (s.maxPlayers == 4) 8 else 4
-                    app.session.maxPlayers = s.maxPlayers
+            item("${version}players$isPro") {
+                if (isPro) {
+                    Row2("Players", "${s.maxPlayers}") {
+                        s.maxPlayers = if (s.maxPlayers == 4) 8 else 4
+                        app.session.maxPlayers = app.players
+                    }
+                } else {
+                    Row2("Players", "${ProRules.FREE_PLAYERS}", "Couch Pro: up to 8") { onPro("More than ${ProRules.FREE_PLAYERS} players need Couch Pro") }
                 }
             }
             item(version + 3) {
@@ -121,11 +161,11 @@ fun SettingsScreen(app: CouchApp, server: ServerState?, onServerChanged: () -> U
                     "Per-session lag summaries, no names, stored on this device · ${history.size} sessions" + (last?.let { " · last p95 $it ms" } ?: ""),
                 ) { s.telemetry = !s.telemetry }
             }
-            item(version + 9) { Row2("Show the welcome tips again", "›", "Crash reports on this device: ${app.diagnostics.crashCount()}") { s.onboardingDone = false } }
+            item(version + 9) { Row2("Show the welcome tips again", "Show", "Crash reports on this device: ${app.diagnostics.crashCount()}") { s.onboardingDone = false } }
             for (sys in Systems.all.filter { it.android.cores.size > 1 }) {
                 item("${version}core${sys.id}") {
                     val current = s.core(sys.id)?.takeIf { it in sys.android.cores } ?: sys.android.cores.first()
-                    val installed = if (app.cores.installed(current)) "installed" else "downloads on first use"
+                    val installed = if (app.cores.installed(current)) "ready" else "not available on this device"
                     Row2("${sys.shortName} core", current, installed) {
                         s.setCore(sys.id, sys.android.cores[(sys.android.cores.indexOf(current) + 1) % sys.android.cores.size])
                     }
@@ -135,7 +175,7 @@ fun SettingsScreen(app: CouchApp, server: ServerState?, onServerChanged: () -> U
                 Column(Modifier.padding(top = 12.dp)) {
                     Text("About", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Text(
-                        "Couch is free software (GPL-3.0-or-later). Emulator cores are separate programs from the libretro project, downloaded on first use with their own licences; snes9x and Genesis Plus GX are non-commercial. Your ROMs and BIOS files stay on this device.",
+                        "Couch is free software (GPL-3.0-or-later); the source is available on request. Emulator cores are separate programs from the libretro project, included with the app under their own licences (all allow commercial use). Couch includes no games: play the ones you own. Your ROMs and BIOS files stay on this device.",
                         color = Muted,
                         fontSize = 14.sp,
                     )

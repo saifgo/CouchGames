@@ -6,7 +6,7 @@ import { onNav, PhoneNavigator } from './focus/focus.js';
 import { loadHostSettings, saveHostSettings, systemAvailability, type HostSettings } from './host-settings.js';
 import { cachedServerLibrary, importLocalFiles, loadLocalGames, loadServerLibrary, type Game, type LibraryProgress } from './library/library.js';
 import { HostSession, type SessionView } from './net/host-session.js';
-import { Modal } from './ui/common.js';
+import { Logo, Modal } from './ui/common.js';
 import { GameDetail } from './ui/GameDetail.js';
 import { Home } from './ui/Home.js';
 import { Player } from './ui/Player.js';
@@ -33,9 +33,7 @@ function Splash({ onStart }: { onStart: () => void }) {
   }, []);
   return (
     <button className="splash" onClick={onStart} autoFocus>
-      <div className="logo huge">
-        <span>▲●</span> Couch
-      </div>
+      <Logo className="huge" />
       <div className="splash-hint">Press any key or click to switch on</div>
     </button>
   );
@@ -68,6 +66,8 @@ function Console() {
   const [detail, setDetail] = useState<Game | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [joinBase, setJoinBase] = useState<string | null>(null);
+  /** Games from the last import: Home jumps to them and highlights them. */
+  const [justAdded, setJustAdded] = useState<{ ids: string[]; at: number } | null>(null);
   const [picker, setPicker] = useState<{ file: File; options: ConsoleId[]; resolve: (v: ConsoleId | null) => void } | null>(null);
   const routeRef = useRef(route);
   routeRef.current = route;
@@ -98,12 +98,12 @@ function Console() {
     else stopAmbient();
   }, [settings.ambientMusic, route.name]);
 
-  // Home button on the library screen opens the lobby/settings? Keep it simple: focus the hero.
+  // Home button on the library screen jumps back to the covers.
   useEffect(
     () =>
       onNav((a) => {
         if (a === 'menu' && routeRef.current.name === 'home') {
-          document.querySelector<HTMLElement>('.hero [data-nav]')?.focus();
+          document.querySelector<HTMLElement>('.home .card')?.focus();
           return true;
         }
         return false;
@@ -126,7 +126,9 @@ function Console() {
 
   const onImport = async (files: File[]) => {
     const added = await importLocalFiles(files, (file, options) => new Promise((resolve) => setPicker({ file, options, resolve })));
-    if (added.length) setLocalGames(await loadLocalGames());
+    if (!added.length) return;
+    setLocalGames(await loadLocalGames());
+    setJustAdded({ ids: added.map((g) => g.id), at: Date.now() });
   };
 
   if (route.name === 'playing') {
@@ -157,6 +159,7 @@ function Console() {
         onOpen={setDetail}
         onSettings={() => setShowSettings(true)}
         onImport={(f) => void onImport(f)}
+        justAdded={justAdded}
         progress={progress}
         libraryAt={libraryAt}
         onRefresh={() => void refreshServer(true)}
@@ -198,17 +201,17 @@ function Console() {
 /** First-run tips (M6 onboarding). */
 function Onboarding({ joinUrl, onDone }: { joinUrl: string | null; onDone: () => void }) {
   const steps = [
-    ['🎮', 'Add your games', 'Put your own ROM files in roms/<system>/ next to the server (e.g. roms/snes/), or drop files on this screen. Run pnpm test-roms for free homebrew.'],
-    ['📱', 'Phones are the controllers', `Scan the QR code with each phone — no app to install. Up to 4 players (8 in Settings).${joinUrl ? ` Or open ${joinUrl.replace(/\?r=.*/, '')}` : ''}`],
-    ['🏠', 'Home button = menu', 'In a game, press Home on your phone for save states, controller swaps and quit. Triple-tap your player badge on the phone for latency stats.'],
+    ['Add your games', 'Put your own ROM files in roms/<system>/ next to the server (e.g. roms/snes/), or drop files on this screen. Run pnpm test-roms for free homebrew.'],
+    ['Phones are the controllers', `Scan the QR code with each phone — no app to install. Up to 4 players (8 in Settings).${joinUrl ? ` Or open ${joinUrl.replace(/\?r=.*/, '')}` : ''}`],
+    ['Home opens the menu', 'In a game, press Home on your phone for save states, controller swaps and quit. Triple-tap your player badge on the phone for latency stats.'],
   ];
   return (
     <Modal onClose={onDone} className="onboarding">
       <h1>Welcome to Couch</h1>
       <div className="onboarding-steps">
-        {steps.map(([icon, title, text]) => (
+        {steps.map(([title, text], i) => (
           <div key={title} className="onboarding-step">
-            <div className="onboarding-icon">{icon}</div>
+            <span className="onboarding-num">{i + 1}</span>
             <h2>{title}</h2>
             <p>{text}</p>
           </div>

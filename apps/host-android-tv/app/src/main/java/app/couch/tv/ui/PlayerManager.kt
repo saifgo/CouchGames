@@ -102,11 +102,11 @@ fun PlayerManager(
                 val takeFocus = !focusGiven
                 focusGiven = true
                 ManagerButton(focus = if (takeFocus) first else null, onClick = { onSwap(pick.slot, i); picked = null }) {
-                    Text(if (other != null) "⇄  Swap with P${i + 1} · ${other.name}" else "→  Move to P${i + 1} (empty)", fontSize = 17.sp)
+                    Text(if (other != null) "Swap with P${i + 1} · ${other.name}" else "Move to P${i + 1} (empty)", fontSize = 17.sp)
                 }
             }
             ManagerButton(focus = if (!focusGiven) first else null, onClick = { onRemove(pick.slot); picked = null }) {
-                Text("✕  Remove ${pick.name} from the game", fontSize = 17.sp, color = Bad)
+                Text("Remove ${pick.name} from the game", fontSize = 17.sp, color = Bad)
             }
             ManagerButton(onClick = { picked = null }) { Text("Cancel", fontSize = 17.sp) }
         }

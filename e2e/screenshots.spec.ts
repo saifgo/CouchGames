@@ -2,8 +2,8 @@ import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 
-/** Not a test: renders TV + phone screenshots into docs/img/ for review. Run with SHOTS=1. */
-const out = fileURLToPath(new URL('../docs/img/', import.meta.url));
+/** Not a test: renders TV + phone screenshots into docs/img/ (or SHOTS_DIR) for review. Run with SHOTS=1. */
+const out = process.env.SHOTS_DIR ? `${process.env.SHOTS_DIR.replace(/[/]?$/, '/')}` : fileURLToPath(new URL('../docs/img/', import.meta.url));
 test.skip(!process.env.SHOTS, 'set SHOTS=1');
 
 test('screenshots', async ({ browser }) => {

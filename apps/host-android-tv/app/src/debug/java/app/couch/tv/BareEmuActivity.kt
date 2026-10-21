@@ -12,7 +12,7 @@ class BareEmuActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val app = application as CouchApp
         val data = GLRetroViewData(this).apply {
-            coreFilePath = app.cores.path(intent.getStringExtra("core")!!)
+            coreFilePath = app.cores.ensure(intent.getStringExtra("core")!!)
             gameFilePath = intent.getStringExtra("rom")
             systemDirectory = app.library.systemDir().absolutePath
             savesDirectory = filesDir.absolutePath

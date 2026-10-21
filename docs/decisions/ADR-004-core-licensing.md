@@ -1,6 +1,6 @@
 # ADR-004: Core licensing
 
-- Status: **Accepted** (2026-10-16)
+- Status: **Accepted** (2026-10-16). The monetisation condition was triggered on 2026-10-19 and the Android defaults were switched (ADR-005)
 - Owner input: the project is **free / open source** (GPL-3.0-or-later) and not monetised. The owner explicitly accepted non-commercial cores under that condition.
 - Full table: `docs/LICENSES.md`
 
@@ -37,6 +37,15 @@ We ship or download one libretro core per system. Some popular cores use a sourc
   - Settings → Cores lets the user pick bsnes / clownmdemu instead. `@couch/systems` lists both, preferred first.
 - **If the project is ever monetised** (ads, paid app, store fees, donations tied to features), the defaults must switch to the GPL alternatives first. That's an owner decision, recorded in `docs/DEVIATIONS.md`.
 - Each downloaded core keeps its own licence file next to the binary (`*_LICENSE.txt` on web; the Android download screen shows it too).
+
+## Update 2026-10-19: Android cores are bundled
+
+Google Play's Device and Network Abuse policy forbids downloading executable code from outside Play, so the
+Android app now bundles every catalog core (defaults and alternatives) as native libraries instead of
+downloading them on first use. This is only possible because ADR-005 already removed the non-commercial cores
+from the Android catalog: everything bundled is GPL-2.0/GPL-3.0/AGPL-3.0/MPL-2.0/BSD (see `docs/LICENSES.md`).
+The GPL-2.0-only cores stay separate `.so` programs that talk to Couch over the libretro API. Cost: about
+25–30 MB more per device download. The web host is unchanged: it still fetches cores at setup time.
 
 ## Consequences
 

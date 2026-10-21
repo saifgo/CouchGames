@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
@@ -64,8 +65,9 @@ fun Art(
     pixelated: Boolean = false,
 ) {
     val url = if (online) thumbnailUrl(game, kind) else null
+    val contain = kind != "Named_Boxarts"
     if (url == null) {
-        GeneratedArt(game, modifier, shape)
+        DefaultCover(game, modifier, shape, contain)
         return
     }
     SubcomposeAsyncImage(
@@ -74,8 +76,8 @@ fun Art(
         contentScale = ContentScale.Crop,
         filterQuality = if (pixelated) FilterQuality.None else FilterQuality.Low,
         modifier = modifier.clip(shape),
-        loading = { GeneratedArt(game, Modifier.fillMaxSize(), shape) },
-        error = { GeneratedArt(game, Modifier.fillMaxSize(), shape) },
+        loading = { DefaultCover(game, Modifier.fillMaxSize(), shape, contain) },
+        error = { DefaultCover(game, Modifier.fillMaxSize(), shape, contain) },
     )
 }
 
@@ -84,11 +86,13 @@ data class HomeRow(
     val key: String,
     /** Short name on the wheel. */
     val label: String,
-    /** Full name for the header. */
+    /** Full name (logo description). */
     val title: String,
     val sub: String,
     val accent: Color?,
     val games: List<Game>,
+    /** Its games need Couch Pro: the wheel stop shows a lock. */
+    val locked: Boolean = false,
 )
 
 /**
@@ -104,6 +108,7 @@ fun HomeScreen(
     view: SessionView,
     joinUrl: String?,
     maxPlayers: Int,
+    free: Boolean,
     onlineArt: Boolean,
     recents: List<String>,
     favourites: Set<String>,
@@ -114,6 +119,10 @@ fun HomeScreen(
     onServer: () -> Unit,
     onRefresh: () -> Unit,
     onPlayers: () -> Unit,
+    /** A dialog is on top. When it closes, focus goes back to the covers (not wherever it fell). */
+    overlayOpen: Boolean = false,
+    /** Games found in a folder the user just added, with when (a new value triggers the jump). */
+    justAdded: Pair<Long, List<Game>>? = null,
 ) {
     var platformKey by rememberSaveable { mutableStateOf("all") }
     var focusedId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -124,31 +133,40 @@ fun HomeScreen(
     val target = sys?.accent?.let(::hexColor) ?: platform?.accent ?: Accent
     val accent by animateColorAsState(target, tween(600), label = "sys")
     val firstCard = remember { FocusRequester() }
+    // Set when a cover gains focus, so the start-up focus request knows it has landed.
+    val coverFocused = remember { mutableStateOf(false) }
+    // After adding games: their console is opened, the first one focused, and a banner says so.
+    var addedText by remember { mutableStateOf<String?>(null) }
+    var addedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var jump by remember { mutableStateOf(0) }
+
+    // Remote vs game controller: a controller that pressed a button has joined as a TV player.
+    val gamepad = view.players.any { it.local }
+    val slotsOpen = view.players.size < maxPlayers
 
     Box(Modifier.fillMaxSize()) {
         Backdrop(game, onlineArt, accent)
+        // Text and controls stay inside the TV overscan margins (SafeX / SafeY); the wheels and
+        // the hint bar's background run to the edges.
         Column(Modifier.fillMaxSize()) {
-            TopBar(
-                title = platform?.title ?: "Couch",
-                position = if (game != null) "${games.indexOf(game) + 1} / ${games.size}" else "0 / 0",
-                view = view,
-                accent = accent,
-                onSettings = onSettings,
-            )
+            TopBar(onSettings = onSettings)
             Row(
-                Modifier.weight(1f).fillMaxWidth().padding(start = 28.dp, end = 28.dp, top = 4.dp, bottom = 10.dp),
+                Modifier.weight(1f).fillMaxWidth().padding(start = SafeX, end = SafeX, top = 4.dp, bottom = 10.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Preview(game, onlineArt, accent, Modifier.weight(1f).fillMaxHeight(), loading = serverLoad)
+                Preview(
+                    game, onlineArt, accent, Modifier.weight(1f).fillMaxHeight(),
+                    loading = serverLoad, needsStoragePermission = needsStoragePermission,
+                )
                 Details(
                     game = game,
-                    recentIndex = game?.let { recents.indexOf(it.id) } ?: -1,
                     favourite = game?.id in favourites,
-                    needsStoragePermission = needsStoragePermission,
+                    gamepad = gamepad,
                     accent = accent,
-                    modifier = Modifier.width(270.dp).fillMaxHeight(),
+                    modifier = Modifier.width(200.dp).fillMaxHeight(),
                 )
-                PlayersPanel(view, joinUrl, maxPlayers, accent, Modifier.width(250.dp).fillMaxHeight())
+                // The join panel gets the width: its QR code has to scan from the sofa.
+                PlayersPanel(view, joinUrl, maxPlayers, accent, Modifier.width(350.dp).fillMaxHeight(), free)
             }
             PlatformWheel(rows, platform?.key, accent) { key ->
                 if (key != platformKey) {
@@ -164,12 +182,58 @@ fun HomeScreen(
                 accent = accent,
                 firstCard = firstCard,
                 needsStoragePermission = needsStoragePermission,
-                onFocus = { focusedId = it.id },
+                onFocus = { focusedId = it.id; coverFocused.value = true },
                 onOpen = onOpen,
                 onEmpty = if (needsStoragePermission) onGrantStorage else onRefresh,
+                jump = jump,
+                newIds = addedIds,
             )
-            Hints(hiddenCount, needsStoragePermission, accent, view, server, serverLoad, onGrantStorage, onServer, onRefresh, onPlayers)
+            Hints(
+                hiddenCount, needsStoragePermission, accent, view, server, serverLoad, onGrantStorage, onServer, onRefresh, onPlayers,
+                gamepad = gamepad, slotsOpen = slotsOpen,
+            )
+        }
+        addedText?.let { AddedBanner(it, accent, Modifier.align(Alignment.TopCenter).padding(top = 64.dp)) }
+    }
+    LaunchedEffect(justAdded?.first) {
+        val fresh = justAdded?.second ?: return@LaunchedEffect
+        val ids = fresh.mapTo(HashSet()) { it.id }
+        // "All Games" is sorted by title, so this is the first new game in wheel order.
+        val shown = rows.firstOrNull { it.key == "all" }?.games.orEmpty().filter { it.id in ids }
+        val first = shown.firstOrNull()
+        val what = if (fresh.size == 1) "\"${fresh[0].title}\"" else "${fresh.size} games"
+        addedIds = ids
+        addedText = if (first != null) {
+            val oneSystem = shown.all { it.system == first.system }
+            platformKey = if (oneSystem) first.system else "all"
+            focusedId = first.id
+            jump++
+            "Added $what to ${if (oneSystem) app.couch.tv.library.Systems.byId(first.system)?.name ?: "your library" else "your library"}"
+        } else {
+            "Added $what, but ${if (fresh.size == 1) "its system is" else "their systems are"} hidden on this TV (see Settings)"
+        }
+        if (first != null) {
+            // Let the wheel recompose on the new console first, so the request lands on the new cover.
+            coverFocused.value = false
+            for (i in 0 until 40) {
+                kotlinx.coroutines.delay(50)
+                runCatching { firstCard.requestFocus() }
+                if (coverFocused.value && focusedId == first.id) break
+            }
+        }
+        kotlinx.coroutines.delay(4500)
+        addedText = null
+        addedIds = emptySet()
+    }
+    LaunchedEffect(rows.isNotEmpty(), overlayOpen) {
+        if (overlayOpen) return@LaunchedEffect
+        // The cover row may not be laid out on the first frames; keep trying briefly so the
+        // remote starts on the games, not on whatever took focus first (the Settings button).
+        coverFocused.value = false
+        repeat(40) {
+            runCatching { firstCard.requestFocus() }
+            kotlinx.coroutines.delay(50)
+            if (coverFocused.value) return@LaunchedEffect
         }
     }
-    LaunchedEffect(rows.isNotEmpty()) { runCatching { firstCard.requestFocus() } }
 }

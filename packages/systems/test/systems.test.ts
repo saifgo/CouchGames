@@ -8,6 +8,15 @@ describe('system catalog', () => {
     for (const c of CONSOLES) expect(SYSTEM_BY_ID[c].id).toBe(c);
   });
 
+  it('ships no non-commercial cores on Android (the app is sold: ADR-004)', () => {
+    const nonCommercial = ['snes9x', 'snes9x2010', 'genesis_plus_gx', 'genesis_plus_gx_wide', 'picodrive'];
+    for (const s of SYSTEMS) {
+      const cores = [...s.android.cores, ...Object.values(s.android.byExtension ?? {}).flat()];
+      for (const c of cores) expect(nonCommercial, `${s.id}: ${c}`).not.toContain(c);
+      for (const e of Object.keys(s.android.byExtension ?? {})) expect(s.extensions).toContain(e);
+    }
+  });
+
   it('uses lower-case dotted extensions', () => {
     for (const s of SYSTEMS) for (const e of s.extensions) expect(e).toMatch(/^\.[a-z0-9]+$/);
   });

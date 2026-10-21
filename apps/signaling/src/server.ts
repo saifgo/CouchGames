@@ -282,7 +282,13 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
         const rel = path.slice(prefix.length) || 'index.html';
         const st = await m.store.stat(rel);
         if (st) return sendFile(req, res, m.store, rel, st);
-        if (m.spa && !extname(rel)) return sendFile(req, res, m.store, 'index.html');
+        if (!extname(rel)) {
+          // Clean URLs for static pages: /privacy serves privacy.html (Play Store legal pages).
+          const page = `${rel.replace(/\/+$/, '')}.html`;
+          const pageSt = rel ? await m.store.stat(page) : null;
+          if (pageSt) return sendFile(req, res, m.store, page, pageSt);
+          if (m.spa) return sendFile(req, res, m.store, 'index.html');
+        }
         return notFound(res);
       }
       notFound(res);

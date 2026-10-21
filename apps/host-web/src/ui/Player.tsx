@@ -4,7 +4,7 @@ import { getSystem } from '@couch/systems';
 import { Engine } from '../engine/engine.js';
 import { onNav } from '../focus/focus.js';
 import { coreFor, type HostSettings } from '../host-settings.js';
-import { biosFiles, gameFiles, listSaves, readSave, touchRecent, writeSave, type Game, type SaveSlot } from '../library/library.js';
+import { biosFiles, gameFiles, listSaves, type DownloadProgress, readSave, touchRecent, writeSave, type Game, type SaveSlot } from '../library/library.js';
 import type { HostSession, SessionView } from '../net/host-session.js';
 import { PlayerChip } from './common.js';
 
@@ -25,6 +25,8 @@ export function Player({ game, resume, settings, session, view, onExit, setNavEn
   const engineRef = useRef<Engine | null>(null);
   const [status, setStatus] = useState<'loading' | 'running' | 'error'>('loading');
   const [error, setError] = useState('');
+  /** Server game download (roms/ folder or S3); null when not downloading. */
+  const [download, setDownload] = useState<DownloadProgress | null>(null);
   const [menu, setMenu] = useState<MenuPage | null>(null);
   const [saves, setSaves] = useState<SaveSlot[]>([]);
   const [overlay, setOverlay] = useState(settings.latencyOverlay);
@@ -48,9 +50,23 @@ export function Player({ game, resume, settings, session, view, onExit, setNavEn
     session.setSkin(sys.skin, game.title);
     touchRecent(game.id);
     setNavEnabled(false);
+    const abort = new AbortController();
     (async () => {
       try {
-        const files = await gameFiles(game);
+        let last = 0;
+        const files = await gameFiles(
+          game,
+          (p) => {
+            // Re-render at most ~10×/s; always show the first and last update.
+            const now = performance.now();
+            if (now - last < 100 && p.loaded < p.total && p.loaded > 0) return;
+            last = now;
+            if (alive) setDownload(p);
+          },
+          abort.signal,
+        );
+        if (!alive) return;
+        setDownload(null);
         const bios = await biosFiles(game.system);
         const auto = resume ? await readSave(game.id, 'auto') : undefined;
         const engine = new Engine({
@@ -85,6 +101,7 @@ export function Player({ game, resume, settings, session, view, onExit, setNavEn
     const startedAt = Date.now();
     return () => {
       alive = false;
+      abort.abort();
       if (settings.telemetry && Date.now() - startedAt > 30_000) sendTelemetry(game, sys.id, coreFor(sys, settings), Date.now() - startedAt, viewRef.current);
       void engineRef.current?.exit();
       engineRef.current = null;
@@ -235,9 +252,22 @@ export function Player({ game, resume, settings, session, view, onExit, setNavEn
   return (
     <div className="player">
       <div className="stage" ref={stageRef} />
-      {status === 'loading' && (
+      {status === 'loading' && download && (
         <div className="loading">
-          <div className="spinner" />
+          <div>
+            Downloading {game.title} · {sys.name}
+          </div>
+          <div className="download-bar">
+            <span style={download.total ? { width: `${Math.min(100, (download.loaded / download.total) * 100)}%` } : undefined} className={download.total ? '' : 'indeterminate'} />
+          </div>
+          <div className="download-info">
+            {download.total ? `${Math.floor((download.loaded / download.total) * 100)} % · ${mb(download.loaded)} of ${mb(download.total)}` : mb(download.loaded)}
+          </div>
+        </div>
+      )}
+      {status === 'loading' && !download && (
+        <div className="loading">
+          <div className="spinner big" />
           <div>
             Starting {game.title} · {sys.name}
           </div>
@@ -280,7 +310,7 @@ export function Player({ game, resume, settings, session, view, onExit, setNavEn
           {menu === 'main' && (
             <div className="menu-list">
               <button data-nav data-nav-default onClick={closeMenu}>
-                ▶ Resume
+                Resume
               </button>
               <button data-nav onClick={() => setMenu('save')}>
                 Save state
@@ -426,3 +456,4 @@ function SaveThumb({ blob }: { blob: Blob }) {
 }
 
 const fmt = (n: number) => (Number.isFinite(n) ? n.toFixed(1) : '–');
+const mb = (bytes: number) => `${(bytes / 1048576).toFixed(bytes < 10 * 1048576 ? 1 : 0)} MB`;

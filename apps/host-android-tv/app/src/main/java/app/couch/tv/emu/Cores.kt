@@ -1,77 +1,47 @@
 package app.couch.tv.emu
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.os.Build
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
-import java.util.zip.ZipInputStream
 
 /**
- * Downloads libretro cores on first use (ADR-004: cores are separate programs,
- * never packaged in the APK) from the libretro buildbot into app storage.
- * A core can also be side-loaded: put `<core>_libretro_android.so` in
- * Android/data/app.couch.tv/files/cores/.
+ * Emulator cores ship inside the app as native libraries (Google Play does not allow downloading
+ * executable code). The build bundles every core in the systems catalog (see `fetchCores` in
+ * app/build.gradle.kts) and the installer extracts them to [ApplicationInfo.nativeLibraryDir].
+ *
+ * Debug builds can also load a side-loaded core from Android/data/<package>/files/cores/ to try
+ * a newer build without reinstalling.
  */
 class Cores(private val context: Context) {
-    private val dir = File(context.filesDir, "cores").apply { mkdirs() }
+    private val nativeDir = File(context.applicationInfo.nativeLibraryDir)
+    private val debuggable = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
     private val sideload = File(context.getExternalFilesDir(null), "cores")
+    private val sideloadCopy = File(context.filesDir, "cores-sideload")
 
-    val abi: String = Build.SUPPORTED_ABIS.firstOrNull { it in setOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86") } ?: "arm64-v8a"
+    val abi: String = Build.SUPPORTED_ABIS.firstOrNull { it in setOf("arm64-v8a", "armeabi-v7a", "x86_64") } ?: "arm64-v8a"
 
-    fun file(core: String) = File(dir, "${core}_libretro_android.so")
-
-    fun installed(core: String): Boolean = file(core).length() > 0 || File(sideload, "${core}_libretro_android.so").exists()
-
-    /** Path for LibretroDroid; copies a side-loaded core into private storage (it must be executable there). */
-    fun path(core: String): String {
-        val side = File(sideload, "${core}_libretro_android.so")
-        if (side.exists() && side.length() != file(core).length()) side.copyTo(file(core), overwrite = true)
-        return file(core).absolutePath
+    init {
+        // Older versions downloaded cores into files/cores; they are bundled now: free the space.
+        Thread { File(context.filesDir, "cores").deleteRecursively() }.start()
     }
 
-    suspend fun ensure(core: String, onProgress: (Float) -> Unit = {}): String = withContext(Dispatchers.IO) {
-        if (installed(core)) return@withContext path(core)
-        val url = URL("https://buildbot.libretro.com/nightly/android/latest/$abi/${core}_libretro_android.so.zip")
-        val conn = (url.openConnection() as HttpURLConnection).apply {
-            connectTimeout = 15_000
-            readTimeout = 30_000
-        }
-        try {
-            if (conn.responseCode != 200) error("Core download failed (HTTP ${conn.responseCode}) for $core")
-            val total = conn.contentLengthLong.coerceAtLeast(1)
-            val tmp = File(dir, "${core}.download")
-            ZipInputStream(CountingStream(conn.inputStream) { onProgress((it.toFloat() / total).coerceAtMost(1f)) }).use { zip ->
-                var entry = zip.nextEntry
-                while (entry != null) {
-                    if (entry.name.endsWith(".so")) {
-                        tmp.outputStream().use { zip.copyTo(it) }
-                        break
-                    }
-                    entry = zip.nextEntry
-                }
-            }
-            check(tmp.length() > 0) { "Archive for $core contained no .so" }
-            tmp.renameTo(file(core))
-            file(core).absolutePath
-        } finally {
-            conn.disconnect()
-        }
-    }
+    private fun bundled(core: String) = File(nativeDir, "lib${core}_libretro_android.so")
 
-    fun delete(core: String) = file(core).delete()
+    private fun sideloaded(core: String) = File(sideload, "${core}_libretro_android.so").takeIf { debuggable && it.exists() }
 
-    private class CountingStream(private val inner: java.io.InputStream, private val cb: (Long) -> Unit) : java.io.InputStream() {
-        private var n = 0L
-        override fun read(): Int = inner.read().also { if (it >= 0) cb(++n) }
-        override fun read(b: ByteArray, off: Int, len: Int): Int = inner.read(b, off, len).also {
-            if (it > 0) {
-                n += it
-                cb(n)
-            }
+    fun installed(core: String): Boolean = sideloaded(core) != null || bundled(core).exists()
+
+    /** Path for LibretroDroid. Throws if this device's CPU has no build of [core]. */
+    fun ensure(core: String): String {
+        sideloaded(core)?.let { side ->
+            // Copied to private storage: files under Android/data can't be loaded as code.
+            val dst = File(sideloadCopy.apply { mkdirs() }, side.name)
+            if (side.length() != dst.length()) side.copyTo(dst, overwrite = true)
+            return dst.absolutePath
         }
-        override fun close() = inner.close()
+        val lib = bundled(core)
+        check(lib.exists()) { "The $core emulator is not available for this device ($abi)" }
+        return lib.absolutePath
     }
 }

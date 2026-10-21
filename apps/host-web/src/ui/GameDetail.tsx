@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getSystem } from '@couch/systems';
 import type { HostSettings } from '../host-settings.js';
 import { favourites, listSaves, removeLocal, toggleFavourite, type Game } from '../library/library.js';
-import { Art, Modal } from './common.js';
+import { Art, Icon, Modal } from './common.js';
 
 export function GameDetail({ game, settings, onPlay, onClose }: { game: Game; settings: HostSettings; onPlay: (resume: boolean) => void; onClose: () => void }) {
   const sys = getSystem(game.system)!;
@@ -17,28 +17,33 @@ export function GameDetail({ game, settings, onPlay, onClose }: { game: Game; se
         <Art game={game} online={settings.onlineArt} />
       </div>
       <div className="detail-info">
-        <div className="hero-system" style={{ color: sys.accent }}>
-          {sys.name}
-        </div>
         <h1>{game.title}</h1>
         <div className="detail-shot">
-          <Art game={game} online={settings.onlineArt} kind="Named_Snaps" />
+          <Art game={game} online={settings.onlineArt} kind="Named_Snaps" fallback={false} />
         </div>
         <p className="hero-meta">
-          {sys.maker} · {sys.year} · up to {sys.maxPlayers} player{sys.maxPlayers > 1 ? 's' : ''} · {(game.size / 1024 / 1024).toFixed(1)} MB ·{' '}
+          <b className="meta-system" style={{ ['--sys' as string]: sys.accent }}>
+            {sys.name}
+          </b> · {sys.maker} · {sys.year} · up to {sys.maxPlayers} player{sys.maxPlayers > 1 ? 's' : ''} · {(game.size / 1024 / 1024).toFixed(1)} MB ·{' '}
           {game.source === 'homebrew' ? 'free homebrew' : game.source === 'local' ? 'stored in this browser' : `roms/${game.system}/${game.file}`}
         </p>
         <div className="detail-actions">
           {hasAuto && (
             <button className="primary big" data-nav data-nav-default onClick={() => onPlay(true)}>
-              ▶ Continue
+              <Icon name="play" /> Continue
             </button>
           )}
           <button className={hasAuto ? 'big' : 'primary big'} data-nav data-nav-default={hasAuto ? undefined : ''} onClick={() => onPlay(false)}>
-            {hasAuto ? 'Start over' : '▶ Play'}
+            {hasAuto ? (
+              'Start over'
+            ) : (
+              <>
+                <Icon name="play" /> Play
+              </>
+            )}
           </button>
           <button data-nav onClick={() => setFav(toggleFavourite(game.id))}>
-            {fav ? '★ Favourite' : '☆ Add to favourites'}
+            <Icon name={fav ? 'starFilled' : 'star'} /> {fav ? 'Favourite' : 'Add to favourites'}
           </button>
           {game.source === 'local' && (
             <button

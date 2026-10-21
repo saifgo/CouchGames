@@ -1,6 +1,7 @@
 package app.couch.tv.ui
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,7 +17,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shape
@@ -45,7 +45,6 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
-import kotlin.math.abs
 
 val Accent = Color(0xFFFFD166)
 val Bg = Color(0xFF07090D)
@@ -69,6 +68,15 @@ fun CouchTheme(content: @Composable () -> Unit) = MaterialTheme(colorScheme = sc
     CompositionLocalProvider(LocalContentColor provides Color(0xFFEEF2F8), content = content)
 }
 
+/** True when the system "Remove animations" setting is on (animator duration scale 0). */
+@Composable
+fun rememberReduceMotion(): Boolean {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    return androidx.compose.runtime.remember {
+        android.provider.Settings.Global.getFloat(context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    }
+}
+
 fun hexColor(s: String): Color = runCatching { Color(android.graphics.Color.parseColor(s)) }.getOrDefault(Color.Gray)
 
 fun qrBitmap(text: String, size: Int = 512): ImageBitmap {
@@ -78,19 +86,27 @@ fun qrBitmap(text: String, size: Int = 512): ImageBitmap {
     return bmp.asImageBitmap()
 }
 
-/** Generated cover art in the system's colours (used when no online art is found). */
+/** Background of the default covers (packages/systems/scripts/build-covers.ts COVER_BG). */
+val CoverBg = Color(0xFF11151D)
+
+/**
+ * The console's default Couch cover (res/drawable-nodpi/cover_<system>.png, made by `pnpm covers`),
+ * used when a game has no box art. [contain] shows it whole in a 4:3 screenshot slot, centred on
+ * the cover's own background.
+ */
 @Composable
-fun GeneratedArt(game: Game, modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(14.dp)) {
-    val sys = Systems.byId(game.system)
-    val hue = (abs(game.title.hashCode()) % 360).toFloat()
-    Box(
-        modifier
-            .clip(shape)
-            .background(Brush.linearGradient(listOf(hexColor(sys?.accent ?: "#333333"), Color.hsl(hue, 0.45f, 0.22f), Bg))),
-    ) {
-        Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.SpaceBetween) {
-            Text(sys?.shortName ?: "", color = Color.White.copy(alpha = .8f), fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
-            Text(game.title, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, maxLines = 4, overflow = TextOverflow.Ellipsis)
+fun DefaultCover(game: Game, modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(14.dp), contain: Boolean = false) {
+    val cover = systemCover(game.system)
+    Box(modifier.clip(shape).background(CoverBg), contentAlignment = Alignment.Center) {
+        if (cover != null) {
+            androidx.compose.foundation.Image(
+                androidx.compose.ui.res.painterResource(cover),
+                contentDescription = null,
+                contentScale = if (contain) androidx.compose.ui.layout.ContentScale.Fit else androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Text(Systems.byId(game.system)?.shortName ?: "", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, maxLines = 1)
         }
     }
 }
@@ -146,5 +162,22 @@ fun PlayerChip(p: PlayerView, detailed: Boolean = false) {
             }
         }
         Box(Modifier.size(9.dp).clip(CircleShape).background(quality(p)))
+    }
+}
+
+/** The Couch mark (a triangle and a circle, as on the web host and the store icon) and the word. */
+@Composable
+fun Logo(height: Dp = 22.dp, modifier: Modifier = Modifier) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(height * .4f)) {
+        // 44 x 20 viewbox, same geometry as the web logo's SVG.
+        Canvas(Modifier.size(width = height * 2.2f, height = height)) {
+            val u = size.height / 20f
+            val tri = androidx.compose.ui.graphics.Path().apply {
+                moveTo(10f * u, 2.5f * u); lineTo(19f * u, 18f * u); lineTo(1f * u, 18f * u); close()
+            }
+            drawPath(tri, Accent)
+            drawCircle(Accent, radius = 7.5f * u, center = androidx.compose.ui.geometry.Offset(33f * u, 10.5f * u))
+        }
+        Text("Couch", fontWeight = FontWeight.ExtraBold, fontSize = (height.value * .9f).sp)
     }
 }

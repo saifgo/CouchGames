@@ -47,8 +47,8 @@ test('phones pair with the TV, get slots, and see the lobby skin', async ({ brow
   const p2 = await openPhone(browser, room, 'Bob');
   await expect(p1.locator('.badge')).toHaveText('P1');
   await expect(p2.locator('.badge')).toHaveText('P2');
-  await expect(host.locator('.topbar-players')).toContainText('Alice');
-  await expect(host.locator('.topbar-players')).toContainText('Bob');
+  await expect(host.locator('.lobby .slots')).toContainText('Alice');
+  await expect(host.locator('.lobby .slots')).toContainText('Bob');
   await expect(p1.locator('svg.pad-svg')).toHaveAttribute('data-skin', 'modern');
 
   // Reconnect keeps the slot: reload phone 1 (same clientId in localStorage).
