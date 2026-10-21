@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import { SYSTEMS } from '@couch/systems';
 import type { HostSettings } from '../host-settings.js';
-import { isDesktopClass } from '../host-settings.js';
+import { isDesktopClass, THEMES, THEME_NAMES } from '../host-settings.js';
 import { Modal } from './common.js';
 
 export function SettingsModal({ settings, onChange, onClose }: { settings: HostSettings; onChange: (s: Partial<HostSettings>) => void; onClose: () => void }) {
@@ -32,7 +32,7 @@ export function SettingsModal({ settings, onChange, onClose }: { settings: HostS
         {cycle('Players', [4, 8] as (4 | 8)[], s.maxPlayers, (v) => onChange({ maxPlayers: v }))}
         {cycle('Run-ahead', [0, 1, 2] as (0 | 1 | 2)[], s.runAhead, (v) => onChange({ runAhead: v }), (v) => (v ? `${v} frame${v > 1 ? 's' : ''}` : 'Off'), 'Removes game-logic lag on light systems; costs CPU')}
         {toggle('onlineArt', 'Box art from the internet', 'Looks up thumbnails.libretro.com by file name')}
-        {cycle('Theme', ['midnight', 'sunset', 'arcade'] as HostSettings['theme'][], s.theme, (v) => onChange({ theme: v }), (v) => v[0]!.toUpperCase() + v.slice(1))}
+        {cycle('Theme', THEMES, s.theme, (v) => onChange({ theme: v }), (v) => THEME_NAMES[v], s.theme === 'pixel' ? 'Restyles itself for each console' : undefined)}
         {toggle('telemetry', 'Share anonymous latency stats', 'Per-session lag summaries, no names, saved on this computer (.cache/logs)')}
         <button data-nav className="setting" onClick={() => onChange({ onboardingDone: false })}>
           <span>Show the welcome tips again</span>

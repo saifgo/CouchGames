@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Couch · Arcade Pixel Art theme mockup</title>
+<!-- Design mockup only (not app code). Open with ?sys=<id>, e.g. mockup.html?sys=snes -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Silkscreen:wght@400;700&family=Pixelify+Sans:wght@400;700&family=Jersey+10&display=block" rel="stylesheet">
+<style>
+:root { --p: 4px; }
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+canvas { image-rendering: pixelated; display: block; }
+
+/* ---------- shared layout (mirrors the real Home grid) ---------- */
+.home {
+  position: relative; width: 1920px; height: 1080px; overflow: hidden; display: grid;
+  grid-template-columns: minmax(0, 1fr) 520px 400px;
+  grid-template-rows: 84px minmax(0, 1fr) 118px 292px 62px;
+  grid-template-areas: 'top top top' 'preview details players' 'platforms platforms platforms' 'wheel wheel wheel' 'hints hints hints';
+  background: var(--bg); color: var(--text); font-family: var(--body-font); font-size: var(--body-size, 22px);
+}
+.home > * { position: relative; z-index: 1; min-width: 0; min-height: 0; }
+.decor { position: absolute !important; inset: 0; z-index: 0 !important; pointer-events: none; }
+.decor canvas { width: 100%; height: 100%; }
+
+.topbar { grid-area: top; display: flex; align-items: center; gap: 24px; padding: 14px 40px 6px; }
+.logo { display: flex; align-items: center; gap: 14px; font-family: var(--head-font); font-size: var(--logo-size, 30px); color: var(--logo, var(--text)); letter-spacing: 1px; }
+.logo canvas { width: 40px; height: 40px; }
+.theme-tag { font-family: var(--head-font); font-size: 14px; color: var(--muted); padding: 6px 12px; border: var(--p) solid var(--line); letter-spacing: 1px; }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 22px; }
+.clock { font-family: var(--head-font); font-size: var(--clock-size, 22px); color: var(--text); }
+.gear { width: 48px; height: 48px; }
+
+.preview { grid-area: preview; display: flex; align-items: center; justify-content: center; padding: 10px 26px 22px 40px; }
+.screen { position: relative; height: 100%; aspect-ratio: var(--ar, 4 / 3); max-width: 100%; background: #000; }
+.screen canvas { width: 100%; height: 100%; }
+
+.panel { position: relative; background: var(--panel); color: var(--text); padding: 26px 28px; }
+.details { grid-area: details; margin: 10px 22px 22px 0; display: flex; flex-direction: column; }
+.players { grid-area: players; margin: 10px 40px 22px 0; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px 22px; }
+
+.d-title { margin: 0; font-family: var(--head-font); font-size: var(--title-size, 34px); line-height: 1.25; color: var(--title, var(--text)); font-weight: normal; }
+.d-sys { margin: 12px 0 18px; font-family: var(--head-font); font-size: var(--sys-size, 16px); color: var(--accent); }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 8px 22px; margin: 0; padding-top: 16px; border-top: var(--p) var(--rule-style, dashed) var(--line); font-size: var(--facts-size, 26px); }
+.facts dt { color: var(--muted); } .facts dd { margin: 0; white-space: nowrap; }
+.press { margin: auto 0 0; display: flex; align-items: center; gap: 12px; font-family: var(--head-font); font-size: var(--press-size, 16px); color: var(--text); }
+.press .blink { animation: none; }
+
+.p-head { font-family: var(--head-font); font-size: var(--phead-size, 16px); color: var(--text); text-align: center; }
+.qr { width: 196px; height: 196px; background: #fff; padding: 10px; }
+.qr canvas { width: 100%; height: 100%; }
+.code { font-family: var(--head-font); font-size: var(--code-size, 30px); color: var(--accent); letter-spacing: 6px; }
+.url { font-size: var(--url-size, 22px); color: var(--muted); }
+.slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%; margin-top: auto; }
+.slot { display: flex; flex-direction: column; align-items: center; gap: 6px; font-family: var(--head-font); font-size: 12px; color: var(--muted); }
+.slot canvas { width: 52px; height: 52px; }
+.slot.on { color: var(--text); }
+
+.platforms { grid-area: platforms; display: flex; align-items: center; justify-content: center; gap: 14px; background: var(--strip); border-block: var(--p) solid var(--line); padding: 0 30px; overflow: hidden; }
+.pf { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 16px; opacity: 0.45; }
+.pf canvas { height: 44px; }
+.pf b { font-family: var(--head-font); font-weight: normal; font-size: 14px; color: var(--pfc, var(--text)); white-space: nowrap; }
+.pf.on { opacity: 1; background: var(--pf-on-bg, transparent); outline: var(--p) solid var(--focus); outline-offset: 0; }
+.pf.on b { color: var(--focus); }
+
+.wheel { grid-area: wheel; display: flex; align-items: flex-end; justify-content: center; gap: 34px; padding: 0 0 18px; }
+.card { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 12px; opacity: 0.75; position: relative; }
+.card.on { opacity: 1; transform: translateY(-14px); }
+.card-title { font-size: var(--ct-size, 20px); color: var(--muted); max-width: 190px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card.on .card-title { color: var(--text); font-family: var(--head-font); font-size: 13px; }
+.cursor { position: absolute; top: -50px; left: 50%; transform: translateX(-50%); width: 40px; height: 32px; }
+
+.hints { grid-area: hints; display: flex; align-items: center; gap: 30px; padding: 0 40px; background: var(--hintbar); border-top: var(--p) solid var(--line); font-family: var(--head-font); font-size: var(--hint-size, 14px); color: var(--text); }
+.hints span { display: inline-flex; align-items: center; gap: 10px; }
+.hints canvas { width: 32px; height: 32px; }
+.hints .grow { flex: 1; }
+.chip { padding: 8px 16px; border: var(--p) solid var(--line); color: var(--muted); }
+
+/* stepped (pixel) corners */
+.notch { clip-path: polygon(0 var(--p), var(--p) var(--p), var(--p) 0, calc(100% - var(--p)) 0, calc(100% - var(--p)) var(--p), 100% var(--p), 100% calc(100% - var(--p)), calc(100% - var(--p)) calc(100% - var(--p)), calc(100% - var(--p)) 100%, var(--p) 100%, var(--p) calc(100% - var(--p)), 0 calc(100% - var(--p))); }
+.notch2 { clip-path: polygon(0 calc(var(--p)*2), var(--p) calc(var(--p)*2), var(--p) var(--p), calc(var(--p)*2) var(--p), calc(var(--p)*2) 0, calc(100% - var(--p)*2) 0, calc(100% - var(--p)*2) var(--p), calc(100% - var(--p)) var(--p), calc(100% - var(--p)) calc(var(--p)*2), 100% calc(var(--p)*2), 100% calc(100% - var(--p)*2), calc(100% - var(--p)) calc(100% - var(--p)*2), calc(100% - var(--p)) calc(100% - var(--p)), calc(100% - var(--p)*2) calc(100% - var(--p)), calc(100% - var(--p)*2) 100%, calc(var(--p)*2) 100%, calc(var(--p)*2) calc(100% - var(--p)), var(--p) calc(100% - var(--p)), var(--p) calc(100% - var(--p)*2), 0 calc(100% - var(--p)*2)); }
+
+/* ---------- game media (cover frames) ---------- */
+.media { position: relative; display: block; }
+.media canvas.label { position: absolute; }
+.ridges { position: absolute; background: repeating-linear-gradient(0deg, rgba(0,0,0,.35) 0 4px, transparent 4px 8px); }
+
+/* ============================================================
+   Per-console looks. Each one borrows the hardware's own language:
+   body plastics, button colours, boot / menu UI, media shape.
+   ============================================================ */
+
+/* NES — grey toaster, black band, red buttons, RPG dialog boxes */
+[data-sys=nes] { --bg:#000; --text:#fcfcfc; --muted:#bcbcbc; --accent:#f83800; --focus:#fcfcfc; --line:#fcfcfc; --panel:#000; --strip:#000; --hintbar:#000;
+  --head-font:'Press Start 2P'; --body-font:'VT323'; --title-size:28px; --body-size:26px; }
+[data-sys=nes] .panel { border: var(--p) solid #fcfcfc; box-shadow: 0 0 0 var(--p) #000, 0 0 0 calc(var(--p)*2) #bcbcbc; border-radius: 6px; }
+[data-sys=nes] .topbar { background: #bcbcbc; color:#000; border-bottom: calc(var(--p)*3) solid #000; box-shadow: 0 calc(var(--p)*3) 0 #7c7c7c; }
+[data-sys=nes] .topbar .logo, [data-sys=nes] .topbar .clock { color:#000; }
+[data-sys=nes] .topbar .logo b { color:#f83800; }
+[data-sys=nes] .theme-tag { color:#000; border-color:#000; }
+[data-sys=nes] .platforms { border-color: #7c7c7c; background:#1c1c1c; }
+[data-sys=nes] .pf.on { outline: none; background:#000; box-shadow: inset 0 0 0 var(--p) #fcfcfc; }
+[data-sys=nes] .screen { box-shadow: 0 0 0 calc(var(--p)*3) #7c7c7c, 0 0 0 calc(var(--p)*5) #000, 0 0 0 calc(var(--p)*6) #bcbcbc; }
+[data-sys=nes] .media.cart { width: 156px; height: 172px; background:#7c7c7c; box-shadow: inset calc(var(--p)*-2) calc(var(--p)*-2) 0 #4c4c4c, inset calc(var(--p)*2) calc(var(--p)*2) 0 #a4a4a4; }
+[data-sys=nes] .media.cart canvas.label { left: 16px; top: 14px; width: 124px; height: 112px; }
+[data-sys=nes] .media.cart .ridges { left: 16px; right: 16px; bottom: 10px; height: 28px; }
+
+/* SNES — light grey + lavender, 4-colour face buttons, blue-gradient RPG windows, Mode 7 floor */
+[data-sys=snes] { --bg:#18103a; --text:#ffffff; --muted:#c8c0e8; --accent:#ffd84a; --focus:#ffffff; --line:#cfc9e6; --panel:linear-gradient(#3848b8 0 12%, #3040a8 12% 30%, #283898 30% 50%, #203088 50% 70%, #182878 70% 88%, #102068 88%); --strip:#b9b4d0; --hintbar:#d6d3e2;
+  --head-font:'Pixelify Sans'; --body-font:'Pixelify Sans'; --title-size:40px; --sys-size:22px; --press-size:22px; --phead-size:22px; --hint-size:20px; --logo-size:34px; --clock-size:28px; --facts-size:24px; }
+[data-sys=snes] .panel { border: var(--p) solid #fff; box-shadow: 0 0 0 var(--p) #6a64a0, inset 0 0 0 var(--p) #9890c8; border-radius: 12px; }
+[data-sys=snes] .d-title { font-weight: 700; text-shadow: 3px 3px 0 #0a1040; }
+[data-sys=snes] .topbar { background: linear-gradient(#d6d3e2 0 70%, #b9b4d0 70%); color:#2a2550; border-bottom: var(--p) solid #8a84b4; }
+[data-sys=snes] .topbar .logo, [data-sys=snes] .topbar .clock { color:#2a2550; }
+[data-sys=snes] .theme-tag { color:#5a5490; border-color:#8a84b4; }
+[data-sys=snes] .platforms { color:#2a2550; border-color:#8a84b4; }
+[data-sys=snes] .pf b { color:#2a2550; }
+[data-sys=snes] .pf.on { outline: none; background:#7b5fc7; border-radius: 10px; box-shadow: 0 var(--p) 0 #4a3a8a; }
+[data-sys=snes] .pf.on b { color:#fff; }
+[data-sys=snes] .hints { color:#2a2550; border-color:#8a84b4; }
+[data-sys=snes] .chip { border-radius: 999px; color:#5a5490; border-color:#8a84b4; }
+[data-sys=snes] .screen { border-radius: 10px; box-shadow: 0 0 0 calc(var(--p)*2) #fff, 0 0 0 calc(var(--p)*3) #6a64a0; overflow: hidden; }
+[data-sys=snes] .card-title { color:#c8c0e8; }
+[data-sys=snes] .media.cart { width: 176px; height: 150px; background:#a9a6b8; border-radius: 22px 22px 6px 6px; box-shadow: inset 0 calc(var(--p)*-2) 0 #7e7b90, inset 0 calc(var(--p)*2) 0 #cfcce0; }
+[data-sys=snes] .media.cart canvas.label { left: 22px; top: 20px; width: 132px; height: 96px; border: var(--p) solid #6e6b80; }
+[data-sys=snes] .media.cart .ridges { left: 30px; right: 30px; bottom: 6px; height: 14px; }
+
+/* Genesis — glossy black, red stripes, chrome "16-BIT" energy, speed-zone checkerboards */
+[data-sys=genesis] { --bg:#05060c; --text:#ffffff; --muted:#9aa4b8; --accent:#ff2a2a; --focus:#2a8cff; --line:#3a3f50; --panel:#0b0d16; --strip:#000; --hintbar:#0b0d16;
+  --head-font:'Press Start 2P'; --body-font:'VT323'; --title-size:28px; --body-size:26px; }
+[data-sys=genesis] .panel { border-top: calc(var(--p)*4) solid #ff2a2a; box-shadow: inset 0 calc(var(--p)*2) 0 #fff, 0 0 0 var(--p) #3a3f50; }
+[data-sys=genesis] .d-title { background: linear-gradient(#ffffff 0 35%, #8fd0ff 35% 50%, #1f6fd1 50% 62%, #ffffff 62% 75%, #c0c8d8 75%); -webkit-background-clip: text; color: transparent; font-style: italic; }
+[data-sys=genesis] .topbar { background: repeating-linear-gradient(180deg, #000 0 6px, #14161f 6px 8px); border-bottom: calc(var(--p)*2) solid #ff2a2a; }
+[data-sys=genesis] .logo { font-style: italic; }
+[data-sys=genesis] .platforms { border-color:#ff2a2a; background: repeating-linear-gradient(180deg, #000 0 6px, #0d0f17 6px 8px); }
+[data-sys=genesis] .pf.on { outline-color:#2a8cff; background:#0a1a3a; }
+[data-sys=genesis] .screen { box-shadow: 0 0 0 calc(var(--p)*2) #000, 0 0 0 calc(var(--p)*3) #3a3f50, 0 0 0 calc(var(--p)*5) #000; }
+[data-sys=genesis] .media.cart { width: 150px; height: 180px; background:#101014; clip-path: polygon(10% 0, 90% 0, 100% 8%, 100% 100%, 0 100%, 0 8%); box-shadow: inset 0 calc(var(--p)*-2) 0 #000, inset calc(var(--p)*2) 0 0 #2a2c36; }
+[data-sys=genesis] .media.cart canvas.label { left: 14px; top: 18px; width: 122px; height: 120px; }
+[data-sys=genesis] .media.cart .ridges { left: 14px; right: 14px; bottom: 10px; height: 22px; background: repeating-linear-gradient(90deg, #2a2c36 0 4px, transparent 4px 10px); }
+
+/* Game Boy — the whole UI is the 4-shade green LCD inside a grey bezel */
+[data-sys=gb] { --bg:#9bbc0f; --text:#0f380f; --muted:#306230; --accent:#0f380f; --focus:#0f380f; --line:#306230; --panel:#8bac0f; --strip:#8bac0f; --hintbar:#8bac0f;
+  --head-font:'Press Start 2P'; --body-font:'VT323'; --title-size:28px; --body-size:26px; }
+[data-sys=gb] .panel { border: var(--p) solid #0f380f; box-shadow: inset 0 0 0 var(--p) #9bbc0f, inset 0 0 0 calc(var(--p)*2) #306230; }
+[data-sys=gb] .home-lcd { position:absolute; inset:0; z-index: 5; pointer-events:none; background: repeating-linear-gradient(90deg, rgba(15,56,15,.07) 0 1px, transparent 1px 4px), repeating-linear-gradient(0deg, rgba(15,56,15,.07) 0 1px, transparent 1px 4px); }
+[data-sys=gb] .topbar { background:#8b8b9b; color:#2c2a5a; border-bottom: calc(var(--p)*2) solid #5d5b74; }
+[data-sys=gb] .topbar .logo, [data-sys=gb] .topbar .clock { color:#2c2a5a; }
+[data-sys=gb] .topbar .logo b { color:#a3195b; font-style: italic; }
+[data-sys=gb] .theme-tag { color:#2c2a5a; border-color:#5d5b74; }
+[data-sys=gb] .pf.on { background:#0f380f; outline: none; } [data-sys=gb] .pf.on b { color:#9bbc0f; }
+[data-sys=gb] .screen { box-shadow: 0 0 0 calc(var(--p)*6) #5d5b74, 0 0 0 calc(var(--p)*7) #3a3850; border-radius: 4px 4px 28px 4px; }
+[data-sys=gb] .hints { background:#8b8b9b; color:#2c2a5a; border-color:#5d5b74; }
+[data-sys=gb] .chip { color:#2c2a5a; border-color:#5d5b74; }
+[data-sys=gb] .media.cart { width: 138px; height: 158px; background:#c4c4c4; clip-path: polygon(0 0, 88% 0, 100% 8%, 100% 100%, 0 100%); box-shadow: inset calc(var(--p)*-2) calc(var(--p)*-2) 0 #8c8c8c; }
+[data-sys=gb] .media.cart canvas.label { left: 14px; top: 34px; width: 108px; height: 108px; }
+[data-sys=gb] .media.cart .ridges { left: 14px; right: 26px; top: 8px; height: 18px; background: repeating-linear-gradient(0deg, #8c8c8c 0 4px, transparent 4px 8px); }
+
+/* Game Boy Color — clear "atomic" plastics, bright 15-bit colour, bubbly */
+[data-sys=gbc] { --bg:#5b2aa8; --text:#1a1030; --muted:#5a4a7a; --accent:#e0368f; --focus:#ffd400; --line:#1a1030; --panel:#fff8e8; --strip:#3e1a80; --hintbar:#2a1060;
+  --head-font:'Pixelify Sans'; --body-font:'Pixelify Sans'; --title-size:42px; --sys-size:22px; --press-size:22px; --phead-size:22px; --hint-size:20px; --logo-size:34px; --clock-size:28px; --facts-size:24px; }
+[data-sys=gbc] .panel { border: calc(var(--p)*2) solid #1a1030; border-radius: 18px; box-shadow: calc(var(--p)*2) calc(var(--p)*2) 0 #ffd400; }
+[data-sys=gbc] .players.panel { box-shadow: calc(var(--p)*2) calc(var(--p)*2) 0 #00c8b4; }
+[data-sys=gbc] .d-title { font-weight: 700; color:#e0368f; }
+[data-sys=gbc] .topbar, [data-sys=gbc] .hints { color:#fff; } [data-sys=gbc] .logo, [data-sys=gbc] .clock, [data-sys=gbc] .hints { color:#fff; }
+[data-sys=gbc] .theme-tag, [data-sys=gbc] .chip { color:#fff; border-color:#fff; border-radius: 999px; }
+[data-sys=gbc] .platforms { border-color:#ffd400; } [data-sys=gbc] .pf b { color:#fff; }
+[data-sys=gbc] .pf.on { outline:none; background:#ffd400; border-radius: 14px; } [data-sys=gbc] .pf.on b { color:#1a1030; }
+[data-sys=gbc] .card-title { color:#e8d8ff; } [data-sys=gbc] .card.on .card-title { color:#fff; }
+[data-sys=gbc] .screen { border-radius: 8px 8px 36px 8px; box-shadow: 0 0 0 calc(var(--p)*6) #1a1030, 0 0 0 calc(var(--p)*8) #00c8b4; overflow: hidden; }
+[data-sys=gbc] .media.cart { width: 138px; height: 158px; background: rgba(200,170,255,.55); clip-path: polygon(0 0, 88% 0, 100% 8%, 100% 100%, 0 100%); box-shadow: inset 0 0 0 var(--p) rgba(255,255,255,.6), inset calc(var(--p)*-2) calc(var(--p)*-2) 0 rgba(30,0,80,.35); }
+[data-sys=gbc] .media.cart canvas.label { left: 14px; top: 34px; width: 108px; height: 108px; }
+[data-sys=gbc] .media.cart .ridges { left: 14px; right: 26px; top: 8px; height: 18px; background: repeating-linear-gradient(0deg, rgba(255,255,255,.5) 0 4px, transparent 4px 8px); }
+
+/* GBA — indigo wide body, L/R shoulders, crisp 240x160, rounded silver panels */
+[data-sys=gba] { --bg:#2a2370; --text:#1d1748; --muted:#56508a; --accent:#4b3fb5; --focus:#ffffff; --line:#1d1748; --panel:#d9d8ea; --strip:#1d1748; --hintbar:#1d1748; --ar: 3 / 2;
+  --head-font:'Silkscreen'; --body-font:'Silkscreen'; --title-size:38px; --sys-size:20px; --press-size:20px; --phead-size:20px; --hint-size:18px; --logo-size:32px; --clock-size:26px; --facts-size:20px; --body-size:20px; --ct-size:16px; }
+[data-sys=gba] .panel { border-radius: 16px; border: var(--p) solid #1d1748; box-shadow: inset 0 calc(var(--p)*3) 0 #ffffff, inset 0 calc(var(--p)*-3) 0 #a9a7c8; }
+[data-sys=gba] .d-title { font-weight: 700; }
+[data-sys=gba] .topbar .logo, [data-sys=gba] .clock, [data-sys=gba] .hints { color:#fff; }
+[data-sys=gba] .theme-tag, [data-sys=gba] .chip { color:#c9c6f0; border-color:#6a62c8; }
+[data-sys=gba] .platforms { border-color:#6a62c8; justify-content: center; }
+[data-sys=gba] .pf b { color:#c9c6f0; } [data-sys=gba] .pf.on { outline:none; background:#4b3fb5; border-radius: 12px; } [data-sys=gba] .pf.on b { color:#fff; }
+[data-sys=gba] .shoulder { flex: 0 0 auto; font-family: 'Silkscreen'; font-weight:700; font-size: 22px; color:#1d1748; background:#9a96c8; padding: 10px 26px; border-radius: 20px 20px 6px 6px; }
+[data-sys=gba] .card-title { color:#c9c6f0; } [data-sys=gba] .card.on .card-title { color:#fff; font-size: 14px; }
+[data-sys=gba] .screen { border-radius: 6px; box-shadow: 0 0 0 calc(var(--p)*5) #15123a, 0 0 0 calc(var(--p)*6) #6a62c8; }
+[data-sys=gba] .media.cart { width: 170px; height: 112px; background:#5c5c66; clip-path: polygon(0 0, 92% 0, 100% 14%, 100% 100%, 0 100%); box-shadow: inset calc(var(--p)*-2) calc(var(--p)*-2) 0 #3c3c44; }
+[data-sys=gba] .media.cart canvas.label { left: 16px; top: 26px; width: 126px; height: 74px; }
+[data-sys=gba] .media.cart .ridges { left: 16px; right: 30px; top: 6px; height: 14px; background: repeating-linear-gradient(0deg, #3c3c44 0 4px, transparent 4px 8px); }
+
+/* PlayStation — grey plastics, memory-card manager, 4 shape glyphs, jewel cases */
+[data-sys=psx] { --bg:#1d2230; --text:#eef0f4; --muted:#9aa2b4; --accent:#e8e8e8; --focus:#ffffff; --line:#5a6274; --panel:#2a3040; --strip:#141824; --hintbar:#8e9aa6;
+  --head-font:'Jersey 10'; --body-font:'VT323'; --title-size:56px; --sys-size:28px; --press-size:28px; --phead-size:28px; --hint-size:26px; --logo-size:42px; --clock-size:34px; --facts-size:26px; --body-size:26px; --code-size:40px; }
+[data-sys=psx] .panel { border: var(--p) solid #8e9aa6; box-shadow: inset var(--p) var(--p) 0 #4a5264, inset calc(var(--p)*-1) calc(var(--p)*-1) 0 #12161f; }
+[data-sys=psx] .panel::before { content:''; position:absolute; left:0; right:0; top:0; height: calc(var(--p)*2); background: linear-gradient(90deg, #e03a3a 0 25%, #f2c81e 25% 50%, #2fb36a 50% 75%, #3a6fe0 75%); }
+[data-sys=psx] .topbar { background:#8e9aa6; border-bottom: calc(var(--p)*2) solid #5a6274; }
+[data-sys=psx] .topbar .logo, [data-sys=psx] .clock { color:#1d2230; }
+[data-sys=psx] .theme-tag { color:#1d2230; border-color:#5a6274; }
+[data-sys=psx] .hints { color:#1d2230; border-color:#5a6274; } [data-sys=psx] .chip { color:#1d2230; border-color:#5a6274; }
+[data-sys=psx] .pf.on { outline-color:#fff; background:#2a3040; }
+[data-sys=psx] .screen { box-shadow: 0 0 0 calc(var(--p)*3) #000, 0 0 0 calc(var(--p)*4) #8e9aa6; }
+[data-sys=psx] .media.case { width: 190px; height: 168px; background:#0c0c10; }
+[data-sys=psx] .media.case canvas.label { left: 22px; top: 6px; width: 162px; height: 156px; }
+[data-sys=psx] .media.case::after { content:''; position:absolute; left: 22px; top: 6px; width: 162px; height: 156px; background: linear-gradient(135deg, rgba(255,255,255,.28) 0 18%, transparent 18% 60%, rgba(255,255,255,.12) 60% 64%, transparent 64%); }
+[data-sys=psx] .media.case .spine { position:absolute; left: 4px; top: 6px; bottom: 6px; width: 12px; background: repeating-linear-gradient(0deg, #1a1a22 0 6px, #2a2a34 6px 8px); }
+
+/* N64 — charcoal body, four-colour cube, gold-framed file select, wide grey carts */
+[data-sys=n64] { --bg:#16181e; --text:#fff6d8; --muted:#b8a878; --accent:#ffcc00; --focus:#ffcc00; --line:#c89a2a; --panel:#26221a; --strip:#0e0f13; --hintbar:#0e0f13;
+  --head-font:'Pixelify Sans'; --body-font:'Pixelify Sans'; --title-size:44px; --sys-size:22px; --press-size:22px; --phead-size:22px; --hint-size:20px; --logo-size:34px; --clock-size:28px; --facts-size:24px; }
+[data-sys=n64] .panel { border: calc(var(--p)*2) solid #c89a2a; box-shadow: 0 0 0 var(--p) #5a3e0a, inset 0 0 0 var(--p) #ffe08a, inset 0 0 0 calc(var(--p)*2) #5a3e0a; background: repeating-linear-gradient(45deg, #2a251c 0 8px, #241f17 8px 16px); }
+[data-sys=n64] .d-title { font-weight:700; color:#ffcc00; text-shadow: 4px 4px 0 #6a2a00; }
+[data-sys=n64] .topbar { border-bottom: calc(var(--p)*2) solid transparent; border-image: linear-gradient(90deg, #e2231a 0 25%, #ffcc00 25% 50%, #009c3a 50% 75%, #1a4ea8 75%) 1; }
+[data-sys=n64] .platforms { border-color:#c89a2a; } [data-sys=n64] .pf.on { background:#26221a; }
+[data-sys=n64] .screen { box-shadow: 0 0 0 calc(var(--p)*2) #000, 0 0 0 calc(var(--p)*4) #c89a2a, 0 0 0 calc(var(--p)*5) #5a3e0a; }
+[data-sys=n64] .media.cart { width: 196px; height: 150px; background:#4a4d55; border-radius: 30px 30px 4px 4px; box-shadow: inset 0 calc(var(--p)*2) 0 #6a6e78, inset 0 calc(var(--p)*-2) 0 #2e3036; }
+[data-sys=n64] .media.cart canvas.label { left: 26px; top: 22px; width: 144px; height: 92px; }
+[data-sys=n64] .media.cart .ridges { left: 0; right: 0; top: 6px; height: 12px; background: repeating-linear-gradient(90deg, #2e3036 0 4px, transparent 4px 12px); }
+
+/* PSP — glossy black, the cross-media bar, a stepped wave band, UMD discs */
+[data-sys=psp] { --bg:#05070c; --text:#ffffff; --muted:#8a92a4; --accent:#7fd4ff; --focus:#ffffff; --line:#2a3040; --panel:rgba(0,0,0,0); --strip:transparent; --hintbar:#000; --ar: 16 / 9;
+  --head-font:'Silkscreen'; --body-font:'VT323'; --title-size:38px; --sys-size:18px; --press-size:18px; --phead-size:18px; --hint-size:16px; --logo-size:28px; --clock-size:24px; --body-size:26px; }
+[data-sys=psp] .panel { border-left: var(--p) solid #ffffff; }
+[data-sys=psp] .platforms { border: 0; }
+[data-sys=psp] .pf { opacity:.5; } [data-sys=psp] .pf.on { outline: none; opacity:1; transform: scale(1.15); }
+[data-sys=psp] .screen { box-shadow: 0 0 0 calc(var(--p)*4) #000, 0 0 0 calc(var(--p)*5) #3a4050; }
+[data-sys=psp] .media.umd { width: 160px; height: 168px; background:#1c1e24; clip-path: polygon(14% 0, 86% 0, 100% 12%, 100% 100%, 0 100%, 0 12%); box-shadow: inset 0 0 0 var(--p) #3a3e48; }
+[data-sys=psp] .media.umd canvas.label { left: 16px; top: 16px; width: 128px; height: 128px; border-radius: 50%; }
+[data-sys=psp] .media.umd .hole { position:absolute; left: 72px; top: 72px; width: 16px; height: 16px; border-radius: 50%; background:#1c1e24; box-shadow: 0 0 0 var(--p) #9aa0ac; }
+
+/* Nintendo DS — two screens, white menu with blue stripes, stylus, small cards */
+[data-sys=nds] { --bg:#e9edf2; --text:#2a3240; --muted:#6a7486; --accent:#2a8ad8; --focus:#2a8ad8; --line:#a7b3c4; --panel:#ffffff; --strip:#dbe2ea; --hintbar:#cfd6df; --ar: 4 / 6;
+  --head-font:'Silkscreen'; --body-font:'Silkscreen'; --title-size:34px; --sys-size:18px; --press-size:18px; --phead-size:18px; --hint-size:16px; --logo-size:28px; --clock-size:24px; --facts-size:20px; --body-size:20px; --ct-size:15px; }
+[data-sys=nds] .panel { border: var(--p) solid #a7b3c4; box-shadow: inset 0 calc(var(--p)*10) 0 #dcebf8; }
+[data-sys=nds] .d-title { font-weight:700; }
+[data-sys=nds] .topbar { background: repeating-linear-gradient(180deg, #ffffff 0 8px, #eef3f8 8px 16px); border-bottom: var(--p) solid #a7b3c4; }
+[data-sys=nds] .pf.on { outline-color:#2a8ad8; background:#fff; }
+[data-sys=nds] .screen { background:transparent; display:flex; flex-direction:column; gap: 18px; }
+[data-sys=nds] .screen canvas { height: calc(50% - 9px); box-shadow: 0 0 0 calc(var(--p)*3) #2a3240, 0 0 0 calc(var(--p)*5) #c0c8d2; }
+[data-sys=nds] .media.dscard { width: 128px; height: 118px; background:#33363e; clip-path: polygon(0 10%, 8% 0, 100% 0, 100% 100%, 0 100%); }
+[data-sys=nds] .media.dscard canvas.label { left: 12px; top: 22px; width: 104px; height: 86px; }
+
+/* PS2 — deep-blue boot fog, towers of cubes, crystal-blue panels, tall DVD cases */
+[data-sys=ps2] { --bg:#020818; --text:#e6f0ff; --muted:#7f97c8; --accent:#5ac8ff; --focus:#9fe2ff; --line:#2c4a9a; --panel:#081a4a; --strip:#020818; --hintbar:#040e2a;
+  --head-font:'Jersey 10'; --body-font:'VT323'; --title-size:58px; --sys-size:28px; --press-size:28px; --phead-size:28px; --hint-size:26px; --logo-size:42px; --clock-size:34px; --facts-size:26px; --body-size:26px; --code-size:40px; }
+[data-sys=ps2] .panel { border: var(--p) solid #2c4a9a; box-shadow: inset 0 0 0 var(--p) #0f2a6e, 0 0 0 var(--p) #000; }
+[data-sys=ps2] .d-title { color:#bfe8ff; text-shadow: 0 0 0 #fff, 4px 4px 0 #0b2a78; }
+[data-sys=ps2] .pf.on { background:#0b2260; }
+[data-sys=ps2] .screen { box-shadow: 0 0 0 calc(var(--p)*2) #000, 0 0 0 calc(var(--p)*3) #2c4a9a; }
+[data-sys=ps2] .media.dvd { width: 136px; height: 192px; background:#163a9a; box-shadow: inset 0 0 0 var(--p) #0b2470; }
+[data-sys=ps2] .media.dvd .band { position:absolute; left:4px; right:4px; top:4px; height: 22px; background:#d8dce6; }
+[data-sys=ps2] .media.dvd canvas.label { left: 4px; top: 26px; width: 128px; height: 162px; }
+
+/* Atari 2600 — woodgrain + black ribs, chunky 160px-wide pixels, toggle switches */
+[data-sys=atari2600] { --bg:#0a0806; --text:#f4e2c0; --muted:#b0946a; --accent:#ff8a1e; --focus:#ffd23c; --line:#3c2c1c; --panel:#120e0a; --strip:#120e0a; --hintbar:#120e0a; --p: 6px;
+  --head-font:'Press Start 2P'; --body-font:'VT323'; --title-size:30px; --body-size:28px; --facts-size:28px; }
+[data-sys=atari2600] .panel { border-top: calc(var(--p)*3) solid transparent; border-image: linear-gradient(#ffd23c 0 33%, #ff8a1e 33% 66%, #d8401a 66%) 1; box-shadow: inset 0 0 0 var(--p) #2a2018; }
+[data-sys=atari2600] .topbar { background: repeating-linear-gradient(90deg, #5a3416 0 18px, #6c4220 18px 30px, #4a2a10 30px 36px, #7a4c26 36px 60px, #5a3416 60px 66px); border-bottom: var(--p) solid #000; }
+[data-sys=atari2600] .topbar .logo, [data-sys=atari2600] .clock { color:#f4e2c0; text-shadow: 4px 4px 0 #000; }
+[data-sys=atari2600] .theme-tag { color:#f4e2c0; border-color:#000; background:#00000066; }
+[data-sys=atari2600] .platforms { background: repeating-linear-gradient(180deg, #0e0b08 0 8px, #1c1610 8px 12px); border-color:#000; }
+[data-sys=atari2600] .pf.on { outline-color:#ffd23c; background:#1c1610; }
+[data-sys=atari2600] .screen { box-shadow: 0 0 0 calc(var(--p)*2) #000, 0 0 0 calc(var(--p)*3) #5a3416; }
+[data-sys=atari2600] .media.cart { width: 128px; height: 186px; background:#141210; box-shadow: inset 0 0 0 var(--p) #2a2622; }
+[data-sys=atari2600] .media.cart canvas.label { left: 12px; top: 12px; width: 104px; height: 118px; }
+[data-sys=atari2600] .media.cart .ridges { left: 12px; right: 12px; bottom: 12px; height: 36px; background: repeating-linear-gradient(0deg, #2a2622 0 6px, transparent 6px 12px); }
+
+/* PC Engine — tiny white console, orange accents, HuCards */
+[data-sys=pce] { --bg:#f2efe8; --text:#1c1c1c; --muted:#6c665c; --accent:#e0561f; --focus:#e0561f; --line:#1c1c1c; --panel:#ffffff; --strip:#e4e0d6; --hintbar:#1c1c1c;
+  --head-font:'Press Start 2P'; --body-font:'VT323'; --title-size:28px; --body-size:26px; }
+[data-sys=pce] .panel { border: var(--p) solid #1c1c1c; box-shadow: calc(var(--p)*2) calc(var(--p)*2) 0 #1c1c1c; }
+[data-sys=pce] .panel::before { content:''; position:absolute; left:0; right:0; top:0; height: calc(var(--p)*3); background: #e0561f; }
+[data-sys=pce] .topbar { border-bottom: var(--p) solid #1c1c1c; background:#fff; }
+[data-sys=pce] .hints { color:#f2efe8; } [data-sys=pce] .chip { color:#f2efe8; border-color:#6c665c; }
+[data-sys=pce] .pf.on { outline-color:#e0561f; background:#fff; }
+[data-sys=pce] .screen { box-shadow: 0 0 0 calc(var(--p)*3) #1c1c1c, calc(var(--p)*5) calc(var(--p)*5) 0 calc(var(--p)*3) #e0561f; }
+[data-sys=pce] .media.hucard { width: 190px; height: 128px; background:#fafafa; border-radius: 6px; box-shadow: inset 0 0 0 var(--p) #bdb8ad; }
+[data-sys=pce] .media.hucard canvas.label { left: 12px; top: 12px; width: 130px; height: 104px; }
+[data-sys=pce] .media.hucard .pins { position:absolute; right: 8px; top: 14px; bottom: 14px; width: 28px; background: repeating-linear-gradient(0deg, #d6a43a 0 6px, transparent 6px 10px); }
+</style>
+</head>
+<body>
+<div class="home" id="home"></div>
+<script>
+// ---------------------------------------------------------------- data
+const SYS = {
+  nes:       { name:'Nintendo Entertainment System', short:'NES', maker:'Nintendo', year:1985, res:[256,240], ar:'4 / 3', media:'cart', scene:'platform',
+               pal:{ sky:['#5c94fc'], ground:'#c84c0c', ground2:'#fc9838', top:'#00a800', hill:'#80d010', hero:['#b81c00','#fca044','#a88000'], hud:'#fcfcfc', coin:'#fcbc3c', cloud:'#fcfcfc' } },
+  snes:      { name:'Super Nintendo', short:'SNES', maker:'Nintendo', year:1990, res:[256,224], ar:'8 / 7', media:'cart', scene:'mode7',
+               pal:{ sky:['#1830a0','#3058d0','#6890f0','#a8c8ff'], floorA:'#58b048', floorB:'#3c8c30', road:'#7c7c8c', road2:'#a8a8b8', hill:'#3a2a8a', hero:['#e03030','#ffd84a','#3050e0'], hud:'#ffffff' } },
+  genesis:   { name:'Sega Genesis / Mega Drive', short:'GENESIS', maker:'Sega', year:1989, res:[320,224], ar:'4 / 3', media:'cart', scene:'speed',
+               pal:{ sky:['#0040c0','#2068e0','#60a0ff','#c0e0ff'], ground:'#a05020', ground2:'#d08040', top:'#20c040', top2:'#108020', hill:'#2080a0', hero:['#2050e0','#fcd8a0','#e02020'], hud:'#ffe000', coin:'#ffe000', cloud:'#ffffff' } },
+  gb:        { name:'Game Boy', short:'GB', maker:'Nintendo', year:1989, res:[160,144], ar:'10 / 9', media:'cart', scene:'platform',
+               pal:{ sky:['#9bbc0f'], ground:'#306230', ground2:'#0f380f', top:'#0f380f', hill:'#8bac0f', hero:['#0f380f','#306230','#0f380f'], hud:'#0f380f', coin:'#306230', cloud:'#8bac0f' } },
+  gbc:       { name:'Game Boy Color', short:'GBC', maker:'Nintendo', year:1998, res:[160,144], ar:'10 / 9', media:'cart', scene:'platform',
+               pal:{ sky:['#78c8ff','#b0e0ff'], ground:'#b05818', ground2:'#e89848', top:'#30c838', hill:'#90e060', hero:['#f83888','#ffd8a8','#4040f8'], hud:'#ffffff', coin:'#ffd800', cloud:'#ffffff' } },
+  gba:       { name:'Game Boy Advance', short:'GBA', maker:'Nintendo', year:2001, res:[240,160], ar:'3 / 2', media:'cart', scene:'platform',
+               pal:{ sky:['#4870e8','#78a0f8','#b8d0ff'], ground:'#8a5a2a', ground2:'#c08850', top:'#48c048', hill:'#5a8ae0', hero:['#4b3fb5','#ffd0a0','#ff5050'], hud:'#ffffff', coin:'#ffe040', cloud:'#ffffff' } },
+  psx:       { name:'PlayStation', short:'PS1', maker:'Sony', year:1994, res:[320,240], ar:'4 / 3', media:'case', scene:'poly',
+               pal:{ sky:['#100818','#301838','#704060','#c07060'], floorA:'#3a3a48', floorB:'#2a2a34', poly:['#606878','#8a92a4','#4a5060'], hero:['#e03a3a','#f2c81e','#3a6fe0'], hud:'#ffffff' } },
+  n64:       { name:'Nintendo 64', short:'N64', maker:'Nintendo', year:1996, res:[320,240], ar:'4 / 3', media:'cart', scene:'poly',
+               pal:{ sky:['#3068e0','#58a0f8','#a8d8ff','#e8f8ff'], floorA:'#38b030', floorB:'#2c9028', poly:['#c89a2a','#e2231a','#1a4ea8'], hero:['#e2231a','#ffcc00','#1a4ea8'], hud:'#ffcc00' } },
+  psp:       { name:'PlayStation Portable', short:'PSP', maker:'Sony', year:2004, res:[480,272], ar:'16 / 9', media:'umd', scene:'poly',
+               pal:{ sky:['#060a20','#102050','#2050a0','#60a0e0'], floorA:'#202838', floorB:'#181e2a', poly:['#3a4a70','#5a7ab0','#7fd4ff'], hero:['#ffffff','#7fd4ff','#3060c0'], hud:'#ffffff' } },
+  nds:       { name:'Nintendo DS', short:'NDS', maker:'Nintendo', year:2004, res:[256,192], ar:'4 / 6', media:'dscard', scene:'platform',
+               pal:{ sky:['#88c8f8','#c8e8ff'], ground:'#8a6a4a', ground2:'#b89068', top:'#58c858', hill:'#a8d8a0', hero:['#e04040','#ffd8b0','#3a60d0'], hud:'#ffffff', coin:'#ffd800', cloud:'#ffffff' } },
+  ps2:       { name:'PlayStation 2', short:'PS2', maker:'Sony', year:2000, res:[320,240], ar:'4 / 3', media:'dvd', scene:'poly',
+               pal:{ sky:['#000410','#02102e','#0a2a6a','#2a5ab8'], floorA:'#06143a', floorB:'#0a1c4c', poly:['#1a3a9a','#3a6ad8','#9fe2ff'], hero:['#9fe2ff','#ffffff','#2a5ab8'], hud:'#bfe8ff' } },
+  atari2600: { name:'Atari 2600', short:'2600', maker:'Atari', year:1977, res:[160,96], ar:'4 / 3', media:'cart', scene:'blocky',
+               pal:{ sky:['#1c1c70'], ground:'#6c5a14', ground2:'#a08a2c', top:'#3c8c1c', hill:'#2c5c10', hero:['#e8e84a','#d86c2c','#c03c3c'], hud:'#e8e84a' } },
+  pce:       { name:'PC Engine / TurboGrafx-16', short:'PCE', maker:'NEC', year:1987, res:[256,224], ar:'8 / 7', media:'hucard', scene:'shmup',
+               pal:{ sky:['#000018','#100830'], hero:['#ffffff','#e0561f','#40a0ff'], hud:'#ffffff', enemy:['#ff4080','#ffd040'], planet:['#e0561f','#ffa060','#802010'] } },
+};
+const ORDER = ['nes','snes','genesis','gb','gbc','gba','psx','n64','psp','nds','ps2','atari2600','pce'];
+const GAMES = ['Star Rescue','Moon Bricks','Pixel Knight','Turbo Lane','Cave Story Jr','Ghost Garden','Neon Drift','Skyward Hop'];
+const params = new URLSearchParams(location.search);
+const id = params.get('sys') && SYS[params.get('sys')] ? params.get('sys') : 'nes';
+const S = SYS[id];
+
+// ---------------------------------------------------------------- helpers
+function rng(seed) { let s = 0; for (const c of seed) s = (s * 31 + c.charCodeAt(0)) >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+function cv(w, h, cls) { const c = document.createElement('canvas'); c.width = w; c.height = h; if (cls) c.className = cls; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return [c, x]; }
+const R = (x, c, a, b, w, h) => { x.fillStyle = c; x.fillRect(a|0, b|0, w|0, h|0); };
+function sprite(x, rows, colors, ox, oy, s = 1) { rows.forEach((r, j) => [...r].forEach((ch, i) => { if (ch !== '.' && colors[ch]) R(x, colors[ch], ox + i*s, oy + j*s, s, s); })); }
+
+// tiny 3x5 pixel font for HUDs drawn into the fake game screens
+const F = {0:'111101101101111',1:'010110010010111',2:'111001111100111',3:'111001111001111',4:'101101111001001',5:'111100111001111',6:'111100111101111',7:'111001010010010',8:'111101111101111',9:'111101111001111',
+A:'010101111101101',B:'110101110101110',C:'011100100100011',D:'110101101101110',E:'111100110100111',F:'111100110100100',G:'011100101101011',H:'101101111101101',I:'111010010010111',J:'001001001101010',K:'101101110101101',L:'100100100100111',M:'101111111101101',N:'110101101101101',O:'010101101101010',P:'110101110100100',Q:'010101101110011',R:'110101110101101',S:'011100010001110',T:'111010010010010',U:'101101101101111',V:'101101101101010',W:'101101111111101',X:'101101010101101',Y:'101101010010010',Z:'111001010100111',':':'000010000010000','-':'000000111000000',' ':'000000000000000'};
+function text(x, str, ox, oy, color, s = 1) { let cx = ox; for (const ch of String(str).toUpperCase()) { const g = F[ch] ?? F[' ']; for (let k = 0; k < 15; k++) if (g[k] === '1') R(x, color, cx + (k % 3) * s, oy + Math.floor(k / 3) * s, s, s); cx += 4 * s; } }
+
+function heroSprite(seed) {
+  // 8 wide x 10 tall mirrored character, 3 colours
+  const r = rng(seed); const half = []; for (let y = 0; y < 10; y++) { let row = ''; for (let x = 0; x < 4; x++) { const edge = x === 0 ? 0.25 : 0.65; row += r() < edge ? (y < 3 ? 'b' : y < 6 ? 'a' : 'c') : '.'; } half.push(row); }
+  half[1] = '.bbb'; half[2] = '.bab'; half[3] = '..aa';
+  return half.map(h => h + [...h].reverse().join(''));
+}
+function invader(seed) { const r = rng(seed + 'inv'); const rows = []; for (let y = 0; y < 8; y++) { let h = ''; for (let x = 0; x < 4; x++) h += r() < 0.55 ? 'a' : '.'; rows.push(h + [...h].reverse().join('')); } rows[3] = rows[3].replace(/^(...)./, '$1b').replace(/.(...)$/, 'b$1'); return rows; }
+
+// ---------------------------------------------------------------- fake game screens
+function scene(sys, seed, w, h) {
+  const [c, x] = cv(w, h); const p = sys.pal; const r = rng(seed);
+  const band = (cols, y0, y1) => { const n = cols.length; for (let i = 0; i < n; i++) R(x, cols[i], 0, y0 + (y1 - y0) * i / n, w, (y1 - y0) / n + 1); };
+  if (sys.scene === 'platform' || sys.scene === 'speed' || sys.scene === 'blocky') {
+    const big = sys.scene === 'blocky' ? 2 : 1; const T = 16 / (w < 200 ? 2 : 1) * (sys.scene === 'blocky' ? 1 : 1);
+    band(p.sky, 0, h);
+    const gy = Math.round(h * 0.78);
+    // hills
+    x.fillStyle = p.hill; for (let i = 0; i < w; i += big) { const hh = Math.round((Math.sin(i / 23 + r()*0.2) * 0.5 + 0.5) * h * 0.18 + h * 0.06); x.fillRect(i, gy - hh, big, hh); }
+    if (sys.scene === 'speed') { for (let i = 0; i < w; i += 16) for (let j = gy - 40; j < gy; j += 8) R(x, ((i/16 + j/8) % 2) ? p.top : p.top2, i, j + Math.sin(i/30)*6, 16, 8); }
+    // clouds
+    if (p.cloud) for (let k = 0; k < 3; k++) { const cx0 = (k * w / 3 + r() * 30) | 0, cy0 = (h * 0.12 + r() * h * 0.15) | 0; R(x, p.cloud, cx0, cy0 + 4, 32, 8); R(x, p.cloud, cx0 + 6, cy0, 20, 6); R(x, p.cloud, cx0 + 12, cy0 - 3, 8, 4); }
+    // ground
+    for (let i = 0; i < w; i += T) { R(x, p.ground, i, gy, T, h - gy); R(x, p.ground2, i + 1, gy + 3, T - 3, 2); R(x, p.ground2, i + T/2, gy + T/2 + 2, 2, T/2); }
+    R(x, p.top, 0, gy, w, sys.scene === 'blocky' ? 6 : 3);
+    // floating blocks + coins
+    const by = gy - Math.round(h * 0.28);
+    for (let k = 0; k < 4; k++) { const bx = Math.round(w * 0.35 + k * T); R(x, p.ground2, bx, by, T - 1, T - 1); R(x, p.ground, bx + 2, by + 2, T - 5, T - 5); }
+    if (p.coin) for (let k = 0; k < 5; k++) { R(x, p.coin, Math.round(w * 0.15 + k * 10), by - 14 + (k % 2) * 3, 4, 6); }
+    sprite(x, heroSprite(seed), { a: p.hero[0], b: p.hero[1], c: p.hero[2] }, Math.round(w * 0.18), gy - 10 * (w >= 200 ? 2 : big), w >= 200 ? 2 : big);
+    sprite(x, invader(seed + 'e'), { a: p.hero[2], b: p.hud }, Math.round(w * 0.72), gy - 8, 1);
+    text(x, 'SCORE 012400', 6, 5, p.hud, 1); text(x, '1UP 03', w - 30, 5, p.hud, 1);
+  } else if (sys.scene === 'mode7') {
+    const hz = Math.round(h * 0.42); band(p.sky, 0, hz);
+    x.fillStyle = p.hill; for (let i = 0; i < w; i++) { const hh = Math.round((Math.sin(i / 17) * 0.5 + 0.5) * 18 + 6); x.fillRect(i, hz - hh, 1, hh); }
+    for (let y = hz; y < h; y++) { const z = 400 / (y - hz + 1); for (let i = 0; i < w; i++) { const wx = (i - w / 2) * z / 40; const onRoad = Math.abs(wx) < 3.2; const ch = ((Math.floor(z) + Math.floor(wx + 100)) & 1); x.fillStyle = onRoad ? (Math.floor(z * 1.5) & 1 ? p.road : p.road2) : (ch ? p.floorA : p.floorB); x.fillRect(i, y, 1, 1); } }
+    sprite(x, heroSprite(seed), { a: p.hero[0], b: p.hero[1], c: p.hero[2] }, w / 2 - 8, h - 46, 2);
+    text(x, 'LAP 2-3', 6, 6, p.hud); text(x, 'TIME 01:24', w - 44, 6, p.hud);
+  } else if (sys.scene === 'poly') {
+    const hz = Math.round(h * 0.5); band(p.sky, 0, hz);
+    for (let y = hz; y < h; y++) { const z = 600 / (y - hz + 2); for (let i = 0; i < w; i++) { const wx = (i - w / 2) * z / 60; x.fillStyle = ((Math.floor(z / 2) + Math.floor(wx / 2 + 100)) & 1) ? p.floorA : p.floorB; x.fillRect(i, y, 1, 1); } }
+    // low-poly pyramids / monoliths
+    const tri = (cx0, base, hw, ht, col, col2) => { for (let yy = 0; yy < ht; yy++) { const ww = Math.round(hw * (yy / ht)); R(x, col, cx0 - ww, base - ht + yy, ww, 1); R(x, col2, cx0, base - ht + yy, ww, 1); } };
+    tri(w * 0.25, hz + 6, 40, 70, p.poly[0], p.poly[1]); tri(w * 0.75, hz + 4, 56, 96, p.poly[2], p.poly[0]); tri(w * 0.52, hz + 2, 24, 40, p.poly[1], p.poly[2]);
+    sprite(x, heroSprite(seed), { a: p.hero[0], b: p.hero[1], c: p.hero[2] }, w / 2 - 8, h - 50, 2);
+    text(x, 'HP 120-120', 8, 8, p.hud); text(x, 'STAGE 3', w - 36, 8, p.hud);
+  } else if (sys.scene === 'shmup') {
+    band(p.sky, 0, h);
+    for (let k = 0; k < 90; k++) R(x, k % 7 ? '#8890c0' : '#ffffff', r() * w, r() * h, 1, 1);
+    x.fillStyle = p.planet[0]; for (let yy = -40; yy < 40; yy++) { const ww = Math.round(Math.sqrt(1600 - yy * yy)); x.fillRect(w * 0.78 - ww, h * 0.3 + yy, ww * 2, 1); }
+    for (let yy = -40; yy < 40; yy += 6) R(x, p.planet[2], w * 0.78 - 30, h * 0.3 + yy, 60, 2);
+    sprite(x, ['...aa...', '..abba..', '.aabbaa.', 'aaaccaaa', 'a.aaaa.a', '...cc...'], { a: p.hero[0], b: p.hero[2], c: p.hero[1] }, 40, h * 0.62, 2);
+    for (let k = 0; k < 4; k++) sprite(x, invader(seed + k), { a: p.enemy[k % 2], b: '#fff' }, 120 + k * 26, 40 + (k % 2) * 20, 2);
+    for (let k = 0; k < 6; k++) R(x, '#ffd040', 60 + k * 14, h * 0.62 + 4, 6, 2);
+    text(x, '1P 0042000', 6, 5, p.hud); text(x, 'HI 0100000', w - 46, 5, p.hud);
+  }
+  return c;
+}
+
+function dsBottom(w, h, seed) {
+  const [c, x] = cv(w, h); R(x, '#f4f7fb', 0, 0, w, h);
+  for (let y = 0; y < h; y += 8) R(x, '#e2e9f2', 0, y, w, 1); for (let i = 0; i < w; i += 8) R(x, '#e2e9f2', i, 0, 1, h);
+  R(x, '#2a8ad8', 0, 0, w, 18); text(x, 'TOUCH TO START', 8, 7, '#ffffff');
+  R(x, '#ffffff', 40, 50, w - 80, 60); R(x, '#2a3240', 40, 50, w - 80, 2); R(x, '#2a3240', 40, 108, w - 80, 2); R(x, '#2a3240', 40, 50, 2, 60); R(x, '#2a3240', w - 42, 50, 2, 60);
+  text(x, 'PLAY', w / 2 - 16, 72, '#2a3240', 2);
+  // stylus
+  for (let k = 0; k < 40; k++) R(x, '#7a8494', w - 60 + k, 140 - k, 3, 3);
+  return c;
+}
+
+// ---------------------------------------------------------------- label art for covers
+function label(sys, title, w, h) {
+  const [c, x] = cv(w, h); const p = sys.pal; const r = rng(title + sys.short);
+  const cols = (p.sky.length > 1 ? p.sky : [p.sky[0], p.hill ?? p.floorA ?? p.sky[0]]);
+  for (let i = 0; i < cols.length; i++) R(x, cols[i], 0, h * i / cols.length, w, h / cols.length + 1);
+  // big hero / enemy art
+  const hs = Math.max(2, Math.floor(w / 18));
+  if (r() < 0.5) sprite(x, heroSprite(title), { a: p.hero[0], b: p.hero[1], c: p.hero[2] }, w / 2 - 4 * hs, h * 0.36, hs);
+  else sprite(x, invader(title), { a: p.hero[0], b: p.hero[1] }, w / 2 - 4 * hs, h * 0.38, hs);
+  // title bar
+  if (id !== 'psp') { const bar = id === 'gb' ? '#0f380f' : '#000'; R(x, bar, 0, 0, w, 12);
+  const t = title.toUpperCase().slice(0, Math.floor(w / 4) - 1); text(x, t, 3, 4, id === 'gb' ? '#9bbc0f' : '#fff'); }
+  if (id === 'nes') { R(x, '#000', 0, h - 10, w, 10); R(x, '#f83800', 3, h - 7, 10, 4); }
+  if (id === 'psx' || id === 'ps2') { R(x, id === 'ps2' ? '#0a1c4c' : '#fff', 0, 12, 8, h - 12); }
+  return c;
+}
+
+// ---------------------------------------------------------------- small pixel icons
+const ICONS = {
+  nes:       { rows: ['gggggggggggggggg','gkkkkkkkkkkkkkkg','gkdkkkkkkkkkkkkg','gdddkkwwkkrkrkkg','gkdkkkkkkkkkkkkg','gkkkkkkkkkkkkkkg','gggggggggggggggg'], c: { g:'#bcbcbc', k:'#1c1c1c', d:'#000', w:'#7c7c7c', r:'#f83800' } },
+  snes:      { rows: ['..gggg......gggg..','.gggggggggggggggggg'.slice(0,18),'ggdgggggggggggyggg','gdddggppgpggbgrggg','ggdgggggggggggggg.'.replace('.', 'g'),'.gggggggggggggggg.','..gggg......gggg..'], c: { g:'#c8c6d6', d:'#3a3850', p:'#7b5fc7', y:'#f0c020', b:'#3050e0', r:'#e03030' } },
+  genesis:   { rows: ['..kkkkkkkkkkkkk.','.kkkkkkkkkkkkkkk','kkdkkkkkkkkkkkkk','kdddkkkkkkrrrkkk','kkdkkkkkkkkkkkkk','.kkkkkkkkkkkkkk.','..kkkk....kkkk..'], c: { k:'#2a2c36', d:'#000', r:'#ff2a2a' } },
+  gb:        { rows: ['gggggggggg','gssssssssg','gsllllllsg','gsllllllsg','gsllllllsg','gssssssssg','gggggggggg','gdgggggmmg','dddggggggg','gdgggggggg','gggggggggg'], c: { g:'#c4c4c4', s:'#5d5b74', l:'#8bac0f', d:'#2a2a2a', m:'#a3195b' } },
+  gbc:       { rows: ['pppppppppp','pssssssssp','psllllllsp','psllllllsp','psllllllsp','pssssssssp','pppppppppp','pdpppppyyp','dddppppppp','pdpppppppp','pppppppppp'], c: { p:'#8a50d8', s:'#1a1030', l:'#00c8b4', d:'#1a1030', y:'#ffd400' } },
+  gba:       { rows: ['..iiiiiiiiiiiiii..','.iiiisssssssssiiii.'.slice(0,18),'iidiisllllllllsiyi'.slice(0,18),'idddisllllllllsyii','iidiisllllllllsiii','.iiiisssssssssiii.'.slice(0,18),'..iiiiiiiiiiiiii..'], c: { i:'#4b3fb5', s:'#15123a', l:'#78a0f8', d:'#1d1748', y:'#c9c6f0' } },
+  psx:       { rows: ['..gggg......gggg..','.gggggggggggggggg.','ggdgggggggggggtggg','gdddggkgkgggsgcggg','ggdgggggggggggxggg','.gggggggggggggggg.','..ggg........ggg..'], c: { g:'#c8ccd4', d:'#4a5060', k:'#2a3040', t:'#2fb36a', c:'#e03a3a', x:'#3a6fe0', s:'#e070b0' } },
+  n64:       { rows: ['.ggggggggggggggg.','gggrgggggggggyyg','ggrrrggkkggggyyg','gggrggkkkkgggbbg','.ggggggkkgggggg.','..gg...gg...gg..','..gg...gg...gg..'], c: { g:'#8a8e98', r:'#e2231a', k:'#2e3036', y:'#ffcc00', b:'#1a4ea8' } },
+  psp:       { rows: ['.kkkkkkkkkkkkkkkkkk.','kkdkksssssssssskkxkk','kdddksllllllllskcksk','kkdkksllllllllskktkk','kkkkksssssssssskkkkk','.kkkkkkkkkkkkkkkkkk.'], c: { k:'#1c1e24', s:'#000', l:'#2050a0', d:'#5a6070', x:'#7fd4ff', c:'#7fd4ff', t:'#7fd4ff' } },
+  nds:       { rows: ['wwwwwwwwwwww','wssssssssssw','wsllllllllsw','wssssssssssw','gggggggggggg','wwwwwwwwwwww','wdwssssssbww','dddsllllsbbw','wdwsllllswww','wwwssssssww w'.replace(' ','').slice(0,12),'wwwwwwwwwwww'], c: { w:'#e4e8ee', s:'#2a3240', l:'#88c8f8', g:'#a7b3c4', d:'#2a3240', b:'#2a8ad8' } },
+  ps2:       { rows: ['..kkkk......kkkk..','.kkkkkkkkkkkkkkkk.','kkdkkkkkkkkkkktkkk','kdddkkbkbkkkskckkk','kkdkkkkkkkkkkkxkkk','.kkkkkkkkkkkkkkkk.','..kkk........kkk..'], c: { k:'#1a1c24', d:'#4a5060', b:'#3a6ad8', t:'#2fb36a', c:'#e03a3a', x:'#3a6fe0', s:'#e070b0' } },
+  atari2600: { rows: ['......kk......','......kk......','......kk......','..r...kk......','kkkkkkkkkkkkkk','kwwwwwwwwwwwwk','kkkkkkkkkkkkkk'], c: { k:'#141210', r:'#d8401a', w:'#ff8a1e' } },
+  pce:       { rows: ['wwwwwwwwwwwwww','wkkkkkkkkkkkkw','wkddkkkkkoookw','wkkkkkkkkkkkkw','wwwwwwwwwwwwww','wooooooooooooow'.slice(0,14)], c: { w:'#fafafa', k:'#2a2a2a', d:'#bdb8ad', o:'#e0561f' } },
+};
+function icon(key, scale = 4) { const ic = ICONS[key]; const w = Math.max(...ic.rows.map(r => r.length)), h = ic.rows.length; const [c, x] = cv(w, h); sprite(x, ic.rows, ic.c, 0, 0, 1); c.style.width = (w * scale) + 'px'; c.style.height = (h * scale) + 'px'; return c; }
+
+function qr(seed) { const n = 25; const [c, x] = cv(n, n); const r = rng(seed); R(x, '#fff', 0, 0, n, n); for (let y = 0; y < n; y++) for (let i = 0; i < n; i++) if (r() < 0.5) R(x, '#000', i, y, 1, 1);
+  const fin = (a, b) => { R(x, '#fff', a - 1, b - 1, 9, 9); R(x, '#000', a, b, 7, 7); R(x, '#fff', a + 1, b + 1, 5, 5); R(x, '#000', a + 2, b + 2, 3, 3); }; fin(0, 0); fin(n - 7, 0); fin(0, n - 7); return c; }
+
+function avatar(i, on) { const cols = ['#e03a3a', '#3a6fe0', '#2fb36a', '#f2c81e']; const [c, x] = cv(13, 13);
+  const rows = ['....aaaaa....', '...aaaaaaa...', '...abbabba...', '...aaaaaaa...', '....aaaaa....', '..aaaaaaaaa..', '.aaaaaaaaaaa.', '.aaaaaaaaaaa.', '.aa.aaaaa.aa.', '....aa.aa....', '....aa.aa....', '...aaa.aaa...', '.............'];
+  sprite(x, rows, { a: on ? (id === 'gb' ? '#0f380f' : cols[i]) : (id === 'gb' ? '#306230' : 'rgba(128,128,128,.45)'), b: on ? (id === 'gb' ? '#9bbc0f' : '#fff') : 'transparent' }, 0, 0); return c; }
+
+function btnGlyph(kind) { const [c, x] = cv(8, 8); const col = id === 'gb' ? '#0f380f' : { A:'#e03030', B:'#f0c020', X:'#3050e0', Y:'#30a050', tri:'#2fb36a', cir:'#e03a3a', crs:'#3a6fe0', sq:'#e070b0' }[kind];
+  const shapes = { tri: ['...aa...','..a..a..','..a..a..','.a....a.','.a....a.','aaaaaaaa','........','........'], cir: ['..aaaa..','.a....a.','a......a','a......a','a......a','a......a','.a....a.','..aaaa..'], crs: ['a......a','.a....a.','..a..a..','...aa...','...aa...','..a..a..','.a....a.','a......a'], sq: ['aaaaaaaa','a......a','a......a','a......a','a......a','a......a','a......a','aaaaaaaa'] };
+  if (shapes[kind]) sprite(x, shapes[kind], { a: col }, 0, 0); else { sprite(x, ['..aaaa..','.aaaaaa.','aaaaaaaa','aaaaaaaa','aaaaaaaa','aaaaaaaa','.aaaaaa.','..aaaa..'], { a: col }, 0, 0); } return c; }
+
+function logoMark() { const [c, x] = cv(10, 10); sprite(x, ['..aaaaaa..', '.a......a.', 'a..aaaa..a', 'a.a....a.a', 'aaaaaaaaaa', 'a.aaaaaa.a', 'aaaaaaaaaa', '.a......a.', '.a......a.', '..........'], { a: 'currentColor' === 'x' ? '#fff' : getComputedStyle(document.querySelector('[data-sys]')).getPropertyValue('--accent') }, 0, 0); return c; }
+
+function cursorSprite() { const [c, x] = cv(10, 8); const col = getComputedStyle(document.querySelector('[data-sys]')).getPropertyValue('--focus').trim();
+  sprite(x, ['aaaaaaaaaa', '.aaaaaaaa.', '..aaaaaa..', '...aaaa...', '....aa....'], { a: col }, 0, 1); return c; }
+
+// ---------------------------------------------------------------- build the page
+const home = document.getElementById('home'); home.dataset.sys = id; home.style.setProperty('--ar', S.ar);
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const game = GAMES[2];
+
+// decorative backdrop per console
+const decor = el('div', 'decor'); home.append(decor);
+(function drawDecor() {
+  const W = 480, H = 270; const [c, x] = cv(W, H); const r = rng(id + 'bg');
+  const bg = getComputedStyle(home).getPropertyValue('--bg').trim(); R(x, bg, 0, 0, W, H);
+  if (id === 'nes') { for (let k = 0; k < 70; k++) R(x, k % 5 ? '#3c3c3c' : '#7c7c7c', r() * W, r() * H * 0.7, 1, 1); }
+  if (id === 'snes') { const hz = 120; for (let y = hz; y < H; y++) { const z = 300 / (y - hz + 1); for (let i = 0; i < W; i++) { const wx = (i - W / 2) * z / 50; x.fillStyle = ((Math.floor(z) + Math.floor(wx + 100)) & 1) ? '#221650' : '#1a1040'; x.fillRect(i, y, 1, 1); } } }
+  if (id === 'genesis') { for (let y = 150; y < H; y += 6) for (let i = 0; i < W; i += 12) R(x, ((i / 12 + y / 6) & 1) ? '#0a1430' : '#05060c', i, y, 12, 6); for (let k = 0; k < 6; k++) R(x, '#ff2a2a', 0, 40 + k * 3, W, 1); }
+  if (id === 'gb' || id === 'gbc') { for (let y = 0; y < H; y += 2) for (let i = (y / 2) % 2; i < W; i += 2) R(x, id === 'gb' ? '#8bac0f' : '#4e2298', i, y, 1, 1); }
+  if (id === 'gba') { for (let y = 0; y < H; y += 8) R(x, '#251f66', 0, y, W, 4); }
+  if (id === 'psx') { for (let k = 0; k < 18; k++) { const cx0 = r() * W, cy0 = r() * H, s = 6 + r() * 14; for (let yy = 0; yy < s; yy++) { const ww = s - Math.abs(yy - s / 2) * 2; R(x, '#252b3c', cx0 - ww / 2, cy0 + yy, ww, 1); } } }
+  if (id === 'n64') { for (let y = 0; y < H; y += 16) for (let i = 0; i < W; i += 16) if (((i + y) / 16) % 2) R(x, '#1b1d24', i, y, 16, 16); }
+  if (id === 'psp') { for (let i = 0; i < W; i++) { const y1 = Math.round(150 + Math.sin(i / 40) * 18 + Math.sin(i / 13) * 4); const y2 = Math.round(160 + Math.sin(i / 34 + 1) * 22); R(x, '#1a3a7a', i, y1, 1, 2); R(x, '#2a5ab0', i, y2, 1, 1); R(x, '#0c1830', i, Math.min(y1, y2) + 2, 1, Math.abs(y2 - y1)); } }
+  if (id === 'nds') { for (let y = 0; y < H; y += 6) R(x, '#dfe5ec', 0, y, W, 1); for (let i = 0; i < W; i += 6) R(x, '#dfe5ec', i, 0, 1, H); }
+  if (id === 'ps2') { for (let k = 0; k < 26; k++) { const tx = 20 + k * 18 + r() * 6, th = 10 + r() * 50, base = 150 + r() * 10; for (let yy = 0; yy < th; yy += 5) { R(x, '#0a2470', tx, base - yy, 8, 4); R(x, '#1a3a9a', tx, base - yy, 8, 1); } } for (let y = 0; y < 120; y++) R(x, `rgba(20,60,160,${0.15 - y / 1000})`, 0, y, W, 1); }
+  if (id === 'atari2600') { for (let y = 0; y < H; y += 3) R(x, '#120e0a', 0, y, W, 1); }
+  if (id === 'pce') { for (let y = 0; y < H; y += 2) for (let i = (y / 2) % 2; i < W; i += 4) R(x, '#e6e1d6', i, y, 1, 1); }
+  decor.append(c);
+})();
+if (id === 'gb') home.append(el('div', 'home-lcd'));
+
+// top bar
+const topEl = el('header', 'topbar'); const logo = el('div', 'logo'); logo.append(logoMark()); logo.append(el('span', null, 'COUCH<b>·</b>'));
+topEl.append(logo, el('span', 'theme-tag', 'THEME: ARCADE PIXEL ART'));
+const tr = el('div', 'topbar-right'); tr.append(el('span', 'clock', '8:42 PM')); const g = icon('nes', 3); g.remove(); tr.append(el('span', 'gear', '')); topEl.append(tr); home.append(topEl);
+// gear as pixel sprite
+(() => { const [c, x] = cv(12, 12); const col = getComputedStyle(topEl.querySelector('.clock')).color; sprite(x, ['....aaaa....', '..a.aaaa.a..', '.aaaaaaaaaa.', '..aaa..aaa..', 'aaaa....aaaa', 'aaa......aaa', 'aaa......aaa', 'aaaa....aaaa', '..aaa..aaa..', '.aaaaaaaaaa.', '..a.aaaa.a..', '....aaaa....'], { a: col }, 0, 0); c.style.width = c.style.height = '48px'; tr.querySelector('.gear').append(c); })();
+
+// preview screen
+const prev = el('section', 'preview'); const scr = el('div', 'screen');
+const shot = scene(S, game, S.res[0], S.res[1]); scr.append(shot);
+if (id === 'nds') scr.append(dsBottom(256, 192, game));
+prev.append(scr); home.append(prev);
+
+// details
+const det = el('aside', 'details panel notch');
+const A = (id === 'psx' || id === 'ps2' || id === 'psp') ? 'crs' : 'A';
+det.innerHTML = `<h1 class="d-title">${game}</h1><p class="d-sys">${S.name.toUpperCase()}</p>
+<dl class="facts"><dt>Made by</dt><dd>${S.maker}, ${S.year}</dd><dt>Players</dt><dd>1 to 2</dd><dt>Source</dt><dd>Free homebrew</dd><dt>Last played</dt><dd>Yesterday</dd><dt>Size</dt><dd>0.3 MB</dd></dl>
+<p class="press">PRESS <span class="btn"></span> TO PLAY</p>`;
+const pb = btnGlyph(A); pb.style.width = pb.style.height = '30px'; det.querySelector('.btn').append(pb);
+if (id === 'nes' || id === 'gb' || id === 'atari2600') det.querySelector('.press').prepend(el('span', null, '▶'));
+home.append(det);
+
+// players / QR
+const pl = el('aside', 'players panel notch');
+pl.append(el('div', 'p-head', '1 OF 4 PLAYERS IN'));
+const q = el('div', 'qr notch'); q.append(qr('couch')); pl.append(q);
+pl.append(el('div', 'code', 'K7QX'), el('div', 'url', '192.168.1.20:8787/c'));
+const slots = el('div', 'slots'); for (let i = 0; i < 4; i++) { const s = el('div', 'slot' + (i === 0 ? ' on' : '')); const a = avatar(i, i === 0); s.append(a, el('span', null, i === 0 ? 'S21' : 'P' + (i + 1))); slots.append(s); } pl.append(slots);
+home.append(pl);
+
+// platform wheel: neighbours of the current console
+const pfs = el('nav', 'platforms');
+const idx = ORDER.indexOf(id); const shown = [];
+for (let k = -3; k <= 3; k++) shown.push(ORDER[(idx + k + ORDER.length) % ORDER.length]);
+if (id === 'gba') pfs.append(el('span', 'shoulder', 'L'));
+for (const k of shown) { const b = el('div', 'pf' + (k === id ? ' on' : '')); b.append(icon(k, 4)); b.append(el('b', null, SYS[k].short)); pfs.append(b); }
+if (id === 'gba') pfs.append(el('span', 'shoulder', 'R'));
+home.append(pfs);
+
+// cover wheel
+const wh = el('section', 'wheel');
+const mediaCls = S.media;
+GAMES.slice(0, 7).forEach((t, i) => {
+  const card = el('div', 'card' + (i === 2 ? ' on' : ''));
+  const m = el('span', 'media ' + mediaCls);
+  const lw = { cart: 64, case: 80, umd: 64, dscard: 52, dvd: 64, hucard: 64 }[mediaCls];
+  const lab = label(S, t, lw, Math.round(lw * 0.9)); lab.classList.add('label');
+  if (mediaCls === 'case') m.append(el('span', 'spine'));
+  if (mediaCls === 'dvd') m.append(el('span', 'band'));
+  m.append(lab);
+  if (mediaCls === 'cart') m.append(el('span', 'ridges'));
+  if (mediaCls === 'umd') m.append(el('span', 'hole'));
+  if (mediaCls === 'hucard') m.append(el('span', 'pins'));
+  card.append(m, el('span', 'card-title', t));
+  if (i === 2) { const cu = cursorSprite(); cu.className = 'cursor'; card.append(cu); }
+  wh.append(card);
+});
+home.append(wh);
+
+// hints
+const hints = el('footer', 'hints');
+const face = (id === 'psx' || id === 'ps2' || id === 'psp') ? [['crs', 'SELECT'], ['cir', 'BACK']] : id === 'snes' ? [['A', 'SELECT'], ['B', 'BACK']] : [['A', 'SELECT'], ['B', 'BACK']];
+for (const [k, t] of face) { const s = el('span'); s.append(btnGlyph(k), document.createTextNode(t)); hints.append(s); }
+hints.append(el('span', null, '✚ BROWSE'), el('span', 'grow'), el('span', 'chip', '12.4 GB FREE'), el('span', 'chip', '+ ADD GAMES'));
+home.append(hints);
+</script>
+</body>
+</html>

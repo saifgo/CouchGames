@@ -8,6 +8,7 @@ import { Art, Icon, Logo, useClock } from './common.js';
 import { Lobby } from './Lobby.js';
 import { StorageChip } from './Storage.js';
 import { TvAppButton, TvAppPanel, useApk } from './TvApp.js';
+import { hasPixelIcon, PixelIcon } from '../themes/pixel-art.js';
 
 interface Props {
   games: Game[];
@@ -43,6 +44,10 @@ interface Platform {
   accent?: string;
   /** Console logo shown instead of the label. */
   logo?: string;
+  /** System id, for the pixel theme's console icon. */
+  system?: string;
+  /** Pixel theme sub-line: short name and year (the icon has no lettering). */
+  pixelSub?: string;
   games: Game[];
 }
 
@@ -78,7 +83,7 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
       const list = playable.filter((g) => g.system === sys.id).sort(byTitle);
       if (list.length) {
         const logo = LOGOS[sys.id];
-        out.push({ key: sys.id, label: sys.shortName, title: sys.name, sub: `${sys.maker} · ${sys.year}`, accent: sys.accent, games: list, ...(logo ? { logo } : {}) });
+        out.push({ key: sys.id, label: sys.shortName, title: sys.name, sub: `${sys.maker} · ${sys.year}`, accent: sys.accent, games: list, system: sys.id, pixelSub: `${sys.shortName} · ${sys.year}`, ...(logo ? { logo } : {}) });
       }
     }
     return out;
@@ -87,6 +92,7 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
 
   const game = (focused && platform.games.includes(focused) ? focused : platform.games[0]) ?? null;
   const sys = game ? getSystem(game.system) : undefined;
+  const pixel = settings.theme === 'pixel';
 
   useEffect(() => {
     // Focus the first cover when the library appears.
@@ -145,6 +151,7 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
     <div
       className="home"
       data-nav-scope
+      data-sys={sys?.id ?? platform.system ?? platform.key}
       style={{ ['--sys' as string]: sys?.accent ?? platform.accent ?? 'var(--accent)' }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
@@ -170,6 +177,7 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
             className={`card ${g === game ? 'current' : ''} ${added?.ids.has(g.id) ? 'just-added' : ''}`}
             style={{ ['--glow' as string]: getSystem(g.system)?.accent }}
             data-game-id={g.id}
+            data-sys={g.system}
             data-nav
             data-nav-default={i === 0 ? '' : undefined}
             onFocus={() => setFocused(g)}
@@ -202,12 +210,14 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
             onFocus={() => pickPlatform(p.key)}
             onClick={() => pickPlatform(p.key)}
           >
-            {p.logo ? (
+            {pixel && p.system && hasPixelIcon(p.system) ? (
+              <PixelIcon className="platform-img platform-pixel" system={p.system} title={p.title} />
+            ) : p.logo ? (
               <img className="platform-img" src={p.logo} alt={p.title} draggable={false} />
             ) : (
               <span className="platform-logo">{p.label}</span>
             )}
-            <small>{p.sub}</small>
+            <small>{pixel && p.system && hasPixelIcon(p.system) ? p.pixelSub : p.sub}</small>
           </button>
         ))}
       </nav>

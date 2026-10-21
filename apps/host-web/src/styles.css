@@ -20,7 +20,6 @@
 }
 /* Themes (M6) */
 :root[data-theme='sunset'] { --accent: #ff8a65; --focus: #ff8a65; --on-accent: #1f0d07; --bg: #120a14; --panel: rgba(32, 18, 34, 0.82); --panel-solid: #1e1220; }
-:root[data-theme='arcade'] { --accent: #39ff88; --focus: #39ff88; --on-accent: #04140a; --bg: #040806; --panel: rgba(10, 24, 16, 0.82); --panel-solid: #0b1a12; }
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; height: 100%; background: var(--bg); color: var(--text); overflow: hidden; }
 ::selection { background: var(--accent); color: var(--on-accent); }
@@ -60,6 +59,11 @@ code { background: rgba(255, 255, 255, 0.08); padding: 0.1em 0.4em; border-radiu
   transition: --sys 0.6s ease;
 }
 .home > * { position: relative; z-index: 1; }
+/* Fixed layout for every theme and console: numeric line heights scale with font-size, not with the
+   font, so box heights never change when a theme swaps fonts. Covers never grow past their slot. */
+.home { line-height: 1.3; }
+.home :is(button, kbd, small, dd, dt, h1, h2, p, span) { line-height: inherit; }
+.home .card { min-width: 0; }
 
 .home > .backdrop { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: radial-gradient(ellipse at 50% -10%, color-mix(in srgb, var(--sys) 16%, var(--bg)) 0%, var(--bg) 65%); }
 .backdrop-art { position: absolute; inset: -5%; opacity: 0.2; filter: blur(32px) saturate(1.2); animation: fadein 0.8s ease; }
