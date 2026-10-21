@@ -9,6 +9,7 @@ import { Lobby } from './Lobby.js';
 import { StorageChip } from './Storage.js';
 import { TvAppButton, TvAppPanel, useApk } from './TvApp.js';
 import { hasPixelIcon, PixelIcon } from '../themes/pixel-art.js';
+import { NeonMarquee, NeonMotifs } from '../themes/neon-art.js';
 
 interface Props {
   games: Game[];
@@ -93,6 +94,9 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
   const game = (focused && platform.games.includes(focused) ? focused : platform.games[0]) ?? null;
   const sys = game ? getSystem(game.system) : undefined;
   const pixel = settings.theme === 'pixel';
+  const neon = settings.theme === 'neon';
+  /** Console the home screen is dressed as: the focused game's, else the selected platform's. */
+  const lookSys = sys ? sys : platform.system ? getSystem(platform.system) : undefined;
 
   useEffect(() => {
     // Focus the first cover when the library appears.
@@ -224,6 +228,7 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
 
       <header className="topbar">
         <Logo />
+        {neon && lookSys && <NeonMarquee key={lookSys.id} logo={LOGOS[lookSys.id]} name={lookSys.name} />}
         <div className="topbar-right">
           <span className="clock">{clock}</span>
           <button className="icon-btn" data-nav onClick={onSettings} aria-label="Settings">
@@ -233,6 +238,7 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
       </header>
 
       <section className="preview" aria-hidden>
+        {neon && lookSys && <NeonMotifs key={lookSys.id} system={lookSys.id} />}
         <div className="preview-screen" key={game?.id ?? 'none'}>
           {game ? (
             <Art game={game} online={settings.onlineArt} kind="Named_Snaps" />

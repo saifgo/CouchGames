@@ -1,0 +1,158 @@
+/*
+ * Neon Arcade theme (data-theme="neon"): an arcade hall at night. Bent-glass tube lettering on a
+ * dark brick wall; the selected console's sign is lit, the others are switched-off tubes.
+ * Mockups: docs/design/themes/neon.html (look "signs").
+ *
+ * RULE: this file never changes layout. Grid, sizes, paddings, margins and positions all come from
+ * styles.css and are the same for every theme and every console. Here we only change colours,
+ * fonts (fixed line heights), backgrounds, and glows drawn with box-shadow / text-shadow / filter,
+ * which take no space. The marquee and the wall drawings are absolutely positioned.
+ *
+ * Each console sets two tube colours on .home[data-sys]: --n1 (main) and --n2 (second), plus the
+ * colours of its pad's buttons (--b-ok, --b-back). Shadows using them are declared on .home so
+ * they resolve with that console's colours.
+ */
+@import '@fontsource/tilt-neon/latin-400.css';
+@import '@fontsource/neonderthaw/latin-400.css';
+
+:root[data-theme='neon'] {
+  --bg: #120d10;
+  --panel: rgba(11, 10, 14, 0.94);
+  --panel-solid: #0e0c11;
+  --line: #2a2430;
+  --text: #fff;
+  --muted: #b9b2c4;
+  --accent: #ff3fa4;
+  --on-accent: #14000c;
+  --focus: #fff;
+  --shadow: none;
+  font-family: 'Tilt Neon', 'Segoe UI', system-ui, sans-serif;
+}
+:root[data-theme='neon'] .modal { border-color: #ff3fa4; box-shadow: 0 0 0 1px #ff3fa4, 0 0 1.4rem #ff3fa480, 0 2rem 5rem rgba(0, 0, 0, 0.6); }
+
+/* Default tubes (All games, Recent, Favourites) and the shadows built from them. */
+[data-theme='neon'] .home {
+  --n1: #ff3fa4; --n2: #3ff0ff; --b-ok: #ff3fa4; --b-back: #3ff0ff;
+  --tube: 0 0 0 2px var(--n1), 0 0 0.6rem 1px var(--n1), 0 0 1.6rem 2px var(--n1), inset 0 0 0.6rem var(--n1);
+  --tube2: 0 0 0 2px var(--n2), 0 0 0.6rem 1px var(--n2), 0 0 1.6rem 2px var(--n2), inset 0 0 0.6rem var(--n2);
+  --tube-text: 0 0 2px #fff, 0 0 0.4rem var(--n1), 0 0 1rem var(--n1), 0 0 2rem var(--n1);
+  --tube-text2: 0 0 2px #fff, 0 0 0.4rem var(--n2), 0 0 1rem var(--n2);
+  --tube-img: drop-shadow(0 0 2px #fff) drop-shadow(0 0 0.45rem var(--n1)) drop-shadow(0 0 1.2rem var(--n1));
+  font-family: 'Tilt Neon', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Per-console tube colours (from each console's plastics and buttons). */
+[data-theme='neon'] .home[data-sys='nes'] { --n1: #ff2b3a; --n2: #f2f2f2; --b-ok: #ff2b3a; --b-back: #ff2b3a; }
+[data-theme='neon'] .home[data-sys='snes'] { --n1: #a46bff; --n2: #ffd23f; --b-ok: #ff3b3b; --b-back: #ffd23f; }
+[data-theme='neon'] .home[data-sys='genesis'] { --n1: #2f8bff; --n2: #ff2a2a; --b-ok: #dfe6f2; --b-back: #dfe6f2; }
+[data-theme='neon'] .home[data-sys='gb'] { --n1: #8cff2e; --n2: #ff3aa8; --b-ok: #ff3aa8; --b-back: #ff3aa8; }
+[data-theme='neon'] .home[data-sys='gbc'] { --n1: #b46bff; --n2: #00ffd5; --b-ok: #ffd400; --b-back: #ffd400; }
+[data-theme='neon'] .home[data-sys='gba'] { --n1: #6c5cff; --n2: #ff5ce1; --b-ok: #c9c6ff; --b-back: #c9c6ff; }
+[data-theme='neon'] .home[data-sys='psx'] { --n1: #3a8bff; --n2: #ff3a5c; --b-ok: #6ea8ff; --b-back: #ff3a5c; }
+[data-theme='neon'] .home[data-sys='n64'] { --n1: #ffcc00; --n2: #2aff6a; --b-ok: #3a6bff; --b-back: #2aff6a; }
+[data-theme='neon'] .home[data-sys='psp'] { --n1: #7fd4ff; --n2: #ffffff; --b-ok: #6ea8ff; --b-back: #ff3a5c; }
+[data-theme='neon'] .home[data-sys='nds'] { --n1: #4ac8ff; --n2: #e4e8ee; --b-ok: #ff3b3b; --b-back: #ffd23f; }
+[data-theme='neon'] .home[data-sys='ps2'] { --n1: #2f5cff; --n2: #9fb8ff; --b-ok: #6ea8ff; --b-back: #ff3a5c; }
+[data-theme='neon'] .home[data-sys='atari2600'] { --n1: #ff8a1e; --n2: #ffd08a; --b-ok: #ff3b1e; --b-back: #ffd08a; }
+[data-theme='neon'] .home[data-sys='pce'] { --n1: #ff6a1f; --n2: #ffffff; --b-ok: #ff6a1f; --b-back: #ff6a1f; }
+[data-theme='neon'] .home[data-sys='recent'] { --n1: #4dd8ff; --n2: #ff3fa4; }
+[data-theme='neon'] .home[data-sys='fav'] { --n1: #ffd166; --n2: #ff3fa4; }
+
+/* wall: dark brick, lit by the signs' colours */
+[data-theme='neon'] .home > .backdrop {
+  background:
+    radial-gradient(ellipse at 28% 40%, color-mix(in srgb, var(--n1) 20%, transparent), transparent 55%),
+    radial-gradient(ellipse at 82% 45%, color-mix(in srgb, var(--n2) 14%, transparent), transparent 50%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='92'%3E%3Cg fill='%230e0a0b'%3E%3Crect y='42' width='120' height='4'/%3E%3Crect y='88' width='120' height='4'/%3E%3Crect x='116' width='4' height='46'/%3E%3Crect x='56' y='46' width='4' height='46'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 7.5rem 5.75rem,
+    #1b1416;
+  transition: background 0.4s ease;
+}
+[data-theme='neon'] .home .backdrop-art { display: none; }
+
+/* top bar: script "Couch" sign, clock, marquee */
+[data-theme='neon'] .home .logo { font-family: 'Neonderthaw', cursive; font-weight: 400; font-size: 2.8rem; line-height: 1.6rem; color: #fff; text-shadow: var(--tube-text); letter-spacing: 0; }
+[data-theme='neon'] .home .logo-mark { height: 1rem; color: var(--n2); filter: drop-shadow(0 0 0.35rem var(--n2)); }
+[data-theme='neon'] .home .clock { font-weight: 400; color: #fff; text-shadow: var(--tube-text2); }
+[data-theme='neon'] .home .icon-btn { background: transparent; box-shadow: 0 0 0 2px var(--n1), 0 0 0.7rem var(--n1); }
+[data-theme='neon'] .home .icon-btn:focus { background: var(--n1); color: #000; box-shadow: 0 0 0 2px #fff, 0 0 1.4rem var(--n1); }
+.neon-marquee { position: absolute; left: 50%; top: 0.5rem; width: 34rem; height: 4.2rem; transform: translateX(-50%); display: flex; align-items: center; justify-content: center;
+  background: rgba(12, 10, 14, 0.92); border-radius: 0.9rem; box-shadow: 0 0 0 2px #2a2430, 0 0.6rem 2rem rgba(0, 0, 0, 0.8); pointer-events: none; }
+.neon-marquee::before, .neon-marquee::after { content: ''; position: absolute; top: -0.5rem; width: 2px; height: 0.5rem; background: #4a4450; }
+.neon-marquee::before { left: 4rem; }
+.neon-marquee::after { right: 4rem; }
+.neon-marquee img { max-height: 3rem; max-width: 30rem; object-fit: contain; filter: var(--tube-img); animation: neon-on 0.5s steps(1); }
+.neon-marquee span { font-size: 2.2rem; line-height: 1; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; color: #fff; text-shadow: var(--tube-text); }
+/* switching consoles: the tube stutters on */
+@keyframes neon-on { 0% { opacity: 0.2; } 20% { opacity: 1; } 35% { opacity: 0.4; } 50% { opacity: 1; } }
+
+/* preview screen and the console drawings either side of it */
+[data-theme='neon'] .home .preview-screen { z-index: 1; border-color: transparent; border-radius: 1rem; box-shadow: var(--tube); }
+[data-theme='neon'] .home .preview-screen::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 2px, transparent 2px 4px); }
+.neon-motif { position: absolute; top: 50%; width: 9rem; height: 10.8rem; transform: translateY(-50%); z-index: 0; overflow: visible; pointer-events: none; animation: fadein 0.5s ease; }
+.neon-motif.left { left: 1.4rem; }
+.neon-motif.right { right: 0.8rem; }
+
+/* panels: glass panes framed by a tube, with mounting screws */
+[data-theme='neon'] .home :is(.details, .players-panel) { border-color: transparent; border-radius: 1.1rem; background: var(--panel); box-shadow: var(--tube); }
+[data-theme='neon'] .home .players-panel { box-shadow: var(--tube2); }
+[data-theme='neon'] .home :is(.details, .players-panel)::before,
+[data-theme='neon'] .home :is(.details, .players-panel)::after { content: ''; position: absolute; top: 0.6rem; left: 0.6rem; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: radial-gradient(#9a9aa0, #3a3a40); }
+[data-theme='neon'] .home :is(.details, .players-panel)::after { left: auto; right: 0.6rem; }
+/* Script title: bigger glyphs on the same line height as the default theme (2.6rem font × .home line-height 1.3). */
+[data-theme='neon'] .home .details-title { font-family: 'Neonderthaw', cursive; font-weight: 400; font-size: 3.6rem; line-height: calc(2.6rem * 1.3); letter-spacing: 0; color: #fff; text-shadow: var(--tube-text);
+  overflow: clip; overflow-clip-margin: 1rem; }
+[data-theme='neon'] .home .details-fav { color: var(--n2); filter: drop-shadow(0 0 0.3rem var(--n2)); }
+[data-theme='neon'] .home .details-system { font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--n2); text-shadow: 0 0 0.6rem var(--n2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[data-theme='neon'] .home .facts { border-top-color: var(--n1); box-shadow: 0 -0.4rem 0.8rem -0.6rem var(--n1); }
+[data-theme='neon'] .home .facts dt { color: var(--muted); }
+[data-theme='neon'] .home .press-play { color: #fff; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 400; }
+[data-theme='neon'] .home kbd { font-family: inherit; font-weight: 400; }
+[data-theme='neon'] .home .press-play kbd { background: transparent; color: #fff; --b: var(--b-ok); box-shadow: 0 0 0 2px var(--b), 0 0 0.7rem var(--b), inset 0 0 0.6rem var(--b); text-shadow: 0 0 0.5rem var(--b);
+  animation: neon-pulse 1.6s ease-in-out infinite; }
+@keyframes neon-pulse { 50% { box-shadow: 0 0 0 2px var(--b), 0 0 1.6rem 0.25rem var(--b), inset 0 0 0.9rem var(--b); } }
+
+/* join panel */
+[data-theme='neon'] .home .lobby-head { font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--n2); text-shadow: 0 0 0.6rem var(--n2); white-space: nowrap; }
+[data-theme='neon'] .home .qr { box-shadow: 0 0 1.1rem var(--n2); }
+[data-theme='neon'] .home .code { color: #fff; font-weight: 400; text-shadow: var(--tube-text2); }
+[data-theme='neon'] .home .lobby-url { color: var(--muted); }
+[data-theme='neon'] .home .slot { background: transparent; border-color: transparent; }
+[data-theme='neon'] .home .slot.empty .slot-avatar { border-color: color-mix(in srgb, var(--pc) 45%, transparent); }
+[data-theme='neon'] .home .slot.filled { background: transparent; border-color: transparent; }
+[data-theme='neon'] .home .slot.filled .slot-avatar { background: transparent; color: #fff; box-shadow: 0 0 0 2px var(--pc), 0 0 0.8rem var(--pc), inset 0 0 0.6rem var(--pc); }
+
+/* console strip: logos are switched-off tubes until selected */
+[data-theme='neon'] .home .platforms { background: rgba(10, 9, 12, 0.95); border-color: var(--n1); box-shadow: 0 0 0.9rem -0.2rem var(--n1), inset 0 0 0.9rem -0.4rem var(--n1); }
+[data-theme='neon'] .home .platform { opacity: 1; background: transparent; }
+[data-theme='neon'] .home .platform-img { filter: grayscale(1) brightness(0.75) opacity(0.3); transition: filter 0.2s ease; }
+[data-theme='neon'] .home .platform-logo { font-weight: 400; color: #4a3f52; }
+[data-theme='neon'] .home .platform small { color: #5a5060; }
+[data-theme='neon'] .home .platform.active .platform-img { filter: grayscale(0.3) opacity(0.75); }
+[data-theme='neon'] .home .platform.active .platform-logo { color: color-mix(in srgb, var(--pf, var(--n1)) 70%, #000); }
+[data-theme='neon'] .home .platform:focus { background: transparent; }
+[data-theme='neon'] .home .platform:focus .platform-img { filter: var(--tube-img); animation: neon-flicker 4s infinite; }
+[data-theme='neon'] .home .platform:focus .platform-logo { color: #fff; text-shadow: 0 0 2px #fff, 0 0 0.4rem var(--pf, var(--n1)), 0 0 1rem var(--pf, var(--n1)); animation: neon-flicker 4s infinite; }
+[data-theme='neon'] .home .platform:focus small { color: var(--n2); text-shadow: 0 0 0.5rem var(--n2); }
+@keyframes neon-flicker { 0%, 7%, 9%, 100% { opacity: 1; } 8% { opacity: 0.35; } }
+
+/* covers */
+[data-theme='neon'] .home .card .art { border-radius: 0.3rem; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15); }
+[data-theme='neon'] .home .card:focus .art { outline: none; box-shadow: var(--tube); }
+[data-theme='neon'] .home .card-title { color: var(--muted); }
+[data-theme='neon'] .home .card:focus .card-title { color: #fff; font-weight: 400; text-shadow: var(--tube-text); }
+[data-theme='neon'] .home .card:focus::before { content: ''; position: absolute; top: -1.5rem; left: calc(50% - 0.5rem); border: 0.5rem solid transparent; border-top-color: var(--n2);
+  filter: drop-shadow(0 0 0.35rem var(--n2)); animation: neon-bob 1.2s ease-in-out infinite; }
+[data-theme='neon'] .home .card { position: relative; }
+@keyframes neon-bob { 50% { transform: translateY(0.3rem); } }
+[data-theme='neon'] .home .new-badge { background: var(--n2); box-shadow: 0 0 0.8rem var(--n2); }
+[data-theme='neon'] .home .add-card .card-frame { border-color: var(--n1); box-shadow: 0 0 0.8rem var(--n1); color: #fff; }
+
+/* bottom bar */
+[data-theme='neon'] .home .hints { background: rgba(10, 9, 12, 0.95); border-top-color: var(--n1); box-shadow: 0 0 0.9rem -0.2rem var(--n1); letter-spacing: 0.06em; }
+[data-theme='neon'] .home .hints kbd { border-color: transparent; color: #fff; --b: var(--b-ok); box-shadow: 0 0 0 2px var(--b), 0 0 0.6rem var(--b), inset 0 0 0.5rem var(--b); text-shadow: 0 0 0.4rem var(--b); }
+[data-theme='neon'] .home .hints > span:nth-child(2) kbd { --b: var(--b-back); }
+[data-theme='neon'] .home .hints kbd.pad { box-shadow: none; text-shadow: none; filter: drop-shadow(0 0 0.3rem var(--n2)); }
+[data-theme='neon'] .home .hints .hint { color: var(--muted); }
+[data-theme='neon'] .home .add { background: transparent; border-color: var(--n2); color: var(--n2); box-shadow: 0 0 0.6rem color-mix(in srgb, var(--n2) 60%, transparent); text-shadow: 0 0 0.4rem var(--n2); }
+[data-theme='neon'] .home .add:focus { background: var(--n2); color: #000; text-shadow: none; box-shadow: 0 0 1.2rem var(--n2); }

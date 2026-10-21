@@ -113,6 +113,8 @@ turned white for the dark UI; nothing else changes.
 | PlayStation 2 | PlayStation 2 logo.svg |
 | Atari 2600 | Atari 2600 logo.svg |
 
+The Neon Arcade theme also shows the focused console's logo as a lit sign in the top bar (same files).
+
 The same logos also appear on the **default Couch covers** (shown when a game has no box art):
 `packages/systems/covers/*.svg` and `res/drawable-nodpi/cover_*.png`, made by
 `packages/systems/scripts/build-covers.ts` (`pnpm covers`). The rest of each cover is Couch's own artwork.
@@ -134,3 +136,14 @@ bundles these fonts from npm (`@fontsource/*`; packaging MIT, fonts as below):
 | Silkscreen (Jason Kottke) | @fontsource/silkscreen | SIL OFL 1.1 |
 | Pixelify Sans (Stefie Justprince) | @fontsource/pixelify-sans | SIL OFL 1.1 |
 | Jersey 10 (Sarah Cadigan-Fried) | @fontsource/jersey-10 | SIL OFL 1.1 |
+
+### Neon Arcade theme (host-web)
+
+The wall drawings (`apps/host-web/src/themes/neon-art.tsx`: buttons, cartridges, discs and handheld outlines
+as neon tubes) and the theme styles (`apps/host-web/src/themes/neon.css`) are original artwork for this
+project. The top-bar sign reuses the console logos listed above. Fonts (`@fontsource/*`; packaging MIT):
+
+| Font | Package | License |
+|---|---|---|
+| Tilt Neon (Andy Clymer) | @fontsource/tilt-neon | SIL OFL 1.1 |
+| Neonderthaw (Robert Leuschke) | @fontsource/neonderthaw | SIL OFL 1.1 |
