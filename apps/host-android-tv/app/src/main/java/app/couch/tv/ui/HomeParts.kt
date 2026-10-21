@@ -75,6 +75,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -151,6 +153,25 @@ private val CenterSpec = object : BringIntoViewSpec {
 /** The background: near-black, lit from the top in the focused system's colour, with the game's snapshot faint behind. */
 @Composable
 fun Backdrop(game: Game?, onlineArt: Boolean, accent: Color) {
+    // Themes paint a flat pattern per console instead of the blurred screenshot.
+    when (val look = LocalLook.current) {
+        // Own layer: animations elsewhere on the screen don't redraw the wall.
+        is HomeLook.Pixel -> { Box(Modifier.fillMaxSize().graphicsLayer().drawBehind(look.p.backdrop)); return }
+        is HomeLook.Neon -> {
+            val wall = remember(look.n) { neonWall(look.n) }
+            Box(Modifier.fillMaxSize().graphicsLayer().drawBehind(wall)) {
+                // Neon drawings of the console on the wall either side of the cover row (behind the
+                // covers, so a long row simply passes in front of them).
+                if (hasNeonMotif(look.sys)) {
+                    val m = Modifier.padding(bottom = 74.dp).size(width = 120.dp, height = 112.dp)
+                    NeonMotif(look.sys!!, 0, m.align(Alignment.BottomStart).padding(start = 18.dp))
+                    NeonMotif(look.sys!!, 1, m.align(Alignment.BottomEnd).padding(end = 18.dp))
+                }
+            }
+            return
+        }
+        HomeLook.Midnight -> Unit
+    }
     Box(
         Modifier.fillMaxSize().drawBehind {
             drawRect(Bg)
@@ -197,16 +218,71 @@ private fun rememberClock(): String {
 @Composable
 fun TopBar(onSettings: () -> Unit) {
     val clock = rememberClock()
+    val look = LocalLook.current
     // Logo, clock, settings. The console you're on shows in the platform wheel, players in the lobby.
-    Row(
-        Modifier.fillMaxWidth().padding(start = SafeX, end = SafeX - 8.dp, top = SafeY, bottom = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    Box(
+        Modifier.fillMaxWidth().drawBehind {
+            when (look) {
+                is HomeLook.Pixel -> {
+                    look.p.bar(this)
+                    drawRect(look.p.line, Offset(0f, size.height), androidx.compose.ui.geometry.Size(size.width, .25f * Rem.toPx()))
+                }
+                else -> Unit
+            }
+        },
     ) {
-        Logo()
-        Spacer(Modifier.weight(1f))
-        Text(clock, fontSize = Body, style = Tabular)
-        IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, contentDescription = "Settings") }
+        Row(
+            Modifier.fillMaxWidth().padding(start = SafeX, end = SafeX - 8.dp, top = SafeY, bottom = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            when (look) {
+                HomeLook.Midnight -> Logo()
+                is HomeLook.Pixel -> Logo(mark = look.p.accent, ink = look.p.barInk, font = look.p.head)
+                is HomeLook.Neon -> Logo(mark = look.n.n2, ink = Color.White, script = look.n.n1)
+            }
+            Spacer(Modifier.weight(1f))
+            when (look) {
+                HomeLook.Midnight -> Text(clock, fontSize = Body, style = Tabular)
+                is HomeLook.Pixel -> ThemedText(clock, style = look.p.head.style(Body).merge(Tabular), color = look.p.barInk)
+                is HomeLook.Neon -> NeonText(clock, TiltNeon.style(Body).merge(Tabular), look.n.n2)
+            }
+            ThemedIconButton(onClick = onSettings) { Icon(Icons.Default.Settings, contentDescription = "Settings") }
+        }
+        if (look is HomeLook.Neon && look.sys != null && Systems.byId(look.sys) != null) {
+            // The console's logo lit in a sign hanging over the middle of the bar.
+            NeonMarquee(
+                look.sys, Systems.byId(look.sys)!!.name, look.n,
+                Modifier.align(Alignment.TopCenter).padding(top = SafeY - 4.dp).size(width = Rem * 34f, height = 44.dp),
+            )
+        }
+    }
+}
+
+/** The top bar's settings button, in the theme's colours. */
+@Composable
+private fun ThemedIconButton(onClick: () -> Unit, content: @Composable () -> Unit) {
+    when (val look = LocalLook.current) {
+        HomeLook.Midnight -> IconButton(onClick = onClick) { content() }
+        is HomeLook.Pixel -> IconButton(
+            onClick = onClick,
+            shape = androidx.tv.material3.IconButtonDefaults.shape(RectangleShape),
+            colors = androidx.tv.material3.IconButtonDefaults.colors(
+                containerColor = Color.Transparent, contentColor = look.p.barInk,
+                focusedContainerColor = look.p.focus, focusedContentColor = look.p.onAccent,
+            ),
+        ) { content() }
+        is HomeLook.Neon -> IconButton(
+            onClick = onClick,
+            modifier = Modifier.drawBehind {
+                tubeGlow(look.n.n1, size.minDimension / 2)
+                drawCircle(look.n.n1, size.minDimension / 2 - 1.dp.toPx(), style = Stroke(2.dp.toPx()))
+            },
+            colors = androidx.tv.material3.IconButtonDefaults.colors(
+                containerColor = Color.Transparent, contentColor = Color.White,
+                focusedContainerColor = look.n.n1, focusedContentColor = Color.Black,
+            ),
+        ) { content() }
     }
 }
 
@@ -222,16 +298,36 @@ fun Preview(
     loading: app.couch.tv.library.LoadProgress? = null,
     needsStoragePermission: Boolean = false,
 ) {
+    val look = LocalLook.current
     Box(modifier, contentAlignment = Alignment.Center) {
         val reduce = rememberReduceMotion()
-        val shape = RoundedCornerShape(8.dp)
+        val shape = when (look) {
+            HomeLook.Midnight -> RoundedCornerShape(8.dp)
+            is HomeLook.Pixel -> RectangleShape
+            is HomeLook.Neon -> RoundedCornerShape(Rem)
+        }
+        val frame = when (look) {
+            HomeLook.Midnight -> Modifier.shadow(16.dp, shape).border(1.dp, Color.White.copy(alpha = .14f), shape)
+            // The console's bezel, drawn outside the screen (fits in the preview's padding).
+            is HomeLook.Pixel -> Modifier.drawBehind { rings(look.p.screen) }.border(1.dp, Color.Black, shape)
+            is HomeLook.Neon -> Modifier.drawBehind { tubeGlow(look.n.n1, Rem.toPx()) }
+        }
         Box(
             Modifier
                 .aspectRatio(4f / 3f, matchHeightConstraintsFirst = true)
-                .shadow(16.dp, shape)
-                .border(1.dp, Color.White.copy(alpha = .14f), shape)
+                .then(frame)
                 .clip(shape)
-                .background(Color.Black),
+                .background(Color.Black)
+                .drawWithContent {
+                    drawContent()
+                    if (look is HomeLook.Neon) {
+                        // Scanlines and the tube's inner glow.
+                        val step = 4f; val line = 2f
+                        var y = 0f
+                        while (y < size.height) { drawRect(Color.Black.copy(alpha = .22f), Offset(0f, y), androidx.compose.ui.geometry.Size(size.width, line)); y += step }
+                        tubeInner(look.n.n1, Rem.toPx())
+                    }
+                },
         ) {
             if (game != null) {
                 androidx.compose.runtime.key(game.id) {
@@ -240,6 +336,7 @@ fun Preview(
                     Art(
                         game, onlineArt, Modifier.fillMaxSize().graphicsLayer { alpha = fade.value },
                         kind = "Named_Snaps", shape = RectangleShape, pixelated = true,
+                        colorFilter = if (look is HomeLook.Pixel && look.p.lcdPreview) LcdGreen else null,
                     )
                 }
             } else {
@@ -271,25 +368,76 @@ fun Preview(
 }
 
 @Composable
-private fun InfoPanel(modifier: Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        modifier
-            .clip(PanelShape)
-            .background(Panel.copy(alpha = .92f))
-            .border(1.dp, Line, PanelShape)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        content = content,
-    )
+private fun InfoPanel(modifier: Modifier, players: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
+    val look = LocalLook.current
+    val skin = when (look) {
+        HomeLook.Midnight -> Modifier.clip(PanelShape).background(Panel.copy(alpha = .92f)).border(1.dp, Line, PanelShape)
+        is HomeLook.Pixel -> {
+            val p = look.p
+            val r = p.radius * Rem.value
+            val shape = RoundedCornerShape(r.dp)
+            val frame = if (players) p.playersFrame ?: p.frame else p.frame
+            // Pixel frames are drawn inside the panel (CSS inset shadows), over its 1 dp border.
+            Modifier.clip(shape).drawBehind { p.panel(this); insets(frame, r.dp.toPx()) }.border(1.dp, p.line, shape)
+        }
+        is HomeLook.Neon -> {
+            val tube = if (players) look.n.n2 else look.n.n1
+            val r = 1.1f * Rem.value
+            val shape = RoundedCornerShape(r.dp)
+            Modifier
+                .drawBehind { tubeGlow(tube, r.dp.toPx()) }
+                .clip(shape)
+                .background(NeonColors.panel)
+                .drawBehind {
+                    tubeInner(tube, r.dp.toPx())
+                    // Mounting screws in the top corners.
+                    val s = .3f * Rem.toPx(); val inset = .6f * Rem.toPx() + s
+                    for (x in listOf(inset, size.width - inset)) {
+                        drawCircle(Brush.radialGradient(listOf(Color(0xFF9A9AA0), Color(0xFF3A3A40)), Offset(x, inset), s), s, Offset(x, inset))
+                    }
+                }
+        }
+    }
+    val ink = when (look) {
+        HomeLook.Midnight -> androidx.tv.material3.LocalContentColor.current
+        is HomeLook.Pixel -> look.p.text
+        is HomeLook.Neon -> Color.White
+    }
+    CompositionLocalProvider(androidx.tv.material3.LocalContentColor provides ink) {
+        Column(
+            modifier.then(skin).padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            content = content,
+        )
+    }
 }
 
 /** Game title in the details panel: the same heavy upright sans as the logo. */
 @Composable
 private fun PanelTitle(text: String, maxLines: Int = 3) {
-    Text(
-        text, fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.ExtraBold,
-        maxLines = maxLines, overflow = TextOverflow.Ellipsis,
-    )
+    when (val look = LocalLook.current) {
+        HomeLook.Midnight -> Text(
+            text, fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.ExtraBold,
+            maxLines = maxLines, overflow = TextOverflow.Ellipsis,
+        )
+        is HomeLook.Pixel -> {
+            val p = look.p
+            var style = p.head.style(24.sp, 28.sp)
+            if (p.titleItalic) style = style.copy(fontStyle = FontStyle.Italic)
+            if (p.titleShadow != null) {
+                val (d, c) = p.titleShadow
+                val px = with(androidx.compose.ui.platform.LocalDensity.current) { (Rem * d).toPx() }
+                style = style.copy(shadow = Shadow(c, Offset(px, px), 0f))
+            }
+            if (p.titleBrush != null) style = style.copy(brush = p.titleBrush)
+            ThemedText(text, style = style, color = if (p.titleBrush != null) Color.Unspecified else p.title, maxLines = maxLines, overflow = TextOverflow.Ellipsis)
+        }
+        // A script neon sign: bigger glyphs on the same line height.
+        is HomeLook.Neon -> NeonText(
+            text, TextStyle(fontFamily = ThemeFonts.neonderthaw, fontSize = 33.sp, lineHeight = 28.sp, lineHeightStyle = FixedLine), look.n.n1,
+            maxLines = maxLines, overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 /**
@@ -313,61 +461,163 @@ fun Details(game: Game?, favourite: Boolean, gamepad: Boolean, accent: Color, mo
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     PanelTitle(game.title)
+                    val look = LocalLook.current
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            sys.name, fontSize = Body, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold,
-                            color = lerp(accent, Color.White, .3f), maxLines = 2, overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false),
-                        )
-                        if (favourite) Icon(Icons.Rounded.Star, contentDescription = "Favourite", tint = Accent, modifier = Modifier.size(18.dp))
+                        val m = Modifier.weight(1f, fill = false)
+                        when (look) {
+                            HomeLook.Midnight -> Text(
+                                sys.name, fontSize = Body, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold,
+                                color = lerp(accent, Color.White, .3f), maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = m,
+                            )
+                            is HomeLook.Pixel -> ThemedText(
+                                sys.name, style = look.p.head.style(Body, 20.sp), color = look.p.accent,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = m,
+                            )
+                            is HomeLook.Neon -> ThemedText(
+                                sys.name.uppercase(), style = TiltNeon.style(Body, 20.sp).copy(letterSpacing = .1.em),
+                                color = look.n.n2, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = m, glow = look.n.n2.copy(alpha = .6f),
+                            )
+                        }
+                        val star = when (look) { HomeLook.Midnight -> Accent; is HomeLook.Pixel -> look.p.accent; is HomeLook.Neon -> look.n.n2 }
+                        if (favourite) Icon(Icons.Rounded.Star, contentDescription = "Favourite", tint = star, modifier = Modifier.size(18.dp))
                     }
-                    Text(if (sys.maxPlayers > 1) "1 to ${sys.maxPlayers} players" else "1 player", fontSize = Body, color = Muted)
+                    val players = if (sys.maxPlayers > 1) "1 to ${sys.maxPlayers} players" else "1 player"
+                    when (look) {
+                        HomeLook.Midnight -> Text(players, fontSize = Body, color = Muted)
+                        is HomeLook.Pixel -> ThemedText(players, style = look.p.body.style(Body), color = look.p.muted)
+                        is HomeLook.Neon -> ThemedText(players, style = TiltNeon.style(Body), color = NeonColors.muted)
+                    }
                     Spacer(Modifier.weight(1f))
                     PressPlay(gamepad)
                 }
             }
         } else {
             PanelTitle("Welcome")
-            Text("Your phones are the controllers. Add a game to get started.", fontSize = Body, lineHeight = 22.sp, color = Muted)
+            val look = LocalLook.current
+            ThemedText(
+                "Your phones are the controllers. Add a game to get started.",
+                style = look.body.style(Body, 22.sp), color = if (look is HomeLook.Pixel) look.p.muted else if (look is HomeLook.Neon) NeonColors.muted else Muted,
+            )
         }
     }
 }
 
 @Composable
 private fun PressPlay(gamepad: Boolean) {
+    val look = LocalLook.current
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("Press", fontWeight = FontWeight.SemiBold, fontSize = Body)
+        val word: @Composable (String) -> Unit = { w ->
+            when (look) {
+                HomeLook.Midnight -> Text(w, fontWeight = FontWeight.SemiBold, fontSize = Body)
+                // Body font (VT323 for Silkscreen): the wide pixel fonts would not fit the panel on one line.
+                is HomeLook.Pixel -> ThemedText(w, style = (if (look.p.body.family == ThemeFonts.silkscreen) Vt323 else look.p.body).style(Body), color = look.p.text, maxLines = 1)
+                is HomeLook.Neon -> ThemedText(w.uppercase(), style = TiltNeon.style(Body).copy(letterSpacing = .08.em), color = Color.White)
+            }
+        }
+        word("Press")
         // A TV remote has OK, not A. A/B only once a game controller has joined.
-        Kbd(if (gamepad) "A" else "OK", Accent, Color(0xFF1A1405))
-        Text("to play", fontWeight = FontWeight.SemiBold, fontSize = Body)
+        Kbd(if (gamepad) "A" else "OK", Accent, Color(0xFF1A1405), role = KeyRole.Play)
+        word("to play")
     }
 }
+
+/** What a button cap stands for, so themes can colour it like the console's own buttons. */
+private enum class KeyRole { Play, Ok, Back, Other }
 
 /** A button cap: a circle for one letter, a pill for "OK". */
 @Composable
-private fun Kbd(label: String, bg: Color = BtnKey, fg: Color = Color.White, size: Dp = 26.dp, fontSize: TextUnit = 13.sp) {
-    Box(
-        Modifier.height(size).widthIn(min = size).clip(RoundedCornerShape(50)).background(bg).padding(horizontal = 6.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(label, fontWeight = FontWeight.ExtraBold, fontSize = fontSize, color = fg)
+private fun Kbd(
+    label: String,
+    bg: Color = BtnKey,
+    fg: Color = Color.White,
+    size: Dp = 26.dp,
+    fontSize: TextUnit = 13.sp,
+    role: KeyRole = KeyRole.Other,
+) {
+    val look = LocalLook.current
+    val pill = RoundedCornerShape(50)
+    when (look) {
+        HomeLook.Midnight -> Box(
+            Modifier.height(size).widthIn(min = size).clip(pill).background(bg).padding(horizontal = 6.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(label, fontWeight = FontWeight.ExtraBold, fontSize = fontSize, color = fg)
+        }
+        is HomeLook.Pixel -> {
+            val p = look.p
+            if (role == KeyRole.Play) {
+                // The press-play cap: a pixel "plus" cut from a square in the accent colour.
+                Box(
+                    Modifier.height(size).widthIn(min = size).clip(PixelCross).background(p.accent).padding(horizontal = 6.dp),
+                    contentAlignment = Alignment.Center,
+                ) { ThemedText(label, style = p.head.style(fontSize), color = p.onAccent) }
+            } else {
+                // Hint bar caps: square outlines in the bar's ink.
+                val ink = androidx.tv.material3.LocalContentColor.current
+                Box(
+                    Modifier.height(size).widthIn(min = size).border(2.dp, ink, RectangleShape).padding(horizontal = 6.dp),
+                    contentAlignment = Alignment.Center,
+                ) { ThemedText(label, style = p.head.style(fontSize), color = ink) }
+            }
+        }
+        is HomeLook.Neon -> {
+            val c = when (role) { KeyRole.Back -> look.n.back; KeyRole.Other -> look.n.n1; else -> look.n.ok }
+            val pulse = if (role == KeyRole.Play) neonPulse() else 0f
+            Box(
+                Modifier.height(size).widthIn(min = size)
+                    .drawBehind {
+                        val r = size.toPx() / 2
+                        drawIntoGlow(c, r, .7f * Rem.toPx() * (1f + pulse * 1.3f))
+                    }
+                    .border(2.dp, c, pill)
+                    .padding(horizontal = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) { ThemedText(label, style = TiltNeon.style(fontSize), color = Color.White, glow = c) }
+        }
     }
 }
 
+/** A glowing pill behind a neon button cap. */
+private fun DrawScope.drawIntoGlow(c: Color, radius: Float, blur: Float) = softGlow(c.copy(alpha = .75f), radius, blur)
+
+/** Pixel "plus" cap shape (pixel.css press-play kbd clip-path). */
+private val PixelCross = androidx.compose.foundation.shape.GenericShape { s, _ ->
+    val w = s.width; val h = s.height
+    moveTo(0f, h * .25f); lineTo(w * .25f, h * .25f); lineTo(w * .25f, 0f); lineTo(w * .75f, 0f); lineTo(w * .75f, h * .25f); lineTo(w, h * .25f)
+    lineTo(w, h * .75f); lineTo(w * .75f, h * .75f); lineTo(w * .75f, h); lineTo(w * .25f, h); lineTo(w * .25f, h * .75f); lineTo(0f, h * .75f); close()
+}
+
 @Composable
-private fun KeyIcon(icon: ImageVector, bg: Color = BtnKey, size: Dp = 26.dp) {
-    Box(Modifier.size(size).clip(CircleShape).background(bg), contentAlignment = Alignment.Center) {
-        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(size * .65f))
+private fun KeyIcon(icon: ImageVector, bg: Color = BtnKey, size: Dp = 26.dp, role: KeyRole = KeyRole.Other) {
+    when (val look = LocalLook.current) {
+        HomeLook.Midnight -> Box(Modifier.size(size).clip(CircleShape).background(bg), contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(size * .65f))
+        }
+        is HomeLook.Pixel -> {
+            val ink = androidx.tv.material3.LocalContentColor.current
+            Box(Modifier.size(size).border(2.dp, ink, RectangleShape), contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = null, tint = ink, modifier = Modifier.size(size * .65f))
+            }
+        }
+        is HomeLook.Neon -> {
+            val c = if (role == KeyRole.Back) look.n.back else look.n.n2
+            Box(
+                Modifier.size(size).drawBehind { drawIntoGlow(c, size.toPx() / 2, .6f * Rem.toPx()) }.border(2.dp, c, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(size * .65f))
+            }
+        }
     }
 }
 
 @Composable
 fun PlayersPanel(view: SessionView, joinUrl: String?, maxPlayers: Int, accent: Color, modifier: Modifier, free: Boolean = false) {
-    InfoPanel(modifier) {
+    InfoPanel(modifier, players = true) {
         Lobby(view, joinUrl, maxPlayers, accent, free)
     }
 }
@@ -413,10 +663,16 @@ fun ColumnScope.Lobby(view: SessionView, joinUrl: String?, maxPlayers: Int, acce
                     // No labels: the code and the address explain themselves.
                     Box(Modifier.padding(top = 2.dp)) { RoomCode(view.room, 36.sp) }
                     if (joinUrl != null) {
-                        Text(
-                            joinUrl.removePrefix("http://").substringBefore("?"),
-                            fontSize = Small, fontWeight = FontWeight.SemiBold, lineHeight = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                        )
+                        val look = LocalLook.current
+                        val url = joinUrl.removePrefix("http://").substringBefore("?")
+                        if (look == HomeLook.Midnight) {
+                            Text(url, fontSize = Small, fontWeight = FontWeight.SemiBold, lineHeight = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        } else {
+                            ThemedText(
+                                url, style = look.body.style(Small, 18.sp), maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                color = if (look is HomeLook.Pixel) look.p.muted else NeonColors.muted,
+                            )
+                        }
                     } else {
                         Text("No network. Connect this TV to Wi-Fi or Ethernet.", fontSize = Small, lineHeight = 18.sp, color = Bad, maxLines = 3)
                     }
@@ -436,22 +692,33 @@ fun ColumnScope.Lobby(view: SessionView, joinUrl: String?, maxPlayers: Int, acce
 
 @Composable
 private fun JoinHeader(text: String) {
-    Text(text, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    when (val look = LocalLook.current) {
+        HomeLook.Midnight -> Text(text, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        is HomeLook.Pixel -> ThemedText(text, style = look.p.head.style(18.sp), color = look.p.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        is HomeLook.Neon -> ThemedText(
+            text.uppercase(), style = TiltNeon.style(18.sp).copy(letterSpacing = .1.em), color = look.n.n2,
+            maxLines = 1, overflow = TextOverflow.Ellipsis, glow = look.n.n2.copy(alpha = .6f),
+        )
+    }
 }
 
 @Composable
 private fun RoomCode(room: String, size: TextUnit) {
-    Text(
-        room.ifEmpty { "····" }, fontWeight = FontWeight.Black, fontSize = size,
-        letterSpacing = .08.em, color = Accent, maxLines = 1,
-    )
+    val code = room.ifEmpty { "····" }
+    when (val look = LocalLook.current) {
+        HomeLook.Midnight -> Text(code, fontWeight = FontWeight.Black, fontSize = size, letterSpacing = .08.em, color = Accent, maxLines = 1)
+        is HomeLook.Pixel -> ThemedText(code, style = look.p.head.style(size).copy(letterSpacing = .08.em), color = look.p.accent, maxLines = 1)
+        is HomeLook.Neon -> NeonText(code, TiltNeon.style(size).copy(letterSpacing = .08.em), look.n.n2, maxLines = 1)
+    }
 }
 
 @Composable
 private fun QrBox(qr: androidx.compose.ui.graphics.ImageBitmap?, accent: Color, modifier: Modifier) {
-    val shape = RoundedCornerShape(6.dp)
+    val look = LocalLook.current
+    val shape = if (look is HomeLook.Pixel) RectangleShape else RoundedCornerShape(6.dp)
     Box(
         modifier.aspectRatio(1f, matchHeightConstraintsFirst = true)
+            .then(if (look is HomeLook.Neon) Modifier.drawBehind { softGlow(look.n.n2.copy(alpha = .8f), 6.dp.toPx(), 1.1f * Rem.toPx()) } else Modifier)
             .clip(shape).background(Color.White).padding(4.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -476,17 +743,30 @@ private fun LockedSlot(modifier: Modifier) {
 @Composable
 private fun SlotAvatar(slot: Int, p: PlayerView?, size: Dp) {
     val c = hexColor(p?.color ?: PLAYER_COLORS[slot % PLAYER_COLORS.size])
+    val look = LocalLook.current
+    // Arcade Pixel Art seats are square; Neon seats are lit rings.
+    val pixel = look is HomeLook.Pixel
     if (p != null) {
-        Box(Modifier.size(size).clip(CircleShape).background(c), contentAlignment = Alignment.Center) {
+        val m = when (look) {
+            is HomeLook.Neon -> Modifier.drawBehind { softGlow(c.copy(alpha = .7f), size.toPx() / 2, .5f * Rem.toPx()) }.border(2.dp, c, CircleShape)
+            is HomeLook.Pixel -> Modifier.background(c)
+            HomeLook.Midnight -> Modifier.clip(CircleShape).background(c)
+        }
+        Box(Modifier.size(size).then(m), contentAlignment = Alignment.Center) {
             DeviceIcon(p, size * .6f)
         }
     } else {
+        val ring = if (look is HomeLook.Neon) c.copy(alpha = .45f) else c.copy(alpha = .7f)
         Box(
             Modifier.size(size).drawBehind {
-                drawCircle(c.copy(alpha = .7f), style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f))))
+                val dash = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f)))
+                if (pixel) drawRect(ring, style = dash) else drawCircle(ring, style = dash)
             },
             contentAlignment = Alignment.Center,
-        ) { Text("${slot + 1}", fontWeight = FontWeight.Black, fontSize = Small, color = c) }
+        ) {
+            if (look == HomeLook.Midnight) Text("${slot + 1}", fontWeight = FontWeight.Black, fontSize = Small, color = c)
+            else ThemedText("${slot + 1}", style = look.head.style(Small), color = c)
+        }
     }
 }
 
@@ -510,9 +790,12 @@ private fun Slot(slot: Int, p: PlayerView?, named: Boolean, modifier: Modifier) 
             if (p != null) Box(Modifier.align(Alignment.TopEnd).size(8.dp).clip(CircleShape).background(quality(p)))
         }
         if (named) {
-            Text(
-                p?.name ?: "", fontSize = Small, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                color = if (p?.connected == true) Color.White else Muted,
+            val look = LocalLook.current
+            val on = if (look is HomeLook.Pixel) look.p.text else Color.White
+            val off = if (look is HomeLook.Pixel) look.p.muted else Muted
+            ThemedText(
+                p?.name ?: "", style = if (look == HomeLook.Midnight) TextStyle(fontSize = Small, fontWeight = FontWeight.SemiBold) else look.body.style(Small),
+                maxLines = 1, overflow = TextOverflow.Ellipsis, color = if (p?.connected == true) on else off,
             )
         }
     }
@@ -557,13 +840,31 @@ private fun SlotChip(slot: Int, p: PlayerView?, modifier: Modifier) {
 @Composable
 fun PlatformWheel(rows: List<HomeRow>, activeKey: String?, accent: Color, onPick: (String) -> Unit) {
     if (rows.isEmpty()) return
+    val look = LocalLook.current
     BoxWithConstraints(
         Modifier.fillMaxWidth()
-            .background(Bg.copy(alpha = .78f))
             .drawBehind {
                 val w = 1.dp.toPx()
-                drawLine(Line, Offset(0f, 0f), Offset(size.width, 0f), w)
-                drawLine(Line, Offset(0f, size.height), Offset(size.width, size.height), w)
+                when (look) {
+                    HomeLook.Midnight -> {
+                        drawRect(Bg.copy(alpha = .78f))
+                        drawLine(Line, Offset(0f, 0f), Offset(size.width, 0f), w)
+                        drawLine(Line, Offset(0f, size.height), Offset(size.width, size.height), w)
+                    }
+                    is HomeLook.Pixel -> {
+                        look.p.strip(this)
+                        drawLine(look.p.line, Offset(0f, 0f), Offset(size.width, 0f), w)
+                        drawLine(look.p.line, Offset(0f, size.height), Offset(size.width, size.height), w)
+                    }
+                    is HomeLook.Neon -> {
+                        drawRect(NeonColors.strip)
+                        // Tubes along both edges.
+                        for (y in listOf(0f, size.height)) {
+                            tubeLine(look.n.n1, y)
+                            drawLine(look.n.n1, Offset(0f, y), Offset(size.width, y), w)
+                        }
+                    }
+                }
             },
     ) {
         val itemW = 132.dp
@@ -587,35 +888,66 @@ fun PlatformWheel(rows: List<HomeRow>, activeKey: String?, accent: Color, onPick
 private fun PlatformItem(r: HomeRow, active: Boolean, modifier: Modifier, onPick: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
     val c = r.accent ?: Color.White
+    val look = LocalLook.current
+    val pixel = look as? HomeLook.Pixel
+    // Pixel: the focused stop gets the console's fill, or a square frame in the focus colour.
+    val focusFill = pixel?.p?.platformFocusFill ?: Color.Transparent
     Surface(
         onClick = onPick,
-        modifier = modifier.onFocusChanged {
-            focused = it.isFocused
-            if (it.isFocused) onPick()
-        },
-        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
+        modifier = modifier
+            .onFocusChanged {
+                focused = it.isFocused
+                if (it.isFocused) onPick()
+            }
+            .then(
+                if (pixel != null && pixel.p.platformFocusFill == null) Modifier.drawWithContent {
+                    drawContent()
+                    val w = 2.dp.toPx()
+                    if (focused) drawRect(pixel.p.focus, Offset(w / 2, w / 2), androidx.compose.ui.geometry.Size(size.width - w, size.height - w), style = Stroke(w))
+                } else Modifier,
+            ),
+        shape = ClickableSurfaceDefaults.shape(if (pixel != null) RectangleShape else RoundedCornerShape(6.dp)),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = Color.Transparent, contentColor = Color.White,
-            focusedContainerColor = Color.Transparent, focusedContentColor = Color.White,
+            focusedContainerColor = focusFill, focusedContentColor = Color.White,
             pressedContainerColor = Color.Transparent, pressedContentColor = Color.White,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.12f),
     ) {
         Column(
-            Modifier.fillMaxWidth().padding(vertical = 4.dp).graphicsLayer { alpha = if (focused) 1f else if (active) .85f else .4f },
+            Modifier.fillMaxWidth().padding(vertical = 4.dp).graphicsLayer {
+                // Neon dims the tube itself (unlit logos), not the whole stop.
+                alpha = if (look is HomeLook.Neon || focused) 1f else if (active) .85f else .4f
+            },
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             val logo = systemLogo(r.key)
+            val slot = Modifier.size(width = 118.dp, height = 30.dp)
             Box {
-                if (logo != null) {
-                    Image(
+                when {
+                    pixel != null && hasPixelIcon(r.key) -> Box(slot, contentAlignment = Alignment.Center) { PixelIcon(r.key, 30.dp, description = r.title) }
+                    look is HomeLook.Neon && logo != null ->
+                        if (focused) GlowLogo(logo, look.n.n1, slot, flicker = true, description = r.title)
+                        else Image(
+                            painterResource(logo), contentDescription = r.title, contentScale = ContentScale.Fit, modifier = slot,
+                            colorFilter = if (active) unlitFilter(1f, .75f, .3f) else unlitFilter(.75f, .3f),
+                        )
+                    logo != null -> Image(
                         painterResource(logo),
                         contentDescription = r.title,
                         contentScale = ContentScale.Fit,
-                        modifier = Modifier.size(width = 118.dp, height = 30.dp),
+                        modifier = slot,
                     )
-                } else {
-                    Text(r.label, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = c, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    pixel != null -> ThemedText(r.label, style = pixel.p.head.style(20.sp), color = c, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    look is HomeLook.Neon ->
+                        if (focused) {
+                            val flick = neonFlicker()
+                            NeonText(r.label, TiltNeon.style(20.sp), r.accent ?: look.n.n1, Modifier.graphicsLayer { alpha = flick }, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        } else ThemedText(
+                            r.label, style = TiltNeon.style(20.sp), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            color = if (active) lerp(r.accent ?: look.n.n1, Color.Black, .3f) else NeonColors.unlit,
+                        )
+                    else -> Text(r.label, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = c, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 if (r.locked) {
                     Icon(
@@ -625,9 +957,14 @@ private fun PlatformItem(r: HomeRow, active: Boolean, modifier: Modifier, onPick
                 }
             }
             // The selected stop gets a short bar in its colour: where you are, without a glow.
+            val bar = when (look) {
+                HomeLook.Midnight -> c
+                is HomeLook.Pixel -> look.p.accent
+                is HomeLook.Neon -> look.n.n2
+            }
             Box(
-                Modifier.padding(top = 4.dp).width(28.dp).height(3.dp).clip(RoundedCornerShape(50))
-                    .background(if (active) c else Color.Transparent),
+                Modifier.padding(top = 4.dp).width(28.dp).height(3.dp).clip(if (pixel != null) RectangleShape else RoundedCornerShape(50))
+                    .background(if (active) bar else Color.Transparent),
             )
         }
     }
@@ -743,7 +1080,15 @@ private fun CoverCard(
         if (reduce) snap() else spring(dampingRatio = .55f, stiffness = 500f),
         label = "scale",
     )
-    val shape = RoundedCornerShape(4.dp)
+    val look = LocalLook.current
+    val shape = when (look) {
+        HomeLook.Midnight -> RoundedCornerShape(4.dp)
+        is HomeLook.Pixel -> RectangleShape
+        is HomeLook.Neon -> RoundedCornerShape(Rem * .3f)
+    }
+    // Arrow over the focused cover: blinks (Pixel) or bobs (Neon).
+    val blink = if (focused && look is HomeLook.Pixel) pixelBlink() else 1f
+    val bob = if (focused && look is HomeLook.Neon) neonPulse(1200) else 0f
     Column(Modifier.width(width), horizontalAlignment = Alignment.CenterHorizontally) {
         Card(
             onClick = { onOpen(g) },
@@ -756,23 +1101,75 @@ private fun CoverCard(
                     translationY = -(scale - 1f) * 12.dp.toPx()
                     transformOrigin = TransformOrigin(.5f, 1f)
                 }
+                .drawWithContent {
+                    // Frames and arrows sit outside the cover's box, so they take no space.
+                    val rem = size.width / 10f
+                    when (look) {
+                        is HomeLook.Neon -> if (focused) tubeGlow(look.n.n1, .3f * rem)
+                        else -> Unit
+                    }
+                    drawContent()
+                    when (look) {
+                        is HomeLook.Pixel -> if (focused) {
+                            val o = .3f * rem; val w = .25f * rem
+                            drawRect(look.p.focus, Offset(-o - w / 2, -o - w / 2), androidx.compose.ui.geometry.Size(size.width + 2 * o + w, size.height + 2 * o + w), style = Stroke(w))
+                            if (blink > .5f) drawPath(pixelArrow(size.width / 2, -1.6f * rem, 1.5f * rem, 1f * rem), look.p.focus)
+                        }
+                        is HomeLook.Neon ->
+                            if (focused) arrowAbove(look.n.n2, -1.5f * rem + bob * .3f * rem, 1f * rem, .5f * rem, glow = true)
+                            else drawRoundRect(Color.White.copy(alpha = .15f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(.3f * rem), style = Stroke(1.dp.toPx()))
+                        HomeLook.Midnight -> Unit
+                    }
+                }
                 .onFocusChanged {
                     focused = it.isFocused
                     if (it.isFocused) onFocus(g)
                 },
             shape = CardDefaults.shape(shape),
-            colors = CardDefaults.colors(containerColor = Color(0xFF111111)),
+            colors = CardDefaults.colors(containerColor = if (look == HomeLook.Midnight) Color(0xFF111111) else Color.Transparent),
             scale = CardDefaults.scale(focusedScale = 1f),
-            border = CardDefaults.border(focusedBorder = Border(BorderStroke(3.dp, Accent), shape = shape)),
+            border = if (look == HomeLook.Midnight) CardDefaults.border(focusedBorder = Border(BorderStroke(3.dp, Accent), shape = shape))
+            else CardDefaults.border(border = Border.None, focusedBorder = Border.None),
             glow = CardDefaults.glow(focusedGlow = Glow.None),
         ) {
             Box(Modifier.fillMaxSize()) {
-                Art(g, onlineArt, Modifier.fillMaxSize(), shape = shape)
+                if (look is HomeLook.Pixel) {
+                    // The console's media (cartridge, CD case, UMD…) with the cover art inside it.
+                    val media = pixelMedia(g.system)
+                    Canvas(Modifier.fillMaxSize()) { media.body(this, size.width / 10f) }
+                    Box(Modifier.fillMaxSize().padding(media.padding(width)), contentAlignment = Alignment.Center) {
+                        if (media.round) Art(g, onlineArt, Modifier.fillMaxWidth().aspectRatio(1f), shape = CircleShape, pixelated = true)
+                        else Art(g, onlineArt, Modifier.fillMaxSize(), shape = RectangleShape, pixelated = true)
+                    }
+                    media.deco?.let { deco -> Canvas(Modifier.fillMaxSize()) { deco(this, size.width / 10f) } }
+                } else {
+                    Art(g, onlineArt, Modifier.fillMaxSize(), shape = shape)
+                }
                 if (!focused && !current) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .4f)))
                 if (isNew) NewMark(c, shape)
             }
         }
     }
+}
+
+/** On/off once a second (CSS `steps(1)` blink). */
+@Composable
+private fun pixelBlink(): Float {
+    if (rememberReduceMotion()) return 1f
+    val v by rememberInfiniteTransition(label = "blink").animateFloat(
+        0f, 1f, infiniteRepeatable(tween(1000, easing = LinearEasing), RepeatMode.Restart), label = "b",
+    )
+    return if (v < .5f) 1f else 0f
+}
+
+/** The pixel theme's stepped arrow (pixel.css clip-path), [w] × [h] at ([cx], [top]). */
+private fun pixelArrow(cx: Float, top: Float, w: Float, h: Float) = androidx.compose.ui.graphics.Path().apply {
+    val l = cx - w / 2
+    fun p(x: Float, y: Float) = Offset(l + x * w, top + y * h)
+    val pts = listOf(p(0f, 0f), p(1f, 0f), p(1f, .25f), p(.83f, .25f), p(.83f, .5f), p(.67f, .5f), p(.67f, .75f), p(.5f, .75f), p(.5f, 1f), p(.33f, .75f), p(.33f, .5f), p(.17f, .5f), p(.17f, .25f), p(0f, .25f))
+    moveTo(pts[0].x, pts[0].y)
+    for (q in pts.drop(1)) lineTo(q.x, q.y)
+    close()
 }
 
 /** Pulsing frame and "New" badge on a just-added cover. */
@@ -863,10 +1260,34 @@ fun Hints(
     gamepad: Boolean = false,
     slotsOpen: Boolean = true,
 ) {
+    val look = LocalLook.current
+    val ink = when (look) {
+        HomeLook.Midnight -> androidx.tv.material3.LocalContentColor.current
+        is HomeLook.Pixel -> look.p.hintsInk ?: look.p.barInk
+        is HomeLook.Neon -> Color.White
+    }
+    CompositionLocalProvider(androidx.tv.material3.LocalContentColor provides ink) {
     Row(
         Modifier.fillMaxWidth()
-            .background(Bg.copy(alpha = .85f))
-            .drawBehind { drawLine(Line, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) }
+            .drawBehind {
+                val w = 1.dp.toPx()
+                when (look) {
+                    HomeLook.Midnight -> {
+                        drawRect(Bg.copy(alpha = .85f))
+                        drawLine(Line, Offset(0f, 0f), Offset(size.width, 0f), w)
+                    }
+                    is HomeLook.Pixel -> {
+                        val bg = look.p.hintsBg
+                        if (bg != null) drawRect(bg) else look.p.bar(this)
+                        drawRect(look.p.line, Offset(0f, -.25f * Rem.toPx()), androidx.compose.ui.geometry.Size(size.width, .25f * Rem.toPx()))
+                    }
+                    is HomeLook.Neon -> {
+                        drawRect(NeonColors.strip)
+                        tubeLine(look.n.n1, 0f)
+                        drawLine(look.n.n1, Offset(0f, 0f), Offset(size.width, 0f), w)
+                    }
+                }
+            }
             // The bar's background runs to the screen edge; its content stays inside the overscan margin.
             .padding(start = SafeX, end = SafeX, top = 6.dp, bottom = SafeY),
         verticalAlignment = Alignment.CenterVertically,
@@ -874,20 +1295,21 @@ fun Hints(
     ) {
         // A TV remote has OK and Back; show A/B only once a game controller is in the room.
         if (gamepad) {
-            Hint({ Kbd("A") }, "Select")
-            Hint({ Kbd("B") }, "Back")
+            Hint({ Kbd("A", role = KeyRole.Ok) }, "Select")
+            Hint({ Kbd("B", role = KeyRole.Back) }, "Back")
         } else {
-            Hint({ Kbd("OK") }, "Select")
-            Hint({ KeyIcon(Icons.AutoMirrored.Rounded.ArrowBack) }, "Back")
+            Hint({ Kbd("OK", role = KeyRole.Ok) }, "Select")
+            Hint({ KeyIcon(Icons.AutoMirrored.Rounded.ArrowBack, role = KeyRole.Back) }, "Back")
         }
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
             if (slotsOpen) {
-                Hint({ KeyIcon(Icons.Rounded.SportsEsports) }, "Controller? Press any button to join", Modifier.weight(1f, fill = false))
+                Hint({ KeyIcon(Icons.Rounded.SportsEsports) }, "Controller? Press any button to join", Modifier.weight(1f, fill = false), long = true)
             }
             if (hiddenCount > 0) {
-                Text(
+                ThemedText(
                     "$hiddenCount game${if (hiddenCount > 1) "s" else ""} hidden: this device is too slow for their system (Settings).",
-                    fontSize = Small, color = Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
+                    style = look.body.style(Small), color = if (look is HomeLook.Midnight) Muted else ink.copy(alpha = .75f),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
                 )
             }
         }
@@ -902,6 +1324,7 @@ fun Hints(
                 Pill("${loadingNames(serverLoad.failed)} did not load · Retry", Bad, onRefresh, icon = Icons.Rounded.Warning)
             else -> LoadingPill(serverLoad, accent)
         }
+    }
     }
 }
 
@@ -952,26 +1375,42 @@ private fun age(at: Long): String {
 }
 
 @Composable
-private fun Hint(key: @Composable () -> Unit, label: String, modifier: Modifier = Modifier) {
+private fun Hint(key: @Composable () -> Unit, label: String, modifier: Modifier = Modifier, long: Boolean = false) {
+    val look = LocalLook.current
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
         key()
-        Text(label, fontSize = Small, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        when (look) {
+            HomeLook.Midnight -> Text(label, fontSize = Small, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // Long hints use the console's body font: the pixel heading fonts are too wide to fit.
+            is HomeLook.Pixel -> ThemedText(label, style = (if (long) look.p.body else look.p.head).style(Small), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            is HomeLook.Neon -> ThemedText(label, style = TiltNeon.style(Small).copy(letterSpacing = .06.em), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
     }
 }
 
 @Composable
 private fun Pill(label: String, accent: Color, onClick: () -> Unit, dot: Color? = null, icon: ImageVector? = null) {
-    val shape = RoundedCornerShape(50)
+    val look = LocalLook.current
+    val shape = if (look is HomeLook.Pixel) RectangleShape else RoundedCornerShape(50)
+    val ink = androidx.tv.material3.LocalContentColor.current
+    // Pixel: outlined in the bar's ink, filled with the focus colour. Neon: a tube in the second colour.
+    val (line, fg, focusBg, focusFg) = when (look) {
+        HomeLook.Midnight -> listOf(Color.White.copy(alpha = .18f), Color.White, Color.White, Color(0xFF0B0D12))
+        is HomeLook.Pixel -> listOf(ink, ink, look.p.focus, look.p.onAccent)
+        is HomeLook.Neon -> listOf(look.n.n2, look.n.n2, look.n.n2, Color.Black)
+    }
     Surface(
         onClick = onClick,
+        modifier = if (look is HomeLook.Neon) Modifier.drawBehind { softGlow(look.n.n2.copy(alpha = .45f), size.height / 2, .6f * Rem.toPx()) } else Modifier,
         shape = ClickableSurfaceDefaults.shape(shape),
         colors = ClickableSurfaceDefaults.colors(
-            containerColor = Color.White.copy(alpha = .06f), contentColor = Color.White,
-            focusedContainerColor = Color.White, focusedContentColor = Color(0xFF0B0D12),
+            containerColor = if (look == HomeLook.Midnight) Color.White.copy(alpha = .06f) else if (look is HomeLook.Neon) NeonColors.strip else Color.Transparent,
+            contentColor = fg,
+            focusedContainerColor = focusBg, focusedContentColor = focusFg,
         ),
         border = ClickableSurfaceDefaults.border(
-            border = Border(BorderStroke(1.dp, Color.White.copy(alpha = .18f)), shape = shape),
-            focusedBorder = Border(BorderStroke(1.dp, Color.White), shape = shape),
+            border = Border(BorderStroke(1.dp, line), shape = shape),
+            focusedBorder = Border(BorderStroke(1.dp, if (look == HomeLook.Midnight) Color.White else focusBg), shape = shape),
         ),
     ) {
         Row(
@@ -980,9 +1419,10 @@ private fun Pill(label: String, accent: Color, onClick: () -> Unit, dot: Color? 
             horizontalArrangement = Arrangement.spacedBy(7.dp),
         ) {
             // A status dot (server health) or an icon, then the label.
-            if (dot != null) Box(Modifier.size(9.dp).clip(CircleShape).background(dot))
+            if (dot != null) Box(Modifier.size(9.dp).clip(if (look is HomeLook.Pixel) RectangleShape else CircleShape).background(dot))
             if (icon != null) Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
-            Text(label, fontSize = Small, maxLines = 1)
+            if (look == HomeLook.Midnight) Text(label, fontSize = Small, maxLines = 1)
+            else ThemedText(label, style = look.head.style(Small), maxLines = 1)
         }
     }
 }

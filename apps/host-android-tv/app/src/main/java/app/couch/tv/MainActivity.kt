@@ -1,5 +1,6 @@
 package app.couch.tv
 
+import app.couch.tv.ui.ThemeId
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Build
@@ -344,6 +345,7 @@ class MainActivity : ComponentActivity() {
                 maxPlayers = ProRules.players(isPro, s.maxPlayers),
                 free = !isPro,
                 onlineArt = s.onlineArt,
+                theme = ThemeId.of(s.theme),
                 recents = recents,
                 favourites = favs,
                 needsStoragePermission = needsPerm,

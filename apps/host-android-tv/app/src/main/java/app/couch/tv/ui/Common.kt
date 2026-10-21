@@ -95,7 +95,13 @@ val CoverBg = Color(0xFF11151D)
  * the cover's own background.
  */
 @Composable
-fun DefaultCover(game: Game, modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(14.dp), contain: Boolean = false) {
+fun DefaultCover(
+    game: Game,
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(14.dp),
+    contain: Boolean = false,
+    colorFilter: androidx.compose.ui.graphics.ColorFilter? = null,
+) {
     val cover = systemCover(game.system)
     Box(modifier.clip(shape).background(CoverBg), contentAlignment = Alignment.Center) {
         if (cover != null) {
@@ -103,6 +109,7 @@ fun DefaultCover(game: Game, modifier: Modifier = Modifier, shape: Shape = Round
                 androidx.compose.ui.res.painterResource(cover),
                 contentDescription = null,
                 contentScale = if (contain) androidx.compose.ui.layout.ContentScale.Fit else androidx.compose.ui.layout.ContentScale.Crop,
+                colorFilter = colorFilter,
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
@@ -167,7 +174,16 @@ fun PlayerChip(p: PlayerView, detailed: Boolean = false) {
 
 /** The Couch mark (a triangle and a circle, as on the web host and the store icon) and the word. */
 @Composable
-fun Logo(height: Dp = 22.dp, modifier: Modifier = Modifier) {
+fun Logo(
+    height: Dp = 22.dp,
+    modifier: Modifier = Modifier,
+    mark: Color = Accent,
+    ink: Color = Color.Unspecified,
+    /** Theme font for the word (Arcade Pixel Art). */
+    font: ThemeFont? = null,
+    /** Neon Arcade: the word is a script neon sign glowing in this colour. */
+    script: Color? = null,
+) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(height * .4f)) {
         // 44 x 20 viewbox, same geometry as the web logo's SVG.
         Canvas(Modifier.size(width = height * 2.2f, height = height)) {
@@ -175,9 +191,18 @@ fun Logo(height: Dp = 22.dp, modifier: Modifier = Modifier) {
             val tri = androidx.compose.ui.graphics.Path().apply {
                 moveTo(10f * u, 2.5f * u); lineTo(19f * u, 18f * u); lineTo(1f * u, 18f * u); close()
             }
-            drawPath(tri, Accent)
-            drawCircle(Accent, radius = 7.5f * u, center = androidx.compose.ui.geometry.Offset(33f * u, 10.5f * u))
+            drawPath(tri, mark)
+            drawCircle(mark, radius = 7.5f * u, center = androidx.compose.ui.geometry.Offset(33f * u, 10.5f * u))
         }
-        Text("Couch", fontWeight = FontWeight.ExtraBold, fontSize = (height.value * .9f).sp)
+        val size = (height.value * .9f).sp
+        when {
+            script != null -> NeonText(
+                "Couch",
+                androidx.compose.ui.text.TextStyle(fontFamily = ThemeFonts.neonderthaw, fontSize = size * 1.75f, lineHeight = size * 1.172f, lineHeightStyle = FixedLine),
+                script,
+            )
+            font != null -> ThemedText("Couch", style = font.style(size), color = ink)
+            else -> Text("Couch", fontWeight = FontWeight.ExtraBold, fontSize = size, color = ink)
+        }
     }
 }

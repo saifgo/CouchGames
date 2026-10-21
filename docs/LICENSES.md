@@ -147,3 +147,12 @@ project. The top-bar sign reuses the console logos listed above. Fonts (`@fontso
 |---|---|---|
 | Tilt Neon (Andy Clymer) | @fontsource/tilt-neon | SIL OFL 1.1 |
 | Neonderthaw (Robert Leuschke) | @fontsource/neonderthaw | SIL OFL 1.1 |
+
+### Themes on the Android TV host
+
+The Android TV app has the same two themes (`apps/host-android-tv/app/src/main/java/app/couch/tv/ui/Themes.kt`,
+`PixelArt.kt`, `NeonArt.kt`): the same original drawings and patterns as the web host, ported to Kotlin, and the
+same console logos (`res/drawable-nodpi/logo_*.png`, listed above), also lit in the Neon Arcade top-bar sign.
+Android can't use the web's `.woff2` files, so the fonts are bundled as TTF in `res/font/`, taken from the
+Google Fonts repository (`github.com/google/fonts`, `ofl/` folder). All are SIL OFL 1.1, as listed above:
+Press Start 2P, VT323, Silkscreen (regular and bold), Pixelify Sans, Jersey 10, Tilt Neon, Neonderthaw.

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,11 +64,12 @@ fun Art(
     kind: String = "Named_Boxarts",
     shape: Shape = RoundedCornerShape(14.dp),
     pixelated: Boolean = false,
+    colorFilter: androidx.compose.ui.graphics.ColorFilter? = null,
 ) {
     val url = if (online) thumbnailUrl(game, kind) else null
     val contain = kind != "Named_Boxarts"
     if (url == null) {
-        DefaultCover(game, modifier, shape, contain)
+        DefaultCover(game, modifier, shape, contain, colorFilter)
         return
     }
     SubcomposeAsyncImage(
@@ -75,9 +77,10 @@ fun Art(
         contentDescription = null,
         contentScale = ContentScale.Crop,
         filterQuality = if (pixelated) FilterQuality.None else FilterQuality.Low,
+        colorFilter = colorFilter,
         modifier = modifier.clip(shape),
-        loading = { DefaultCover(game, Modifier.fillMaxSize(), shape, contain) },
-        error = { DefaultCover(game, Modifier.fillMaxSize(), shape, contain) },
+        loading = { DefaultCover(game, Modifier.fillMaxSize(), shape, contain, colorFilter) },
+        error = { DefaultCover(game, Modifier.fillMaxSize(), shape, contain, colorFilter) },
     )
 }
 
@@ -111,6 +114,8 @@ fun HomeScreen(
     free: Boolean,
     onlineArt: Boolean,
     recents: List<String>,
+    /** Home screen theme (Themes.kt); every theme keeps this layout. */
+    theme: ThemeId = ThemeId.Midnight,
     favourites: Set<String>,
     needsStoragePermission: Boolean,
     onGrantStorage: () -> Unit,
@@ -144,6 +149,10 @@ fun HomeScreen(
     val gamepad = view.players.any { it.local }
     val slotsOpen = view.players.size < maxPlayers
 
+    // The console the screen is dressed as: the focused game's, else the selected stop's (web: data-sys).
+    val lookSys = game?.system ?: platform?.key
+    val look = remember(theme, lookSys) { HomeLook.of(theme, lookSys) }
+    CompositionLocalProvider(LocalLook provides look) {
     Box(Modifier.fillMaxSize()) {
         Backdrop(game, onlineArt, accent)
         // Text and controls stay inside the TV overscan margins (SafeX / SafeY); the wheels and
@@ -194,6 +203,7 @@ fun HomeScreen(
             )
         }
         addedText?.let { AddedBanner(it, accent, Modifier.align(Alignment.TopCenter).padding(top = 64.dp)) }
+    }
     }
     LaunchedEffect(justAdded?.first) {
         val fresh = justAdded?.second ?: return@LaunchedEffect

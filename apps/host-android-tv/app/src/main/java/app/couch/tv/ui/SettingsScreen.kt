@@ -150,6 +150,13 @@ fun SettingsScreen(
                     s.ps2Experimental = !s.ps2Experimental
                 }
             }
+            item("${version}theme") {
+                val theme = ThemeId.of(s.theme)
+                Row2("Theme", theme.label, if (theme != ThemeId.Midnight) "Restyles itself for each console" else null) {
+                    val all = ThemeId.entries
+                    s.theme = all[(all.indexOf(theme) + 1) % all.size].key
+                }
+            }
             item(version + 6) { Row2("Box art from the internet", if (s.onlineArt) "On" else "Off", "thumbnails.libretro.com, by file name") { s.onlineArt = !s.onlineArt } }
             item(version + 7) { Row2("Latency overlay in game", if (s.latencyOverlay) "On" else "Off", "Also toggled from the in-game menu") { s.latencyOverlay = !s.latencyOverlay } }
             item(version + 8) {

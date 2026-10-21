@@ -37,6 +37,10 @@ class Settings(context: Context) {
     var onlineArt: Boolean
         get() = p.getBoolean("onlineArt", true)
         set(v) = p.edit { putBoolean("onlineArt", v) }
+    /** Home screen theme (ui/Themes.kt ThemeId key): midnight (default), pixel, neon. */
+    var theme: String
+        get() = p.getString("theme", "midnight")!!
+        set(v) = p.edit { putString("theme", v) }
 
     var telemetry: Boolean
         get() = p.getBoolean("telemetry", false)
