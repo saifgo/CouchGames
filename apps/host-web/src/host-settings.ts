@@ -18,7 +18,8 @@ export interface HostSettings {
   onlineArt: boolean;
   /** Opt-in: store anonymous per-session latency summaries (no names/ids) on the server. */
   telemetry: boolean;
-  theme: 'midnight' | 'sunset' | 'arcade';
+  /** midnight = the original look (default). pixel = Arcade Pixel Art, restyled per console. */
+  theme: 'midnight' | 'sunset' | 'pixel';
   onboardingDone: boolean;
 }
 
@@ -39,9 +40,16 @@ const DEFAULTS: HostSettings = {
 
 const KEY = 'couch.host.settings.v1';
 
+export const THEMES: HostSettings['theme'][] = ['midnight', 'pixel', 'sunset'];
+export const THEME_NAMES: Record<HostSettings['theme'], string> = { midnight: 'Midnight', pixel: 'Arcade Pixel Art', sunset: 'Sunset' };
+
 export function loadHostSettings(): HostSettings {
   try {
-    return { ...DEFAULTS, ...(JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<HostSettings>) };
+    const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Omit<Partial<HostSettings>, 'theme'> & { theme?: string };
+    // 'arcade' (a green recolour) was replaced by Arcade Pixel Art.
+    if (saved.theme === 'arcade') saved.theme = 'pixel';
+    if (saved.theme && !THEMES.includes(saved.theme as HostSettings['theme'])) delete saved.theme;
+    return { ...DEFAULTS, ...(saved as Partial<HostSettings>) };
   } catch {
     return { ...DEFAULTS };
   }

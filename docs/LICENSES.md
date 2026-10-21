@@ -120,3 +120,17 @@ The same logos also appear on the **default Couch covers** (shown when a game ha
 ⚠️ Public domain covers copyright only. These logos are **trademarks** of Nintendo, Sega, Sony Interactive
 Entertainment and Atari. They're fine for personal use. Before publishing or selling the app, replace them, or
 get legal advice on nominative use.
+
+### Arcade Pixel Art theme (host-web)
+
+The pixel console icons (`apps/host-web/src/themes/pixel-art.tsx`), cover shapes and backgrounds
+(`apps/host-web/src/themes/pixel.css`) are original pixel art drawn for this project, with no logos. The theme
+bundles these fonts from npm (`@fontsource/*`; packaging MIT, fonts as below):
+
+| Font | Package | License |
+|---|---|---|
+| Press Start 2P (CodeMan38) | @fontsource/press-start-2p | SIL OFL 1.1 |
+| VT323 (Peter Hull) | @fontsource/vt323 | SIL OFL 1.1 |
+| Silkscreen (Jason Kottke) | @fontsource/silkscreen | SIL OFL 1.1 |
+| Pixelify Sans (Stefie Justprince) | @fontsource/pixelify-sans | SIL OFL 1.1 |
+| Jersey 10 (Sarah Cadigan-Fried) | @fontsource/jersey-10 | SIL OFL 1.1 |

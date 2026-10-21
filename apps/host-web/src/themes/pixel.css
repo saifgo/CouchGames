@@ -1,0 +1,298 @@
+/*
+ * Arcade Pixel Art theme (data-theme="pixel"). Mockups: docs/design/themes/.
+ *
+ * RULE: this file never changes layout. Grid, sizes, paddings, margins and positions all come from
+ * styles.css and are the same for every theme and every console. Here we only change colour,
+ * fonts (with fixed sizes and line heights per role), backgrounds, and frames drawn with
+ * box-shadow / outline / pseudo-elements, which take no space. Cover shapes (cartridge, CD case,
+ * UMD, HuCard…) are painted inside the cover's existing box.
+ *
+ * The home screen carries data-sys = the focused game's console, and every cover carries its own
+ * data-sys, so each console gets its own look in the same layout.
+ */
+@import '@fontsource/press-start-2p/latin-400.css';
+@import '@fontsource/vt323/latin-400.css';
+@import '@fontsource/silkscreen/latin-400.css';
+@import '@fontsource/silkscreen/latin-700.css';
+@import '@fontsource/pixelify-sans/latin-400.css';
+@import '@fontsource/pixelify-sans/latin-700.css';
+@import '@fontsource/jersey-10/latin-400.css';
+
+/* ---------- base: arcade cabinet (used outside the home screen and before a console is picked) ---------- */
+:root[data-theme='pixel'] {
+  --bg: #07060f;
+  --panel: #0e0c1c;
+  --panel-solid: #0e0c1c;
+  --line: #3a3466;
+  --text: #f4f1ff;
+  --muted: #a49cc8;
+  --accent: #ff3fa4;
+  --on-accent: #12001a;
+  --focus: #3ff0ff;
+  --shadow: none;
+  --px-head: 'Press Start 2P';
+  --px-body: 'Pixelify Sans';
+  --px-bar: #0e0c1c;
+  --px-bar-ink: #f4f1ff;
+  --px-strip: #000;
+  --px-frame: inset 0 0 0 0.25rem #0e0c1c, inset 0 0 0 0.5rem var(--line);
+  --px-screen: 0 0 0 0.25rem #000, 0 0 0 0.5rem var(--line);
+  --px-backdrop: radial-gradient(circle at 1px 1px, #1c1838 1px, transparent 1.5px) 0 0 / 1.2rem 1.2rem, var(--bg);
+  font-family: var(--px-body), 'Segoe UI', system-ui, sans-serif;
+}
+:root[data-theme='pixel'] button { border-radius: 0; }
+:root[data-theme='pixel'] .modal { border-radius: 0; border-color: var(--line); box-shadow: inset 0 0 0 0.25rem var(--panel-solid), inset 0 0 0 0.5rem var(--line); }
+:root[data-theme='pixel'] .modal h1, :root[data-theme='pixel'] .menu-head h2 { font-family: var(--px-head); font-weight: 400; font-size-adjust: 0.5; }
+
+/* Same font metrics everywhere: x-height normalised, line heights fixed in rem. */
+[data-theme='pixel'] .home { font-family: var(--px-body), system-ui, sans-serif; font-size-adjust: 0.52; }
+[data-theme='pixel'] .home :is(.logo, .clock, .details-title, .details-system, .press-play, .lobby-head, .code, .platform small, .platform-logo, .hints, .card:focus .card-title) {
+  font-family: var(--px-head), system-ui, sans-serif; font-weight: 400; font-size-adjust: 0.5;
+}
+[data-theme='pixel'] .home .details-title { line-height: 3.1rem; letter-spacing: 0; color: var(--px-title, var(--text)); }
+[data-theme='pixel'] .home .details-system { line-height: 1.6rem; color: var(--accent); }
+[data-theme='pixel'] .home .facts { line-height: 1.6rem; border-top: 0.25rem dashed var(--line); padding-top: calc(1.2rem - 0.25rem + 1px); }
+[data-theme='pixel'] .home .press-play { line-height: 2.2rem; color: var(--text); }
+[data-theme='pixel'] .home .press-play kbd { border-radius: 0; clip-path: polygon(0 25%, 25% 25%, 25% 0, 75% 0, 75% 25%, 100% 25%, 100% 75%, 75% 75%, 75% 100%, 25% 100%, 25% 75%, 0 75%); font-family: var(--px-head); }
+
+/* backdrop: a flat pixel pattern per console instead of the blurred screenshot */
+[data-theme='pixel'] .home > .backdrop { background: var(--px-backdrop); }
+[data-theme='pixel'] .home .backdrop-art { display: none; }
+
+/* bars */
+[data-theme='pixel'] .home .topbar { background: var(--px-bar); color: var(--px-bar-ink); box-shadow: 0 0.25rem 0 var(--line); }
+[data-theme='pixel'] .home .topbar .clock, [data-theme='pixel'] .home .topbar .logo { color: var(--px-bar-ink); }
+[data-theme='pixel'] .home .logo-mark { color: var(--accent); }
+[data-theme='pixel'] .home .icon-btn { border-radius: 0; background: transparent; color: var(--px-bar-ink); }
+[data-theme='pixel'] .home .icon-btn:focus { background: var(--focus); color: var(--on-accent); }
+[data-theme='pixel'] .home .hints { background: var(--px-bar); color: var(--px-bar-ink); border-top-color: var(--line); box-shadow: 0 -0.25rem 0 var(--line); }
+[data-theme='pixel'] .home .hints kbd { border-radius: 0; border-color: currentColor; color: inherit; font-family: var(--px-head); }
+[data-theme='pixel'] .home .hints kbd.pad { border: 0; }
+[data-theme='pixel'] .home .hints .hint { color: inherit; opacity: 0.75; }
+[data-theme='pixel'] .home :is(.add, .hints button) { border-radius: 0; background: transparent; border-color: currentColor; color: inherit; }
+[data-theme='pixel'] .home :is(.add, .hints button):focus { background: var(--focus); color: var(--on-accent); border-color: var(--focus); }
+
+/* panels: pixel frames drawn inside (inset shadows), same border width as before */
+[data-theme='pixel'] .home :is(.details, .players-panel) { border-radius: 0; border-color: var(--line); background: var(--panel); color: var(--text); box-shadow: var(--px-frame); }
+[data-theme='pixel'] .home .facts dt { color: var(--muted); }
+[data-theme='pixel'] .home .facts dd { color: var(--text); }
+[data-theme='pixel'] .home .lobby-url { color: var(--muted); }
+[data-theme='pixel'] .home .qr { border-radius: 0; }
+[data-theme='pixel'] .home .slot { border-radius: 0; background: transparent; border-color: var(--line); }
+[data-theme='pixel'] .home .slot.filled { background: color-mix(in srgb, var(--pc) 22%, transparent); }
+[data-theme='pixel'] .home .slot-avatar { border-radius: 0; }
+
+/* preview screen: bezel drawn outside with shadows (fits inside the preview padding) */
+[data-theme='pixel'] .home .preview-screen { border-radius: 0; border-color: #000; box-shadow: var(--px-screen); }
+[data-theme='pixel'] .home .preview-screen .art.default-cover { image-rendering: pixelated; }
+
+/* platform row */
+[data-theme='pixel'] .home .platforms { background: var(--px-strip); border-color: var(--line); }
+[data-theme='pixel'] .home .platform { border-radius: 0; }
+[data-theme='pixel'] .home .platform-pixel { width: auto; }
+[data-theme='pixel'] .home .platform small { color: var(--muted); }
+[data-theme='pixel'] .home .platform-logo { color: var(--pf, var(--text)); font-size: 2.1rem; }
+[data-theme='pixel'] .home .platform:focus { background: var(--panel); box-shadow: inset 0 0 0 0.25rem var(--focus); }
+[data-theme='pixel'] .home .platform:focus small { color: var(--focus); }
+
+/* ---------- covers: console media painted inside the fixed 10rem × 3:4 box ---------- */
+[data-theme='pixel'] .home .card { position: relative; }
+[data-theme='pixel'] .home .card-frame { padding: var(--m-pad, 0.6rem); min-height: 0; height: calc(10rem * 4 / 3); }
+[data-theme='pixel'] .home .card .art { min-height: 0; }
+[data-theme='pixel'] .home .card-frame::before { content: ''; position: absolute; inset: 0; background: var(--m-bg, #333); clip-path: var(--m-clip, none); border-radius: var(--m-radius, 0); box-shadow: var(--m-shadow, none); }
+[data-theme='pixel'] .home .card-frame::after { content: ''; position: absolute; z-index: 2; pointer-events: none; inset: var(--d-inset, auto); background: var(--d-bg, none); border-radius: var(--d-radius, 0); }
+[data-theme='pixel'] .home .card .art { position: relative; z-index: 1; border-radius: var(--m-art-radius, 0); box-shadow: none; image-rendering: pixelated; }
+[data-theme='pixel'] .home .card .art.default-cover { image-rendering: auto; }
+[data-theme='pixel'] .home .card:focus .art { outline: none; }
+[data-theme='pixel'] .home .card:focus .card-frame { outline: 0.25rem solid var(--focus); outline-offset: 0.3rem; }
+/* blinking pixel arrow above the focused cover */
+[data-theme='pixel'] .home .card:focus::before { content: ''; position: absolute; top: -1.6rem; left: calc(50% - 0.75rem); width: 1.5rem; height: 1rem; background: var(--focus);
+  clip-path: polygon(0 0, 100% 0, 100% 25%, 83% 25%, 83% 50%, 67% 50%, 67% 75%, 50% 75%, 50% 100%, 50% 100%, 33% 75%, 33% 50%, 17% 50%, 17% 25%, 0 25%); animation: px-blink 1s steps(1) infinite; }
+@keyframes px-blink { 50% { opacity: 0; } }
+[data-theme='pixel'] .home .card-title { color: var(--muted); }
+[data-theme='pixel'] .home .card:focus .card-title { color: var(--text); }
+[data-theme='pixel'] .home .new-badge { border-radius: 0; font-family: var(--px-head); }
+[data-theme='pixel'] .home .add-card .card-frame { border-radius: 0; border-color: var(--line); }
+[data-theme='pixel'] .home .add-card .card-frame::before, [data-theme='pixel'] .home .add-card .card-frame::after { display: none; }
+
+/* Cover shapes, per console of each cover. */
+[data-theme='pixel'] .card[data-sys='nes'] { --m-bg: #7c7c7c; --m-pad: 0.7rem 0.7rem 2.6rem; --m-shadow: inset -0.25rem -0.25rem 0 #4c4c4c, inset 0.25rem 0.25rem 0 #a4a4a4;
+  --d-inset: auto 0.7rem 0.6rem; --d-bg: repeating-linear-gradient(0deg, #4c4c4c 0 0.25rem, transparent 0.25rem 0.5rem); }
+[data-theme='pixel'] .card[data-sys='nes'] .card-frame::after { height: 1.6rem; }
+[data-theme='pixel'] .card[data-sys='snes'] { --m-bg: #a9a6b8; --m-radius: 1.4rem 1.4rem 0.3rem 0.3rem; --m-pad: 1rem 0.8rem 2rem; --m-shadow: inset 0 -0.25rem 0 #7e7b90, inset 0 0.25rem 0 #cfcce0;
+  --d-inset: auto 1.6rem 0.5rem; --d-bg: repeating-linear-gradient(0deg, #7e7b90 0 0.25rem, transparent 0.25rem 0.5rem); }
+[data-theme='pixel'] .card[data-sys='snes'] .card-frame::after { height: 1rem; }
+[data-theme='pixel'] .card[data-sys='genesis'] { --m-bg: #101014; --m-clip: polygon(10% 0, 90% 0, 100% 6%, 100% 100%, 0 100%, 0 6%); --m-pad: 1rem 0.7rem 2.2rem; --m-shadow: inset 0.25rem 0 0 #2a2c36;
+  --d-inset: auto 0.7rem 0.6rem; --d-bg: repeating-linear-gradient(90deg, #2a2c36 0 0.25rem, transparent 0.25rem 0.6rem); }
+[data-theme='pixel'] .card[data-sys='genesis'] .card-frame::after { height: 1.3rem; }
+[data-theme='pixel'] .card:is([data-sys='gb'], [data-sys='gbc'], [data-sys='gba']) { --m-clip: polygon(0 0, 86% 0, 100% 7%, 100% 100%, 0 100%); --m-pad: 2.2rem 0.8rem 0.8rem; --d-inset: 0.5rem 1.6rem auto 0.8rem; }
+[data-theme='pixel'] .card:is([data-sys='gb'], [data-sys='gbc'], [data-sys='gba']) .card-frame::after { height: 1.2rem; }
+[data-theme='pixel'] .card[data-sys='gb'] { --m-bg: #c4c4c4; --m-shadow: inset -0.25rem -0.25rem 0 #8c8c8c; --d-bg: repeating-linear-gradient(0deg, #8c8c8c 0 0.25rem, transparent 0.25rem 0.5rem); }
+[data-theme='pixel'] .card[data-sys='gbc'] { --m-bg: rgba(170, 130, 255, 0.6); --m-shadow: inset 0 0 0 0.25rem rgba(255, 255, 255, 0.6), inset -0.5rem -0.5rem 0 rgba(30, 0, 80, 0.35); --d-bg: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.55) 0 0.25rem, transparent 0.25rem 0.5rem); }
+[data-theme='pixel'] .card[data-sys='gba'] { --m-bg: #5c5c66; --m-shadow: inset -0.25rem -0.25rem 0 #3c3c44; --d-bg: repeating-linear-gradient(0deg, #3c3c44 0 0.25rem, transparent 0.25rem 0.5rem); }
+[data-theme='pixel'] .card[data-sys='psx'] { --m-bg: #0c0c10; --m-pad: 0.35rem 0.35rem 0.35rem 1.1rem;
+  --d-inset: 0.35rem 0.35rem 0.35rem 1.1rem; --d-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.26) 0 16%, transparent 16% 60%, rgba(255, 255, 255, 0.1) 60% 64%, transparent 64%); }
+[data-theme='pixel'] .card[data-sys='psx'] .card-frame::before { background: repeating-linear-gradient(0deg, #1a1a22 0 0.35rem, #2a2a34 0.35rem 0.5rem) 0.25rem 0.35rem / 0.6rem calc(100% - 0.7rem) no-repeat, #0c0c10; }
+[data-theme='pixel'] .card[data-sys='n64'] { --m-bg: #4a4d55; --m-radius: 2rem 2rem 0.25rem 0.25rem; --m-pad: 1.6rem 0.8rem 1.4rem; --m-shadow: inset 0 0.25rem 0 #6a6e78, inset 0 -0.25rem 0 #2e3036;
+  --d-inset: 0.4rem 1.4rem auto; --d-bg: repeating-linear-gradient(90deg, #2e3036 0 0.25rem, transparent 0.25rem 0.75rem); }
+[data-theme='pixel'] .card[data-sys='n64'] .card-frame::after { height: 0.75rem; }
+[data-theme='pixel'] .card[data-sys='psp'] { --m-bg: #1c1e24; --m-clip: polygon(14% 0, 86% 0, 100% 10%, 100% 100%, 0 100%, 0 10%); --m-shadow: inset 0 0 0 0.25rem #3a3e48; --m-pad: 2.45rem 0.8rem; --m-art-radius: 50%;
+  --d-inset: calc(50% - 0.55rem) calc(50% - 0.55rem); --d-bg: #1c1e24; --d-radius: 50%; }
+[data-theme='pixel'] .card[data-sys='psp'] .art { height: auto !important; aspect-ratio: 1; }
+[data-theme='pixel'] .card[data-sys='psp'] .card-frame::after { box-shadow: 0 0 0 0.25rem #9aa0ac; }
+[data-theme='pixel'] .card[data-sys='nds'] { --m-bg: #33363e; --m-clip: polygon(0 8%, 10% 0, 100% 0, 100% 100%, 0 100%); --m-pad: 1.6rem 0.7rem 0.7rem; }
+[data-theme='pixel'] .card[data-sys='ps2'] { --m-bg: #163a9a; --m-shadow: inset 0 0 0 0.25rem #0b2470; --m-pad: 1.5rem 0.3rem 0.3rem; --d-inset: 0.3rem 0.3rem auto; --d-bg: #d8dce6; }
+[data-theme='pixel'] .card[data-sys='ps2'] .card-frame::after { height: 1.1rem; }
+[data-theme='pixel'] .card[data-sys='atari2600'] { --m-bg: #141210; --m-shadow: inset 0 0 0 0.35rem #2a2622; --m-pad: 0.7rem 0.7rem 3rem;
+  --d-inset: auto 0.7rem 0.7rem; --d-bg: repeating-linear-gradient(0deg, #2a2622 0 0.35rem, transparent 0.35rem 0.7rem); }
+[data-theme='pixel'] .card[data-sys='atari2600'] .card-frame::after { height: 2rem; }
+[data-theme='pixel'] .card[data-sys='pce'] { --m-bg: #fafafa; --m-radius: 0.4rem; --m-shadow: inset 0 0 0 0.25rem #bdb8ad; --m-pad: 0.7rem 2.1rem 0.7rem 0.7rem;
+  --d-inset: 0.9rem 0.5rem 0.9rem auto; --d-bg: repeating-linear-gradient(0deg, #d6a43a 0 0.35rem, transparent 0.35rem 0.6rem); }
+[data-theme='pixel'] .card[data-sys='pce'] .card-frame::after { width: 1.2rem; }
+
+/* ---------- per-console looks for the whole home screen (colours + frames only) ---------- */
+
+/* NES: grey/black bands, red accents, RPG dialog boxes */
+[data-theme='pixel'] .home[data-sys='nes'] {
+  --bg: #000; --panel: #000; --line: #fcfcfc; --text: #fcfcfc; --muted: #bcbcbc; --accent: #f83800; --on-accent: #000; --focus: #fcfcfc;
+  --px-head: 'Press Start 2P'; --px-body: 'VT323';
+  --px-bar: #bcbcbc; --px-bar-ink: #000; --px-strip: #1c1c1c;
+  --px-frame: inset 0 0 0 0.25rem #000, inset 0 0 0 0.5rem #fcfcfc, inset 0 0 0 0.75rem #000;
+  --px-screen: 0 0 0 0.25rem #7c7c7c, 0 0 0 0.5rem #000;
+  --px-backdrop: radial-gradient(circle at 1px 1px, #3c3c3c 1px, transparent 1.5px) 0 0 / 2.3rem 1.9rem, #000;
+}
+/* SNES: lavender plastics, blue-gradient RPG windows, Mode 7 floor */
+[data-theme='pixel'] .home[data-sys='snes'] {
+  --bg: #18103a; --panel: linear-gradient(#3848b8 0 14%, #3040a8 14% 32%, #283898 32% 52%, #203088 52% 72%, #182878 72% 88%, #102068 88%); --line: #cfc9e6;
+  --text: #fff; --muted: #c8c0e8; --accent: #ffd84a; --on-accent: #1a1040; --focus: #fff;
+  --px-head: 'Pixelify Sans'; --px-body: 'Pixelify Sans'; --px-title: #fff;
+  --px-bar: #d6d3e2; --px-bar-ink: #2a2550; --px-strip: #b9b4d0;
+  --px-frame: inset 0 0 0 0.25rem #fff, inset 0 0 0 0.5rem #6a64a0;
+  --px-screen: 0 0 0 0.35rem #fff, 0 0 0 0.6rem #6a64a0;
+  --px-backdrop: repeating-conic-gradient(#221650 0 25%, #1a1040 0 50%) 0 0 / 3rem 3rem, #18103a;
+}
+[data-theme='pixel'] .home[data-sys='snes'] :is(.details, .players-panel) { border-radius: 0.6rem; }
+[data-theme='pixel'] .home[data-sys='snes'] .platform small { color: #5a5490; }
+[data-theme='pixel'] .home[data-sys='snes'] .platform:focus { background: #7b5fc7; box-shadow: none; }
+[data-theme='pixel'] .home[data-sys='snes'] .platform:focus small { color: #fff; }
+/* Genesis: glossy black, red stripes, chrome title, checkerboard */
+[data-theme='pixel'] .home[data-sys='genesis'] {
+  --bg: #05060c; --panel: #0b0d16; --line: #3a3f50; --text: #fff; --muted: #9aa4b8; --accent: #ff2a2a; --on-accent: #fff; --focus: #2a8cff;
+  --px-head: 'Press Start 2P'; --px-body: 'VT323';
+  --px-bar: repeating-linear-gradient(180deg, #000 0 0.4rem, #14161f 0.4rem 0.5rem); --px-bar-ink: #fff; --px-strip: #000;
+  --px-frame: inset 0 0.75rem 0 #ff2a2a, inset 0 1rem 0 #fff;
+  --px-screen: 0 0 0 0.25rem #000, 0 0 0 0.5rem #3a3f50;
+  --px-backdrop: linear-gradient(transparent 60%, #ff2a2a 60% 60.4%, transparent 60.4% 61%, #ff2a2a 61% 61.4%, transparent 61.4%), repeating-conic-gradient(#0a1430 0 25%, #05060c 0 50%) 0 0 / 2rem 1.2rem;
+}
+[data-theme='pixel'] .home[data-sys='genesis'] .details-title { font-style: italic; background: linear-gradient(#fff 0 35%, #8fd0ff 35% 50%, #1f6fd1 50% 62%, #fff 62% 75%, #c0c8d8 75%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+/* Game Boy: only the 4 LCD greens, grey bezel */
+[data-theme='pixel'] .home[data-sys='gb'] {
+  --bg: #9bbc0f; --panel: #8bac0f; --line: #0f380f; --text: #0f380f; --muted: #306230; --accent: #0f380f; --on-accent: #9bbc0f; --focus: #0f380f;
+  --px-head: 'Press Start 2P'; --px-body: 'VT323';
+  --px-bar: #8b8b9b; --px-bar-ink: #2c2a5a; --px-strip: #8bac0f;
+  --px-frame: inset 0 0 0 0.25rem #9bbc0f, inset 0 0 0 0.5rem #306230;
+  --px-screen: 0 0 0 0.6rem #5d5b74, 0 0 0 0.75rem #3a3850;
+  --px-backdrop: repeating-conic-gradient(#8bac0f 0 25%, #9bbc0f 0 50%) 0 0 / 0.5rem 0.5rem;
+}
+[data-theme='pixel'] .home[data-sys='gb'] .preview-screen { filter: grayscale(1) sepia(1) hue-rotate(40deg) saturate(2.2) brightness(0.8); }
+/* Game Boy Color: clear purple, teal bezel, bright bubbly panels */
+[data-theme='pixel'] .home[data-sys='gbc'] {
+  --bg: #5b2aa8; --panel: #fff8e8; --line: #1a1030; --text: #1a1030; --muted: #5a4a7a; --accent: #e0368f; --on-accent: #fff; --focus: #ffd400;
+  --px-head: 'Pixelify Sans'; --px-body: 'Pixelify Sans'; --px-title: #e0368f;
+  --px-bar: #2a1060; --px-bar-ink: #fff; --px-strip: #3e1a80;
+  --px-frame: inset 0 0 0 0.25rem #1a1030, inset 0 -0.6rem 0 #ffd400;
+  --px-screen: 0 0 0 0.5rem #1a1030, 0 0 0 0.75rem #00c8b4;
+  --px-backdrop: repeating-conic-gradient(#4e2298 0 25%, #5b2aa8 0 50%) 0 0 / 0.5rem 0.5rem;
+}
+[data-theme='pixel'] .home[data-sys='gbc'] :is(.details, .players-panel) { border-radius: 1rem; }
+[data-theme='pixel'] .home[data-sys='gbc'] .players-panel { --px-frame: inset 0 0 0 0.25rem #1a1030, inset 0 -0.6rem 0 #00c8b4; }
+[data-theme='pixel'] .home[data-sys='gbc'] :is(.card-title, .platform small) { color: #e8d8ff; }
+[data-theme='pixel'] .home[data-sys='gbc'] .card:focus .card-title { color: #fff; }
+/* GBA: indigo body, rounded silver panels */
+[data-theme='pixel'] .home[data-sys='gba'] {
+  --bg: #2a2370; --panel: #d9d8ea; --line: #1d1748; --text: #1d1748; --muted: #56508a; --accent: #4b3fb5; --on-accent: #fff; --focus: #fff;
+  --px-head: 'Silkscreen'; --px-body: 'Silkscreen';
+  --px-bar: #1d1748; --px-bar-ink: #fff; --px-strip: #1d1748;
+  --px-frame: inset 0 0.6rem 0 #fff, inset 0 -0.6rem 0 #a9a7c8;
+  --px-screen: 0 0 0 0.5rem #15123a, 0 0 0 0.75rem #6a62c8;
+  --px-backdrop: repeating-linear-gradient(180deg, #251f66 0 0.5rem, #2a2370 0.5rem 1rem);
+}
+[data-theme='pixel'] .home[data-sys='gba'] :is(.details, .players-panel) { border-radius: 1rem; }
+[data-theme='pixel'] .home[data-sys='gba'] :is(.card-title, .platform small) { color: #c9c6f0; }
+[data-theme='pixel'] .home[data-sys='gba'] .card:focus .card-title { color: #fff; }
+[data-theme='pixel'] .home[data-sys='gba'] .platform:focus { background: #4b3fb5; box-shadow: none; }
+[data-theme='pixel'] .home[data-sys='gba'] .platform:focus small { color: #fff; }
+/* PlayStation: grey body, memory-card panels, 4-colour stripe */
+[data-theme='pixel'] .home[data-sys='psx'] {
+  --bg: #1d2230; --panel: #2a3040; --line: #8e9aa6; --text: #eef0f4; --muted: #9aa2b4; --accent: #e8e8e8; --on-accent: #1d2230; --focus: #fff;
+  --px-head: 'Jersey 10'; --px-body: 'VT323';
+  --px-bar: #8e9aa6; --px-bar-ink: #1d2230; --px-strip: #141824;
+  --px-frame: inset 0 0.4rem 0 #e03a3a, inset 0 0.4rem 0 0 transparent, inset 0.25rem 0.25rem 0 #4a5264, inset -0.25rem -0.25rem 0 #12161f;
+  --px-screen: 0 0 0 0.35rem #000, 0 0 0 0.5rem #8e9aa6;
+  --px-backdrop: radial-gradient(#252b3c 0.7rem, transparent 0.75rem) 0 0 / 7rem 7rem, #1d2230;
+}
+[data-theme='pixel'] .home[data-sys='psx'] :is(.details, .players-panel) {
+  background: linear-gradient(90deg, #e03a3a 0 25%, #f2c81e 25% 50%, #2fb36a 50% 75%, #3a6fe0 75%) top / 100% 0.4rem no-repeat, #2a3040;
+  box-shadow: inset 0.25rem 0.25rem 0 #4a5264, inset -0.25rem -0.25rem 0 #12161f;
+}
+/* N64: charcoal body, gold file-select frames, 4-colour bar */
+[data-theme='pixel'] .home[data-sys='n64'] {
+  --bg: #16181e; --panel: repeating-linear-gradient(45deg, #2a251c 0 0.5rem, #241f17 0.5rem 1rem); --line: #c89a2a; --text: #fff6d8; --muted: #b8a878; --accent: #ffcc00; --on-accent: #2a1a00; --focus: #ffcc00;
+  --px-head: 'Pixelify Sans'; --px-body: 'Pixelify Sans'; --px-title: #ffcc00;
+  --px-bar: linear-gradient(90deg, #e2231a 0 25%, #ffcc00 25% 50%, #009c3a 50% 75%, #1a4ea8 75%) bottom / 100% 0.35rem no-repeat, #0e0f13; --px-bar-ink: #fff6d8; --px-strip: #0e0f13;
+  --px-frame: inset 0 0 0 0.25rem #5a3e0a, inset 0 0 0 0.5rem #c89a2a, inset 0 0 0 0.75rem #ffe08a;
+  --px-screen: 0 0 0 0.25rem #000, 0 0 0 0.5rem #c89a2a;
+  --px-backdrop: repeating-conic-gradient(#1b1d24 0 25%, #16181e 0 50%) 0 0 / 2rem 2rem;
+}
+[data-theme='pixel'] .home[data-sys='n64'] .details-title { text-shadow: 0.25rem 0.25rem 0 #6a2a00; }
+/* PSP: black gloss, cross-media wave, thin lines */
+[data-theme='pixel'] .home[data-sys='psp'] {
+  --bg: #05070c; --panel: rgba(5, 7, 12, 0.6); --line: #2a3040; --text: #fff; --muted: #8a92a4; --accent: #7fd4ff; --on-accent: #001020; --focus: #fff;
+  --px-head: 'Silkscreen'; --px-body: 'VT323';
+  --px-bar: #05070c; --px-bar-ink: #fff; --px-strip: transparent;
+  --px-frame: inset 0.25rem 0 0 #fff;
+  --px-screen: 0 0 0 0.35rem #000, 0 0 0 0.5rem #3a4050;
+  --px-backdrop: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 54' preserveAspectRatio='none' shape-rendering='crispEdges'%3E%3Cpath d='M0 30h8v-1h8v-1h8v-1h8v1h8v1h8v2h8v1h8v1h8v-1h8v-1h8v-2h8V54H0z' fill='%230c1830'/%3E%3Cpath d='M0 33h8v-1h8v-1h8v-1h8v1h8v1h8v1h8v2h8v1h8v-1h8v-1h8v-1h8v1H0z' fill='%231a3a7a'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat, #05070c;
+}
+/* Nintendo DS: light menu, blue stripes, grid paper */
+[data-theme='pixel'] .home[data-sys='nds'] {
+  --bg: #e9edf2; --panel: #fff; --line: #a7b3c4; --text: #2a3240; --muted: #6a7486; --accent: #2a8ad8; --on-accent: #fff; --focus: #2a8ad8;
+  --px-head: 'Silkscreen'; --px-body: 'Silkscreen';
+  --px-bar: repeating-linear-gradient(180deg, #fff 0 0.5rem, #eef3f8 0.5rem 1rem); --px-bar-ink: #2a3240; --px-strip: #dbe2ea;
+  --px-frame: inset 0 4rem 0 #dcebf8;
+  --px-screen: 0 0 0 0.35rem #2a3240, 0 0 0 0.6rem #c0c8d2;
+  --px-backdrop: linear-gradient(#dfe5ec 1px, transparent 1px) 0 0 / 0.75rem 0.75rem, linear-gradient(90deg, #dfe5ec 1px, transparent 1px) 0 0 / 0.75rem 0.75rem, #e9edf2;
+}
+/* PS2: deep-blue boot fog, cube towers */
+[data-theme='pixel'] .home[data-sys='ps2'] {
+  --bg: #020818; --panel: #081a4a; --line: #2c4a9a; --text: #e6f0ff; --muted: #7f97c8; --accent: #5ac8ff; --on-accent: #001030; --focus: #9fe2ff;
+  --px-head: 'Jersey 10'; --px-body: 'VT323'; --px-title: #bfe8ff;
+  --px-bar: #040e2a; --px-bar-ink: #e6f0ff; --px-strip: #020818;
+  --px-frame: inset 0 0 0 0.25rem #0f2a6e;
+  --px-screen: 0 0 0 0.25rem #000, 0 0 0 0.4rem #2c4a9a;
+  --px-backdrop: repeating-linear-gradient(0deg, transparent 0 0.25rem, #020818 0.25rem 0.35rem) 0 0 / 100% 100%,
+    linear-gradient(90deg, transparent 4%, #0a2470 4% 6%, transparent 6% 13%, #0a2470 13% 15%, transparent 15% 27%, #0a2470 27% 29%, transparent 29% 44%, #0a2470 44% 46%, transparent 46% 58%, #0a2470 58% 60%, transparent 60% 71%, #0a2470 71% 73%, transparent 73% 86%, #0a2470 86% 88%, transparent 88%) bottom / 100% 45% no-repeat,
+    linear-gradient(#0a1e5c, #020818 50%);
+}
+[data-theme='pixel'] .home[data-sys='ps2'] .details-title { text-shadow: 0.25rem 0.25rem 0 #0b2a78; }
+/* Atari 2600: woodgrain, black ribs, orange stripes */
+[data-theme='pixel'] .home[data-sys='atari2600'] {
+  --bg: #0a0806; --panel: #120e0a; --line: #3c2c1c; --text: #f4e2c0; --muted: #b0946a; --accent: #ff8a1e; --on-accent: #120e0a; --focus: #ffd23c;
+  --px-head: 'Press Start 2P'; --px-body: 'VT323';
+  --px-bar: repeating-linear-gradient(90deg, #5a3416 0 1.1rem, #6c4220 1.1rem 1.9rem, #4a2a10 1.9rem 2.2rem, #7a4c26 2.2rem 3.7rem, #5a3416 3.7rem 4.1rem); --px-bar-ink: #f4e2c0;
+  --px-strip: repeating-linear-gradient(180deg, #0e0b08 0 0.5rem, #1c1610 0.5rem 0.75rem);
+  --px-frame: inset 0 0.35rem 0 #ffd23c, inset 0 0.7rem 0 #ff8a1e, inset 0 1.05rem 0 #d8401a;
+  --px-screen: 0 0 0 0.35rem #000, 0 0 0 0.6rem #5a3416;
+  --px-backdrop: repeating-linear-gradient(180deg, #0a0806 0 0.4rem, #120e0a 0.4rem 0.6rem);
+}
+[data-theme='pixel'] .home[data-sys='atari2600'] .preview-screen .art { image-rendering: pixelated; }
+/* PC Engine: white console, orange accents, offset shadows */
+[data-theme='pixel'] .home[data-sys='pce'] {
+  --bg: #f2efe8; --panel: #fff; --line: #1c1c1c; --text: #1c1c1c; --muted: #6c665c; --accent: #e0561f; --on-accent: #fff; --focus: #e0561f;
+  --px-head: 'Press Start 2P'; --px-body: 'VT323';
+  --px-bar: #fff; --px-bar-ink: #1c1c1c; --px-strip: #e4e0d6;
+  --px-frame: inset 0 0.6rem 0 #e0561f;
+  --px-screen: 0 0 0 0.35rem #1c1c1c, 0.6rem 0.6rem 0 0.35rem #e0561f;
+  --px-backdrop: repeating-conic-gradient(#e6e1d6 0 25%, #f2efe8 0 50%) 0 0 / 0.5rem 0.5rem;
+}
+[data-theme='pixel'] .home[data-sys='pce'] .hints { background: #1c1c1c; color: #f2efe8; }
