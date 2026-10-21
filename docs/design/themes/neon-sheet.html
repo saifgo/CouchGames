@@ -1,0 +1,6 @@
+<!doctype html><meta charset="utf-8"><title>Neon Arcade sheet</title>
+<style>body{margin:0;background:#0a0a10;width:1920px;font:600 22px system-ui;color:#ddd}
+.g{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:12px}.g figure{margin:0}.g img{width:100%;display:block;border-radius:6px}.g figcaption{padding:6px 2px 0}</style>
+<div class="g" id="g"></div>
+<script>const look=new URLSearchParams(location.search).get('look');const N={snes:'SNES',nes:'NES',genesis:'Genesis',gb:'Game Boy',psx:'PlayStation',n64:'Nintendo 64'};
+for(const s in N)document.getElementById('g').insertAdjacentHTML('beforeend',`<figure><img src="shots/neon/${look}-${s}.png"><figcaption>${N[s]}</figcaption></figure>`);</script>

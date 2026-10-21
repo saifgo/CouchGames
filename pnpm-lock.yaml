@@ -69,6 +69,9 @@ importers:
       '@fontsource/jersey-10':
         specifier: ^5.3.0
         version: 5.3.0
+      '@fontsource/neonderthaw':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource/pixelify-sans':
         specifier: ^5.3.0
         version: 5.3.0
@@ -76,6 +79,9 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/silkscreen':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/tilt-neon':
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/vt323':
@@ -579,6 +585,9 @@ packages:
   '@fontsource/jersey-10@5.3.0':
     resolution: {integrity: sha512-1dOTUg3JXm/Ls6j4BEPLRF5DHGadCGQy/sIHS7L0SWauB2rEd2W6614Xufxoc+TVXtrt8kVR6IWh3RFkXmy/Cw==}
 
+  '@fontsource/neonderthaw@5.3.0':
+    resolution: {integrity: sha512-DvjrViA3SXmUPXSquDFj17ktkxADWLh4FGPxeh8DV7idIaCbvMviRDfx+g4xXS2zzBqCXUlBHl+syx8AkkJyzg==}
+
   '@fontsource/pixelify-sans@5.3.0':
     resolution: {integrity: sha512-4RCe9nXbi7wUu5+H0FNX1sgPZ2kJ1MmY1uTkEfvQIzzqhoS8zGKJaJfdK8oreE0OU+5gM+NdurFi3H3FJRBvyw==}
 
@@ -587,6 +596,9 @@ packages:
 
   '@fontsource/silkscreen@5.3.0':
     resolution: {integrity: sha512-M1NQ3LQH0LFNvyFPd/piHEGMImPPtpLglNnLC6Vdcq9kL0jNIOtTQmksAWCc4enbDnw1OnIpZtjNEfRqYm/QmA==}
+
+  '@fontsource/tilt-neon@5.3.0':
+    resolution: {integrity: sha512-A9C6HZEwi8TWuLiSzJQdpeb7F3rbB+nfe5MswkiR27iZVgZ9DAAB3fORtYIkAbndhH9ydnwfOJC2oR04HXyW5w==}
 
   '@fontsource/vt323@5.3.0':
     resolution: {integrity: sha512-3w33Rg/0+R1587HQfz4t7Q7e0GGeCqr3wmzIwqdGInUnrGEwMA5eX39GP4Z9wpTQnwfhVOhYuxuRwRUeIcicbw==}
@@ -1841,11 +1853,15 @@ snapshots:
 
   '@fontsource/jersey-10@5.3.0': {}
 
+  '@fontsource/neonderthaw@5.3.0': {}
+
   '@fontsource/pixelify-sans@5.3.0': {}
 
   '@fontsource/press-start-2p@5.3.0': {}
 
   '@fontsource/silkscreen@5.3.0': {}
+
+  '@fontsource/tilt-neon@5.3.0': {}
 
   '@fontsource/vt323@5.3.0': {}
 
