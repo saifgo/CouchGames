@@ -11,6 +11,7 @@ apps/controller-web   Phone controller (Vite + Preact). Served at /c/ by the hos
 apps/host-web         TV host in the browser (Vite + React + Nostalgist.js)
 apps/host-android-tv  Native TV host (Kotlin, Compose for TV, LibretroDroid, Ktor, libwebrtc)
 apps/signaling        "Couch server": rooms, WebRTC signaling, WS relay, ROM library API, static hosting
+apps/site             couchpad.tv: marketing site, Pro page, privacy/terms/support (Astro + Markdown)
 packages/protocol     Wire format (binary), clock sync, stats, golden vectors (shared with Kotlin)
 packages/net          Browser transport: PhoneLink / HostLink (WebSocket first, WebRTC upgrade)
 packages/skins        Controller layouts per console (RetroPad effects baked in)

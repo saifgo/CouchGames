@@ -1,0 +1,16 @@
+---
+import Base from '../layouts/Base.astro';
+import Lobby from '../components/Lobby.astro';
+---
+<Base title="Seat not found · CouchPad" description="This page doesn’t exist. Head back to CouchPad." barTone="ink">
+  <section class="field field--ink close nf wrap" data-tone="ink" aria-labelledby="nf-title">
+    <h1 id="nf-title" class="t-display" data-rise>This seat is empty.</h1>
+    <div class="close__foot">
+      <p data-rise>The page you were after isn’t here. The couch is, though, and there’s room for one more.</p>
+      <a class="btn" href="/" data-rise>Back to CouchPad</a>
+    </div>
+    <div data-rise>
+      <Lobby code="SOFA" seats={[{ name: 'Omar' }, { name: 'Lina' }, { name: 'Sam' }, {}]} toast="Seat 4 is free." label="A TV lobby with one free seat" />
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,18 @@
+---
+/** The plain top bar: wordmark, a few links, one action. On the home page it waits until the hero
+ *  has scrolled away (the hero's seats are the navigation there), then takes each chapter's colours. */
+import Wordmark from './Wordmark.astro';
+import { SITE } from '../site';
+
+interface Props { hidden?: boolean; tone?: string }
+const { hidden = false, tone = 'cream' } = Astro.props;
+---
+<header class="bar" data-bar data-hidden={hidden ? 'true' : 'false'} data-tone={tone}>
+  <Wordmark />
+  <nav aria-label="Main">
+    <a href="/#how">How it works</a>
+    <a href="/pro">Pro</a>
+    <a href="/support">Support</a>
+    <a class="btn" href={SITE.playUrl} rel="noopener">Get CouchPad</a>
+  </nav>
+</header>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://couchpad.tv/sitemap-index.xml

@@ -1,0 +1,21 @@
+---
+/** The few icons the site uses, drawn with the mark's round 2.5px strokes. */
+interface Props {
+  name: 'arrow-right' | 'arrow-down' | 'arrow-up-right' | 'check' | 'play' | 'plus';
+  class?: string;
+}
+const { name, class: cls } = Astro.props;
+const paths: Record<Props['name'], string> = {
+  'arrow-right': 'M5 12h14M13 6l6 6-6 6',
+  'arrow-down': 'M12 5v14M6 13l6 6 6-6',
+  'arrow-up-right': 'M7 17 17 7M8 7h9v9',
+  check: 'M5 12.5l4.5 4.5L19 7.5',
+  play: 'M8 5.5v13l11-6.5z',
+  plus: 'M12 5v14M5 12h14',
+};
+const big = name === 'arrow-up-right';
+---
+<svg class={cls} viewBox="0 0 24 24" fill={name === 'play' ? 'currentColor' : 'none'} stroke="currentColor"
+  stroke-width={big ? 2.6 : 2.5} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d={paths[name]} />
+</svg>

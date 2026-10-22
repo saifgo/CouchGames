@@ -1,0 +1,406 @@
+---
+import { Image, getImage } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import Lobby from '../components/Lobby.astro';
+import Wordmark from '../components/Wordmark.astro';
+import Icon from '../components/Icon.astro';
+import { qrSvg } from '../lib/qr';
+import { SITE, NAV } from '../site';
+
+import shooter from '../assets/shots/game-shooter.png';
+import phoneJoin from '../assets/shots/phone-join.png';
+import phonePad from '../assets/shots/phone-ingame.png';
+import test240p from '../assets/shots/game-240p.png';
+
+/** Controller skins, rendered from packages/skins (original artwork, no console trademarks). */
+const skinFiles = import.meta.glob<{ default: ImageMetadata }>('../assets/skins/*.png', { eager: true });
+const skin = (id: string) => skinFiles[`../assets/skins/${id}.png`]!.default;
+const PADS = [
+  { id: 'snes', system: 'SNES', pad: '16-bit pad', pro: false },
+  { id: 'nes', system: 'NES', pad: '8-bit pad', pro: false },
+  { id: 'genesis', system: 'Genesis', pad: '6-button pad', pro: false },
+  { id: 'gb', system: 'Game Boy', pad: 'classic handheld', pro: false },
+  { id: 'gba', system: 'GBA', pad: 'advance handheld', pro: true },
+  { id: 'n64', system: 'N64', pad: 'three-prong pad with C buttons and Z', pro: true },
+  { id: 'psx', system: 'PS1', pad: 'twin-stick pad', pro: true },
+  { id: 'psp', system: 'PSP', pad: 'wide portable', pro: true },
+  { id: 'nds', system: 'NDS', pad: 'dual-screen handheld', pro: true },
+  { id: 'ps2', system: 'PS2', pad: 'twin-stick pad with L3 and R3', pro: true },
+] as const;
+const padImages = await Promise.all(
+  PADS.map(async (p) => {
+    const img = await getImage({ src: skin(p.id), width: 1280, format: 'webp', quality: 82 });
+    return { ...p, src: img.src };
+  }),
+);
+const first = padImages[0]!;
+
+const heroQr = await qrSvg(SITE.url);
+
+const FAQ = [
+  {
+    q: 'Do my friends need to install anything?',
+    a: [
+      'No. They point the phone camera at the code on the TV and the controller opens in the browser. No app, no account, nothing to update.',
+      'It’s built for Chrome on Android and Safari on iPhone. Android phones buzz under your thumb; iPhones click with the system haptic.',
+    ],
+  },
+  {
+    q: 'Where do the games come from?',
+    a: [
+      'From you. CouchPad doesn’t include or sell games. Use backups of games you own, or free homebrew like the 240p Test Suite below.',
+      'Put them in folders like roms/snes/ on a USB drive, choose Add game folder on the TV, and they show up with their box art.',
+    ],
+    img: true,
+  },
+  {
+    q: 'Which consoles does it play?',
+    a: [
+      'Free: NES, SNES, Genesis, Master System, Game Gear, Game Boy, Game Boy Color, Atari 2600 and PC Engine.',
+      'Pro adds GBA, PS1, N64, PSP, NDS and PS2. CouchPad checks how fast your TV box is and only shows the systems it can run well. PS2 needs a fast one.',
+    ],
+  },
+  {
+    q: 'Will a phone feel laggy?',
+    a: [
+      'We measured it on a Galaxy S21 with a real game running: a press reaches the TV in 5 ms, and 95% of presses arrive within 9.5 ms on 5 GHz Wi-Fi.',
+      'On 2.4 GHz most presses are still quick, but some arrive late. The TV shows every player’s connection, so you can see who should move closer.',
+    ],
+  },
+  {
+    q: 'Do I need the internet?',
+    a: [
+      'Not with the Android TV app. The TV is its own little server: phones and TV just need the same Wi-Fi, not a guest network.',
+      'The browser version at app.couchpad.tv uses our server to connect phones to the TV page.',
+    ],
+  },
+  {
+    q: 'Is Pro a subscription?',
+    a: [
+      `No. Pro is one purchase of ${SITE.proPrice} through Google Play, inside the app. It comes back when you sign in with the same Google account, and refunds go through Google Play.`,
+    ],
+  },
+  {
+    q: 'What do you know about me?',
+    a: [
+      'Nothing. No accounts, no ads, no analytics. Names typed on phones go to your TV over your Wi-Fi and stay in the room.',
+    ],
+    link: { href: '/privacy', label: 'Read the privacy policy' },
+  },
+];
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'CouchPad',
+    alternateName: 'CouchPad for Android TV',
+    description: SITE.description,
+    url: SITE.url,
+    applicationCategory: 'GameApplication',
+    operatingSystem: 'Android TV',
+    image: new URL('/og.png', SITE.url).href,
+    downloadUrl: SITE.playUrl,
+    offers: [
+      { '@type': 'Offer', name: 'CouchPad Free', price: '0', priceCurrency: 'USD' },
+      { '@type': 'Offer', name: 'CouchPad Pro (one-time in-app purchase)', price: '5.99', priceCurrency: 'USD' },
+    ],
+    publisher: { '@type': 'Organization', name: SITE.developer },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a.join(' ') },
+    })),
+  },
+];
+---
+<Base
+  title="CouchPad: retro games on your TV, phones are the controllers"
+  description={SITE.description}
+  barHidden
+  barTone="ink"
+  jsonLd={jsonLd}
+>
+  <!-- Hero: the TV is on, the join card waits, the seats are the navigation -->
+  <section class="hero" data-tone="ink" data-hero aria-labelledby="hero-title">
+    <div class="screen">
+      <Image class="screen__game" src={shooter} alt="" widths={[968]} sizes="80vw" format="webp" quality={90} loading="eager" data-drift />
+      <div class="screen__top">
+        <Wordmark onInk />
+        <span class="screen__clock" data-clock aria-hidden="true">20:30</span>
+      </div>
+      <h1 id="hero-title" class="t-display screen__title" data-rise>Your phones are the controllers.</h1>
+      <div class="screen__copy">
+        <p class="lead" data-rise>
+          Retro games on your TV. Everyone on the sofa scans one code and plays. Nothing to install on the phones.
+        </p>
+        <div class="screen__actions" data-rise>
+          <a class="btn" href={SITE.playUrl} rel="noopener"><Icon name="play" />Get it on Google Play</a>
+          <a class="link" href={SITE.appUrl}>or play in a browser</a>
+        </div>
+      </div>
+      <div class="screen__lobby" data-rise>
+        <div class="lobby" data-ui data-hero-lobby role="group" aria-label="The join card the TV shows">
+          <p class="lobby__title">Scan to join</p>
+          <div class="lobby__qr" set:html={heroQr} />
+          <p class="lobby__code" aria-label="Room code S O F A">SOFA</p>
+          <ul class="lobby__seats" aria-label="Seats">
+            {[1, 2, 3, 4].map((n) => (
+              <li class="lseat" data-p={n}>
+                <span class="lseat__dot" aria-hidden="true">{n}</span>
+                <span class="lseat__name">P{n}</span>
+              </li>
+            ))}
+          </ul>
+          <p class="lobby__toast" data-hero-toast aria-hidden="true"></p>
+          <p class="lobby__hint">Go on, scan it: this page opens on your phone.</p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="seats" aria-label="On this page">
+      {NAV.map((n, i) => (
+        <a href={n.href} class={`seat--${['how', 'try', 'pads', 'pro', 'faq'][i]}`}>
+          <span class="chip" data-p={n.seat}>{n.seat ? `P${n.seat}` : '?'}</span>
+          <span class="seat__go">{n.label}<Icon name="arrow-down" /></span>
+        </a>
+      ))}
+    </nav>
+  </section>
+
+  <!-- How it works: Scan. Sit. Play. -->
+  <section id="how" class="field field--cream how wrap" data-tone="cream" aria-labelledby="how-title">
+    <div class="grid how__grid">
+      <div class="how__head">
+        <h2 id="how-title" class="t-display" data-rise>Scan. Sit. Play.</h2>
+        <p class="lead" data-rise>From “who wants to play?” to playing, in about ten seconds. Nobody reads a manual.</p>
+      </div>
+
+      <div class="stage stage--1">
+        <div class="tile" data-rise>
+          <div class="qr-only" set:html={heroQr} data-ui role="img" aria-label="The QR code on the TV" />
+        </div>
+        <div data-rise>
+          <h3 class="stage__name">Scan</h3>
+          <p class="stage__text">Point a phone camera at the code on the TV. No app, no account.</p>
+        </div>
+      </div>
+
+      <div class="stage stage--2">
+        <div class="tile" data-rise>
+          <Image class="tile__phone" src={phoneJoin} alt="The CouchPad join screen on a phone: the TV code, your name and a Join button" widths={[360, 560]} sizes="(max-width: 720px) 50vw, 260px" format="webp" />
+        </div>
+        <div data-rise>
+          <h3 class="stage__name">Sit</h3>
+          <p class="stage__text">Type a name and tap Join. The phone takes the next free seat on the TV.</p>
+        </div>
+      </div>
+
+      <div class="stage stage--3">
+        <div class="tile" data-rise>
+          <span class="chip tile__corner" data-p="1">P1</span>
+          <Image class="tile__pad" src={phonePad} alt="A phone held sideways showing a 16-bit pad: D-pad, Select, Start and four face buttons" widths={[640, 1000, 1400]} sizes="(max-width: 1080px) 90vw, 38vw" format="webp" />
+        </div>
+        <div data-rise>
+          <h3 class="stage__name">Play</h3>
+          <p class="stage__text">Turn the phone sideways. It’s now the controller for whatever is on the TV.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Try it: type a name, the TV seats you -->
+  <section id="try" class="field field--yellow try wrap" data-tone="yellow" aria-labelledby="try-title">
+    <div class="grid">
+      <h2 id="try-title" class="t-title try__head" data-rise>Everyone gets a seat.</h2>
+      <div class="try__line" data-ui data-rise>
+        <label class="sr-only" for="try-name">Type a player name</label>
+        <input id="try-name" class="try__input" type="text" value="Lina" maxlength="14" autocomplete="off" spellcheck="false" enterkeyhint="done" data-try-input />
+      </div>
+
+      <div class="try__answer" data-rise>
+        <Lobby id="try-lobby" code="SOFA" qr={false} seats={[{ name: 'Omar' }, { name: 'Lina' }, {}, {}]} toast="Lina’s phone is in. Player 2." label="The TV lobby, updating as you type" />
+      </div>
+
+      <div class="try__side">
+        <p class="t-statement" data-rise>Type a name above and watch the TV seat you.</p>
+        <ul class="try__facts">
+          <li data-rise><span class="chip" data-p="2">P2</span><span>Each phone gets a seat and a colour, so you always know which one is you.</span></li>
+          <li data-rise><span class="chip" data-p="3">P3</span><span>Phone died mid-level? Join again with the same name and you’re back in your seat.</span></li>
+          <li data-rise><span class="chip" data-p="4">P4</span><span>Two seats free. Four, or eight for party games, with Pro.</span></li>
+        </ul>
+      </div>
+
+      <div class="try__examples" data-rise>
+        <span class="t-small soft">Try:</span>
+        <button type="button" data-try-example="Grandma">Grandma</button>
+        <button type="button" data-try-example="Sam">Sam</button>
+        <button type="button" data-try-example="Little Ziad">Little Ziad</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Controllers: the fixed output, live controls -->
+  <section id="pads" class="field field--ink1 pads wrap" data-tone="ink1" aria-labelledby="pads-title">
+    <div class="grid pads__grid">
+      <div class="pads__stage">
+        <div class="pad" data-pad data-ui>
+          <img src={first.src} alt={`The ${first.pad} on a phone, for ${first.system} games`} width="2265" height="945" data-pad-img />
+          <span class="pad__flash" aria-hidden="true"></span>
+          <span class="pad__badge">
+            <span class="chip" data-p="1" data-pad-seat>P1</span>
+            <span class="chip pad__ping num" data-pad-ping>5 ms</span>
+          </span>
+        </div>
+        <p class="pads__caption" aria-live="polite" data-pad-caption>
+          <strong>{first.system}</strong> on the TV: every phone becomes a {first.pad}. Free.
+        </p>
+      </div>
+
+      <div class="pads__list">
+        <h2 id="pads-title" class="t-title" data-rise>A real pad for every console.</h2>
+
+        <div class="feat">
+          <p class="t-statement" data-rise>The pad changes with the game.</p>
+          <p data-rise>Start an N64 game and every phone grows C buttons and a Z trigger. Switch to SNES and it’s a SNES pad. Nobody touches a setting.</p>
+          <div class="controls" role="group" aria-label="Pick a console" data-rise>
+            {padImages.map((p, i) => (
+              <button type="button" class="opt" aria-pressed={i === 0 ? 'true' : 'false'}
+                data-pad-pick={p.id} data-src={p.src} data-system={p.system} data-pad={p.pad} data-pro={p.pro ? '1' : '0'}>
+                {p.system}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div class="feat">
+          <p class="t-statement" data-rise>Fast enough to feel.</p>
+          <p data-rise>We measured it with a real game running: a press reaches the TV in 5 ms on 5 GHz Wi-Fi, and 95% of presses land within 9.5 ms. The TV shows everyone’s ping.</p>
+          <label class="switch" data-rise>
+            <input type="checkbox" data-pad-ping-toggle />
+            <span class="switch__track" aria-hidden="true"></span>
+            Show ping
+          </label>
+        </div>
+
+        <div class="feat">
+          <p class="t-statement" data-rise>Feel every press.</p>
+          <p data-rise>Buttons light up the instant your thumb lands, and Android phones buzz under it. Rumble from the game comes through too.</p>
+          <div class="controls" data-rise>
+            <button type="button" class="press-a" data-pad-press aria-label="Press A">A</button>
+          </div>
+        </div>
+
+        <div class="feat">
+          <p class="t-statement" data-rise>Whose pad is whose.</p>
+          <p data-rise>Every seat has its own colour on the phone and on the TV, so P3 never steers P2’s kart.</p>
+          <div class="controls" role="group" aria-label="Pick a seat" data-rise>
+            {[1, 2, 3, 4].map((n) => (
+              <button type="button" class="opt" data-p={n} aria-pressed={n === 1 ? 'true' : 'false'} data-pad-seat-pick={n}>P{n}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pro: plans that step up -->
+  <section id="pro" class="field field--linen pro wrap" data-tone="linen" aria-labelledby="pro-title">
+    <div class="grid pro__grid">
+      <div class="pro__head">
+        <h2 id="pro-title" class="t-display" data-rise>Free to start. Pro once.</h2>
+        <p class="lead" data-rise>Pro adds seats and bigger consoles. It never makes Free play worse: no ads, no timers, no added lag.</p>
+      </div>
+
+      <article class="plan plan--web" data-rise aria-labelledby="plan-web">
+        <div class="plan__body">
+          <h3 class="plan__name" id="plan-web">In a browser</h3>
+          <p class="plan__price">Free</p>
+          <p class="plan__for">A computer plugged into the TV, running Chrome.</p>
+          <ul>
+            <li>Phones join the same way</li>
+            <li>Up to 4 players, 8 in settings</li>
+            <li>Drag your games onto the page</li>
+          </ul>
+        </div>
+        <a class="plan__cta" href={SITE.appUrl}>Open app.couchpad.tv</a>
+      </article>
+
+      <article class="plan plan--free" data-rise aria-labelledby="plan-free">
+        <div class="plan__body">
+          <h3 class="plan__name" id="plan-free">CouchPad Free</h3>
+          <p class="plan__price">Free</p>
+          <p class="plan__for">The Android TV app. No computer, no internet needed.</p>
+          <ul>
+            <li>2 players</li>
+            <li>NES, SNES, Genesis, Master System, Game Gear, Game Boy, Game Boy Color, Atari 2600, PC Engine</li>
+            <li>Save slot 1, plus auto-save when you quit</li>
+            <li>No ads, no time limits</li>
+          </ul>
+        </div>
+        <a class="plan__cta" href={SITE.playUrl} rel="noopener">Get it on Google Play</a>
+      </article>
+
+      <article class="plan plan--pro" data-rise aria-labelledby="plan-pro">
+        <div class="plan__body">
+          <h3 class="plan__name" id="plan-pro">CouchPad Pro</h3>
+          <p class="plan__price">{SITE.proPrice}<small>once</small></p>
+          <p class="plan__for">Everything in Free, plus:</p>
+          <ul>
+            <li>4 players, or 8 for party games</li>
+            <li>GBA, PS1, N64, PSP, NDS and PS2, on TV boxes fast enough to run them</li>
+            <li>4 save slots per game</li>
+            <li>Your own CouchPad server: one game library for every TV in the house</li>
+            <li>No “Go Pro” card before games</li>
+            <li>No subscription, ever</li>
+          </ul>
+        </div>
+        <a class="plan__cta" href="/pro">What you get with Pro</a>
+      </article>
+
+      <div class="pro__note t-small soft" data-rise>
+        <p>Pro is bought inside CouchPad for Android TV, through Google Play. Prices can differ by country.</p>
+        <p>CouchPad includes no games. Play the games you own, or free homebrew.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ: a band per question -->
+  <section id="faq" aria-labelledby="faq-title">
+    <div class="field field--deep faq__head wrap" data-tone="deep">
+      <h2 id="faq-title" class="t-display" data-rise>Questions from the sofa.</h2>
+    </div>
+    <div>
+      {FAQ.map((f, i) => (
+        <div class="band wrap" data-tone={i % 2 ? "linen" : "cream"}>
+          <div class="grid">
+            <h3 data-rise>{f.q}</h3>
+            <div class="band__a">
+              {f.a.map((p) => <p data-rise>{p}</p>)}
+              {f.link && <p data-rise><a class="link" href={f.link.href}>{f.link.label}</a></p>}
+              {f.img && (
+                <figure data-rise>
+                  <Image src={test240p} alt="The 240p Test Suite, a free homebrew program, running on a TV through CouchPad" widths={[700, 1400]} sizes="(max-width: 1080px) 92vw, 46vw" format="webp" quality={90} />
+                  <figcaption class="t-small soft">240p Test Suite by Damian Yerrick and Artemio Urbina, free homebrew (zlib licence).</figcaption>
+                </figure>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- Close: the idea again, on Ink -->
+  <section class="field field--ink close wrap" data-tone="ink" aria-labelledby="close-title">
+    <h2 id="close-title" class="t-display" data-rise><span>Grab a phone.</span> <span>Take a seat.</span></h2>
+    <div class="close__foot">
+      <p data-rise>CouchPad Free is on Google Play for Android TV. Pro is {SITE.proPrice}, once, when you want more seats.</p>
+      <a class="btn" href={SITE.playUrl} rel="noopener" data-rise><Icon name="play" />Get it on Google Play</a>
+    </div>
+  </section>
+</Base>

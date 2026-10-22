@@ -147,3 +147,18 @@ project. The top-bar sign reuses the console logos listed above. Fonts (`@fontso
 |---|---|---|
 | Tilt Neon (Andy Clymer) | @fontsource/tilt-neon | SIL OFL 1.1 |
 | Neonderthaw (Robert Leuschke) | @fontsource/neonderthaw | SIL OFL 1.1 |
+
+### Website (apps/site, couchpad.tv)
+
+| Component | License | Use |
+|---|---|---|
+| Astro, @astrojs/sitemap, @astrojs/markdown-remark | MIT | Static site build |
+| qrcode | MIT | The scannable QR code on the page (built at compile time) |
+| sharp (build only) | Apache-2.0 | Image resizing at build time |
+| Fredoka (The Fredoka Project Authors) | SIL OFL 1.1 | Display type, self-hosted (`apps/site/public/fonts`, licence files alongside) |
+| Inter (The Inter Project Authors) | SIL OFL 1.1 | Text type, self-hosted |
+
+Pictures on the site are CouchPad's own screenshots and controller skins, plus two homebrew games
+shown running in CouchPad: *240p Test Suite* by Damian Yerrick and Artemio Urbina (zlib, credited
+on the page) and *Horizontal Shooter* (SNES homebrew from retrobrews, free distribution approved
+by its author), seen behind the hero.

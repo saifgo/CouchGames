@@ -1,0 +1,15 @@
+---
+/** The CouchPad lockup: the mark plus the name in Fredoka. "Pad" turns yellow on Ink only. */
+interface Props {
+  href?: string;
+  onInk?: boolean;
+  class?: string;
+  label?: string;
+}
+const { href = '/', onInk = false, class: cls = '', label = 'CouchPad home' } = Astro.props;
+const src = onInk ? '/mark-on-ink.svg' : '/mark.svg';
+---
+<a href={href} class:list={['wordmark', { 'wordmark--ink': onInk }, cls]} aria-label={label}>
+  <img src={src} alt="" width="140" height="104" />
+  <span aria-hidden="true">Couch<span class="wm-pad">Pad</span></span>
+</a>
