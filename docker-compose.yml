@@ -1,5 +1,7 @@
-# Couch server for Coolify ("Docker Compose" build pack) or plain `docker compose up -d`.
-# Coolify: give the service a domain with the port, e.g. https://couch.example.com:8787.
+# CouchPad for Coolify ("Docker Compose" build pack) or plain `docker compose up -d`.
+# Two services, one domain each (set in Coolify > service > Domains, with the port):
+#   couch -> https://app.couchpad.tv:8787   the playable app (TV host, phone controller, server)
+#   site  -> https://couchpad.tv:80         the Astro marketing site (static, nginx)
 # Coolify adds HTTPS and passes WebSockets through. See docs/DEPLOY.md.
 services:
   couch:
@@ -34,6 +36,16 @@ services:
       - couch-roms:/app/roms
       # No-Intro metadata cache, crash/latency logs.
       - couch-cache:/app/.cache
+
+  # couchpad.tv: static marketing site. Its "Open app" links point at app.couchpad.tv
+  # (apps/site/src/site.ts).
+  site:
+    build:
+      context: .
+      dockerfile: apps/site/Dockerfile
+    restart: unless-stopped
+    expose:
+      - "80"
 
 volumes:
   couch-roms:

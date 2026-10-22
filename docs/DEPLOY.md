@@ -1,6 +1,7 @@
 # Deploying CouchPad (Docker / Coolify): public HTTPS mode
 
-One container serves everything on port 8787:
+`docker-compose.yml` runs two containers: `site` (the marketing site at couchpad.tv, nginx on port 80)
+and `couch` (the app at app.couchpad.tv). The `couch` container serves everything below on port 8787:
 
 | Path | What |
 |---|---|
@@ -19,12 +20,16 @@ All client URLs come from `location.origin` (`https` → `wss`), so no domain is
 2. In Coolify: **New Resource → Public/Private Repository → Build Pack: Docker Compose**
    (it picks up `docker-compose.yml`). The **Dockerfile** build pack also works: set the port to `8787`
    and add the two volumes below by hand.
-3. On the `couch` service, set **Domains** to your domain with the port, e.g. `https://couchpad.tv:8787`
-   (Coolify routes 443 → container 8787 and issues the Let's Encrypt cert). WebSockets pass through
-   Traefik with no extra config.
+3. Set **Domains** on each service, with the container port (Coolify routes 443 → that port and issues
+   the Let's Encrypt certs). WebSockets pass through Traefik with no extra config.
+   - `couch` (the playable app): `https://app.couchpad.tv:8787`
+   - `site` (the Astro marketing site, `apps/site/Dockerfile`): `https://couchpad.tv:80`
+     (add `https://www.couchpad.tv:80` too if you want `www`)
+
+   Both DNS names need an A record pointing at the Coolify server.
 4. Deploy. The first build takes a few minutes because it downloads ~165 MB of cores and ~55 MB of
    homebrew ROMs. The healthcheck is `GET /api/health`.
-5. Add your games to the `couch-roms` volume (see below), then open `https://couchpad.tv` on the TV.
+5. Add your games to the `couch-roms` volume (see below), then open `https://app.couchpad.tv` on the TV.
 
 ### Getting ROMs into the container
 
@@ -74,12 +79,12 @@ version. Or set `APK_URL` to an external link (e.g. a GitHub release). Without e
 is hidden. Local runs from the repo pick up `apps/host-android-tv/app/build/outputs/apk/release/`.
 
 **On the Android TV app.** In the app, open *Settings → CouchPad server* and enter the address of the
-TV page (e.g. `https://couchpad.tv`). The server's games (folder or S3) then show up next to
+TV page (e.g. `https://app.couchpad.tv`). The server's games (folder or S3) then show up next to
 the ones on the TV box, and a status chip in the hint bar shows the connection. A game downloads
 through the server into the app's cache the first time it's played (up to 8 GB are kept; the
 least recently played are removed first), and the system's BIOS files from `bios/` come along.
 The TV never gets the S3 keys. Instead of typing on the remote, set the address over adb:
-`adb shell am start -a android.intent.action.VIEW -d "couch://server?url=https://couchpad.tv"`.
+`adb shell am start -a android.intent.action.VIEW -d "couch://server?url=https://app.couchpad.tv"`.
 
 The TV still loads `/roms/...` from the CouchPad server, which proxies the bytes (Range requests
 included). The bucket can stay **private** and needs no CORS rules. Every ROM load costs the server
