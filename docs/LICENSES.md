@@ -1,6 +1,6 @@
 # Third-party licenses
 
-Couch Emulation itself is **GPL-3.0-or-later**. Since 2026-10-19 the Android TV app is sold (Couch Pro, ADR-005), so it
+CouchPad itself is **GPL-3.0-or-later**. Since 2026-10-19 the Android TV app is sold (CouchPad Pro, ADR-005), so it
 only uses cores whose licence allows commercial use.
 Every core and library we ship or download at build time is listed here. Licenses were
 verified on 2026-10-16 against each project's LICENSE file (GitHub API `spdx_id`, plus the
@@ -56,7 +56,7 @@ not GPL-compatible) · ❌ not usable.
 | Nostalgist.js | MIT | host-web | Thin launcher API over RetroArch Emscripten builds |
 | EmulatorJS (core builds only) | GPL-3.0 | host-web (N64/PSP/NDS cores) | Only WASM builds of those cores that exist |
 | LibretroDroid | GPL-3.0 | host-android-tv | libretro frontend for Android (powers Lemuroid) |
-| Google Play Billing Library 8 | Android SDK License (proprietary) | host-android-tv | ⚠️ Couch Pro purchase (ADR-005). Linking a proprietary library into an app that includes GPL-3 LibretroDroid is a licence question: see ADR-005 "Open question" |
+| Google Play Billing Library 8 | Android SDK License (proprietary) | host-android-tv | ⚠️ CouchPad Pro purchase (ADR-005). Linking a proprietary library into an app that includes GPL-3 LibretroDroid is a licence question: see ADR-005 "Open question" |
 | ws | MIT | signaling | WebSocket server |
 | tsx | MIT | signaling | Run TypeScript in Node without a build step |
 | @aws-sdk/client-s3 (+ @smithy/* deps) | Apache-2.0 | signaling | Optional ROM library in an S3 / S3-compatible bucket |
@@ -71,7 +71,7 @@ not GPL-compatible) · ❌ not usable.
 | stream-webrtc-android (libwebrtc) | Apache-2.0 / BSD-3 | host-android-tv | WebRTC DataChannels |
 | ZXing core | Apache-2.0 | host-android-tv | QR code rendering |
 | Coil 3 | Apache-2.0 | host-android-tv | Box art loading |
-| OkHttp 4 | Apache-2.0 | host-android-tv | Couch server library and game downloads (also used by Coil) |
+| OkHttp 4 | Apache-2.0 | host-android-tv | CouchPad server library and game downloads (also used by Coil) |
 | androidx.tvprovider | Apache-2.0 | host-android-tv | "Continue playing" on the TV home screen |
 | kotlinx.serialization / coroutines | Apache-2.0 | host-android-tv | JSON, concurrency |
 
@@ -115,9 +115,9 @@ turned white for the dark UI; nothing else changes.
 
 The Neon Arcade theme also shows the focused console's logo as a lit sign in the top bar (same files).
 
-The same logos also appear on the **default Couch covers** (shown when a game has no box art):
+The same logos also appear on the **default CouchPad covers** (shown when a game has no box art):
 `packages/systems/covers/*.svg` and `res/drawable-nodpi/cover_*.png`, made by
-`packages/systems/scripts/build-covers.ts` (`pnpm covers`). The rest of each cover is Couch's own artwork.
+`packages/systems/scripts/build-covers.ts` (`pnpm covers`). The rest of each cover is CouchPad's own artwork.
 
 ⚠️ Public domain covers copyright only. These logos are **trademarks** of Nintendo, Sega, Sony Interactive
 Entertainment and Atari. They're fine for personal use. Before publishing or selling the app, replace them, or
@@ -147,3 +147,15 @@ project. The top-bar sign reuses the console logos listed above. Fonts (`@fontso
 |---|---|---|
 | Tilt Neon (Andy Clymer) | @fontsource/tilt-neon | SIL OFL 1.1 |
 | Neonderthaw (Robert Leuschke) | @fontsource/neonderthaw | SIL OFL 1.1 |
+
+### CouchPad brand (all surfaces)
+
+The CouchPad mark, wordmark and brand kit (`docs/brand/`, `packages/design/`) are original artwork for this
+project. Brand fonts, bundled with the web apps (`packages/design/fonts/*.woff2`, latin subsets from Google
+Fonts) and the Android TV app (`apps/host-android-tv/app/src/main/res/font/fredoka_*.ttf`, `inter_*.ttf`),
+never loaded from Google at runtime:
+
+| Font | Source | License |
+|---|---|---|
+| Fredoka (The Fredoka Project Authors) | Google Fonts | SIL OFL 1.1 (`packages/design/fonts/OFL-Fredoka.txt`) |
+| Inter (The Inter Project Authors) | Google Fonts | SIL OFL 1.1 (`packages/design/fonts/OFL-Inter.txt`) |

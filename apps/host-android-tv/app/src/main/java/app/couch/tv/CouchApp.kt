@@ -41,7 +41,7 @@ class CouchApp : Application() {
         session = HostSession(this, settings.hostName)
         session.roomFullText = {
             if (pro.isPro) "All ${session.maxPlayers} player slots are taken"
-            else "Couch Free has ${ProRules.FREE_PLAYERS} player slots. Couch Pro on the TV opens up to 8."
+            else "CouchPad Free has ${ProRules.FREE_PLAYERS} player slots. CouchPad Pro on the TV opens up to 8."
         }
         session.maxPlayers = players
         CoroutineScope(SupervisorJob() + Dispatchers.Main).launch { pro.active.collect { session.maxPlayers = players } }

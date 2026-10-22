@@ -1,5 +1,5 @@
 /**
- * Couch server: signaling + WebSocket relay + ROM library + static hosting of the
+ * CouchPad server: signaling + WebSocket relay + ROM library + static hosting of the
  * built web apps. Run on the laptop that drives the TV (web host), or in the cloud
  * (signaling/relay only).
  *
@@ -69,7 +69,7 @@ const srv = await startCouchServer({
 const port = (srv.server.address() as { port: number }).port;
 if (roms instanceof S3Store) console.log(`ROM library: s3://${roms.bucket}/${roms.prefix}`);
 const scheme = tls ? 'https' : 'http';
-console.log(`Couch server on ${scheme}://localhost:${port}`);
+console.log(`CouchPad server on ${scheme}://localhost:${port}`);
 for (const a of lanAddresses()) console.log(`  ${a.virtual ? '(virtual) ' : ''}${scheme}://${a.address}:${port}  [${a.name}]`);
 
 const shutdown = () => void srv.close().then(() => process.exit(0));

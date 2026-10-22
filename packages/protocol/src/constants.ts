@@ -123,13 +123,17 @@ export const CHANNEL_INPUT = { label: 'input', id: 0 } as const;
 export const CHANNEL_CTRL = { label: 'ctrl', id: 1 } as const;
 
 export const MAX_PLAYERS = 8;
+/**
+ * Player colours, P1–P8 (docs/brand/identity.md; P1–P4 from the brand kit, P5–P8 extend it).
+ * Sent as strings in WELCOME, so changing them is not a wire-format change. Mirrored in Kotlin.
+ */
 export const PLAYER_COLORS = [
-  '#ff4d5e',
-  '#3d9bff',
-  '#2ed47a',
-  '#ffc83d',
-  '#b06bff',
-  '#ff8a3d',
-  '#2fd6d0',
-  '#ff6bcb',
+  '#f7c948', // P1 Yellow
+  '#f47c5b', // P2 Coral
+  '#3ebfa5', // P3 Teal
+  '#9b8cf5', // P4 Lilac
+  '#5aa9f0', // P5 Sky
+  '#8ccb5e', // P6 Leaf
+  '#f28ac0', // P7 Rose
+  '#e8dcc0', // P8 Linen
 ] as const;

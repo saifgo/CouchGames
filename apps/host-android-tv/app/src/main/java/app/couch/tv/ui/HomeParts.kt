@@ -123,7 +123,7 @@ import kotlinx.coroutines.delay
 
 private val Line = Color.White.copy(alpha = .1f)
 /** Button caps are neutral: the label says which button, colour is kept for state. */
-private val BtnKey = Color(0xFF2A303C)
+private val BtnKey = Color(0xFF312A23)
 private val PanelShape = RoundedCornerShape(10.dp)
 /** Digits that don't jump around as they change (clock, counters). */
 private val Tabular = TextStyle(fontFeatureSettings = "tnum")
@@ -342,7 +342,7 @@ private fun PressPlay(gamepad: Boolean) {
     ) {
         Text("Press", fontWeight = FontWeight.SemiBold, fontSize = Body)
         // A TV remote has OK, not A. A/B only once a game controller has joined.
-        Kbd(if (gamepad) "A" else "OK", Accent, Color(0xFF1A1405))
+        Kbd(if (gamepad) "A" else "OK", Accent, Color(0xFF1C1814))
         Text("to play", fontWeight = FontWeight.SemiBold, fontSize = Body)
     }
 }
@@ -468,7 +468,7 @@ private fun LockedSlot(modifier: Modifier) {
             Modifier.size(28.dp).graphicsLayer { alpha = .35f }.clip(CircleShape).background(Color.White.copy(alpha = .12f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Rounded.Lock, contentDescription = "Locked: Couch Pro", tint = Color.White, modifier = Modifier.size(14.dp))
+            Icon(Icons.Rounded.Lock, contentDescription = "Locked: CouchPad Pro", tint = Color.White, modifier = Modifier.size(14.dp))
         }
     }
 }
@@ -619,7 +619,7 @@ private fun PlatformItem(r: HomeRow, active: Boolean, modifier: Modifier, onPick
                 }
                 if (r.locked) {
                     Icon(
-                        Icons.Rounded.Lock, contentDescription = "Needs Couch Pro", tint = Accent,
+                        Icons.Rounded.Lock, contentDescription = "Needs CouchPad Pro", tint = Accent,
                         modifier = Modifier.align(Alignment.TopEnd).offset(x = 6.dp, y = (-4).dp).size(14.dp),
                     )
                 }
@@ -761,7 +761,7 @@ private fun CoverCard(
                     if (it.isFocused) onFocus(g)
                 },
             shape = CardDefaults.shape(shape),
-            colors = CardDefaults.colors(containerColor = Color(0xFF111111)),
+            colors = CardDefaults.colors(containerColor = Color(0xFF26211B)),
             scale = CardDefaults.scale(focusedScale = 1f),
             border = CardDefaults.border(focusedBorder = Border(BorderStroke(3.dp, Accent), shape = shape)),
             glow = CardDefaults.glow(focusedGlow = Glow.None),
@@ -803,7 +803,7 @@ private fun NewMark(color: Color, shape: Shape) {
 fun AddedBanner(text: String, accent: Color, modifier: Modifier = Modifier) {
     Row(
         modifier
-            .background(Color(0xE60A0C12), RoundedCornerShape(50))
+            .background(Color(0xE61C1814), RoundedCornerShape(50))
             .border(2.dp, accent, RoundedCornerShape(50))
             .padding(horizontal = 18.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -967,7 +967,7 @@ private fun Pill(label: String, accent: Color, onClick: () -> Unit, dot: Color? 
         shape = ClickableSurfaceDefaults.shape(shape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = Color.White.copy(alpha = .06f), contentColor = Color.White,
-            focusedContainerColor = Color.White, focusedContentColor = Color(0xFF0B0D12),
+            focusedContainerColor = Color.White, focusedContentColor = Color(0xFF1C1814),
         ),
         border = ClickableSurfaceDefaults.border(
             border = Border(BorderStroke(1.dp, Color.White.copy(alpha = .18f)), shape = shape),

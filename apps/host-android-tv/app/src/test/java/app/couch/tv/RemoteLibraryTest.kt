@@ -50,7 +50,7 @@ class RemoteLibraryTest {
         assertTrue(e(java.net.SocketTimeoutException("connect timed out"), "https://c.example.com:8787").contains("without :8787"))
         assertTrue(e(java.net.UnknownHostException("c.example.com"), "https://c.example.com").contains("Can't find c.example.com"))
         assertTrue(e(javax.net.ssl.SSLHandshakeException("bad cert"), "https://c.example.com").contains("certificate"))
-        assertTrue(e(app.couch.tv.library.HttpStatus(404), "https://c.example.com").contains("not a Couch server"))
+        assertTrue(e(app.couch.tv.library.HttpStatus(404), "https://c.example.com").contains("not a CouchPad server"))
     }
 
     @Test

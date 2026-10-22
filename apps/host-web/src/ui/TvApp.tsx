@@ -1,6 +1,6 @@
 /**
- * "Android TV app" button + panel: tells people there is a native app version (CoucheTV)
- * and offers the APK the couch server has (/api/apk), with a QR code for phones.
+ * "Android TV app" button + panel: tells people there is a native app version (CouchPad for Android TV)
+ * and offers the APK the CouchPad server has (/api/apk), with a QR code for phones.
  */
 import { useEffect, useState } from 'react';
 import { Icon, Modal, QR } from './common.js';
@@ -39,7 +39,7 @@ export function TvAppPanel({ apk, onClose }: { apk: ApkInfo; onClose: () => void
     <Modal onClose={onClose} className="tvapp">
       <h1>Play on your Android TV</h1>
       <p className="tvapp-lead">
-        There is also an app version of Couch, <b>CoucheTV</b>, for Android TV and Google TV boxes. It runs the games on the box itself, without a browser:
+        There is also an app version, <b>CouchPad for Android TV</b>, for Android TV and Google TV boxes. It runs the games on the box itself, without a browser:
       </p>
       <ul className="tvapp-points">
         <li>
@@ -52,14 +52,14 @@ export function TvAppPanel({ apk, onClose }: { apk: ApkInfo; onClose: () => void
           <b>Same controllers</b>: phones still scan a QR code, and Bluetooth gamepads work too
         </li>
         <li>
-          <b>This library too</b>: in the app, Settings → Couch server → <code>{location.origin}</code>
+          <b>This library too</b>: in the app, Settings → CouchPad server → <code>{location.origin}</code>
         </li>
       </ul>
       <div className="tvapp-download">
         <QR text={href} size={150} />
         <div>
           <a className="add tvapp-get" data-nav data-nav-default href={apk.url} download={apk.file} target={apk.size === null ? '_blank' : undefined} rel="noreferrer">
-            ⬇ Download CoucheTV{apk.version ? ` ${apk.version}` : ''}
+            ⬇ Download CouchPad for Android TV{apk.version ? ` ${apk.version}` : ''}
             {size}
           </a>
           <p className="tvapp-how">

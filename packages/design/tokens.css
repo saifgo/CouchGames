@@ -1,0 +1,57 @@
+/*
+ * CouchPad brand tokens for the web (docs/brand/identity.md). Mirrors src/index.ts and the Android
+ * ui/Brand.kt. Fonts are bundled (SIL OFL 1.1, see fonts/OFL-*.txt), never loaded from Google.
+ */
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('./fonts/fredoka-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./fonts/inter-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./fonts/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  /* Core palette */
+  --cp-yellow: #f7c948;
+  --cp-yellow-deep: #d9a520;
+  --cp-ink: #1c1814;
+  --cp-cream: #fff6e0;
+  --cp-mocha: #7a6f5e;
+  --cp-sand: #b8ae9c;
+  --cp-linen: #e8dcc0;
+
+  /* Dark (Ink) ground: TV and phone. Surfaces are lifted Ink, lines are Cream at low alpha. */
+  --cp-ink-1: #26211b; /* panels */
+  --cp-ink-2: #312a23; /* raised: buttons, inputs */
+  --cp-ink-line: #3a332b;
+
+  /* Player colours: controllers only (P1–P4 from the brand kit, P5–P8 extend it) */
+  --cp-p1: #f7c948;
+  --cp-p2: #f47c5b;
+  --cp-p3: #3ebfa5;
+  --cp-p4: #9b8cf5;
+  --cp-p5: #5aa9f0;
+  --cp-p6: #8ccb5e;
+  --cp-p7: #f28ac0;
+  --cp-p8: #e8dcc0;
+
+  --cp-font-display: Fredoka, Nunito, ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
+  --cp-font-body: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}

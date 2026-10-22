@@ -5,6 +5,7 @@ import { enterPlayMode, isStandalone, measureSafeArea } from './device.js';
 import { Gyro, requestMotionPermission } from './gyro.js';
 import { Haptics, isIOS } from './haptics.js';
 import { PadSurface } from './pad/pad.js';
+import { Mark, Wordmark } from './brand.js';
 import { InputSender } from './sender.js';
 import { Session, type SessionSnapshot } from './session.js';
 import { loadSettings, saveSettings, type Settings } from './settings.js';
@@ -50,7 +51,7 @@ export function App() {
   useEffect(() => {
     if (autojoin) void join(room, params.get('name') ?? (settings.name || 'Player'));
   }, []);
-  if (!session) return autojoin ? <div class="banner">Joining…</div> : <JoinScreen room={room} name={settings.name} onJoin={join} />;
+  if (!session) return autojoin ? <div class="banner">Joining the TV…</div> : <JoinScreen room={room} name={settings.name} onJoin={join} />;
   return <PlayScreen session={session} settings={settings} update={update} onLeave={leave} />;
 }
 
@@ -100,7 +101,13 @@ function JoinScreen(props: { room: string; name: string; onJoin: (room: string, 
   return (
     <form class="join" onSubmit={submit}>
       <div class="brand">
-        <span class="logo">▲●</span> Couch
+        <Mark size={72} />
+        <div>
+          <h1>
+            <Wordmark />
+          </h1>
+          <p class="tagline">Scan. Sit. Play.</p>
+        </div>
       </div>
       <label class="field">
         <span>TV code</span>
@@ -122,7 +129,10 @@ function JoinScreen(props: { room: string; name: string; onJoin: (room: string, 
       <button class="primary" disabled={!valid || busy} type="submit">
         {busy ? 'Connecting…' : 'Join'}
       </button>
-      <p class="hint">Turn your phone sideways. {isIOS && !isStandalone() ? 'Tip: Share → Add to Home Screen for full screen.' : ''}</p>
+      <p class="hint">
+        Turn your phone sideways to play.
+        {isIOS && !isStandalone() ? ' Tip: Share → Add to Home Screen for full screen.' : ''}
+      </p>
     </form>
   );
 }
@@ -206,13 +216,13 @@ function PlayScreen(props: { session: Session; settings: Settings; update: (p: P
     <div class="play">
       <div class="pad" ref={padRef} />
       <div class="hud">
-        <button class="badge" style={{ background: snap.color }} onClick={badgeTap}>
+        <button class={`badge${snap.slot === null ? ' pending' : ''}`} style={snap.slot === null ? undefined : { background: snap.color }} onClick={badgeTap}>
           {snap.slot === null ? '…' : `P${snap.slot + 1}`}
         </button>
         <span class={`ping ${quality}`} title="Connection quality" />
         {snap.gameTitle && <span class="title">{snap.gameTitle}</span>}
-        <button class="gear" aria-label="Settings" onClick={() => setSheet('settings')}>
-          ⚙
+        <button class="gear" aria-label="Controller settings" onClick={() => setSheet('settings')}>
+          <GearIcon />
         </button>
       </div>
       {banner && <div class="banner">{banner}</div>}
@@ -233,9 +243,14 @@ function PlayScreen(props: { session: Session; settings: Settings; update: (p: P
           analog={getSkin(skinId).analog}
           name={settings.name}
           onRename={(n) => session.setName(n)}
+          slot={snap.slot}
+          color={snap.color}
         />
       )}
-      <div class="rotate">↻ Turn your phone sideways</div>
+      <div class="rotate">
+        <Mark size={96} body={snap.slot === null ? undefined : snap.color} />
+        <p>Turn your phone sideways</p>
+      </div>
     </div>
   );
 }
@@ -272,7 +287,7 @@ function TvMenu({ snap, session }: { snap: SessionSnapshot; session: Session }) 
       {mode === 'main' && (
         <div class="row">
           <button class="primary" onClick={() => session.menu(MenuAction.RESUME)}>
-            ▶ Resume
+            <PlayIcon /> Resume
           </button>
           <button onClick={() => setMode('save')}>Save state</button>
           <button onClick={() => setMode('load')} disabled={snap.saveSlots.length === 0}>
@@ -316,14 +331,22 @@ function SettingsSheet(props: {
   onRename: (name: string) => void;
   analog: boolean;
   name: string;
+  slot: number | null;
+  color: string;
 }) {
   const { settings: s, update } = props;
   const skins = useMemo(() => Object.values(SKINS).map((k) => ({ id: k.id, name: k.name })), []);
   return (
     <div class="sheet settings" onPointerDown={(e) => e.stopPropagation()}>
       <div class="sheet-head">
-        <strong>Controller settings</strong>
-        <button onClick={props.onClose}>Done</button>
+        <Mark size={44} body={props.slot === null ? undefined : props.color} />
+        <div class="who">
+          <strong>Controller settings</strong>
+          <span>{props.slot === null ? 'Finding you a seat…' : `You’re player ${props.slot + 1}`}</span>
+        </div>
+        <button class="primary" onClick={props.onClose}>
+          Done
+        </button>
       </div>
       <div class="grid">
         <label>
@@ -416,5 +439,29 @@ function SettingsSheet(props: {
         </button>
       </div>
     </div>
+  );
+}
+
+/* ----------------------------------------------------------------- icons */
+
+function GearIcon() {
+  // Eight short teeth around a ring: reads as a gear at 22 px.
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round">
+      <path
+        stroke-width="3.4"
+        d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.35 5.35l1.55 1.55M17.1 17.1l1.55 1.55M5.35 18.65l1.55-1.55M17.1 6.9l1.55-1.55"
+      />
+      <circle cx="12" cy="12" r="6.4" stroke-width="2.6" />
+      <circle cx="12" cy="12" r="2.2" stroke-width="2.2" />
+    </svg>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+      <path d="M4 2.5v11a1 1 0 0 0 1.5.86l9-5.5a1 1 0 0 0 0-1.72l-9-5.5A1 1 0 0 0 4 2.5z" fill="currentColor" />
+    </svg>
   );
 }

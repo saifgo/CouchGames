@@ -1,37 +1,66 @@
-/* Shared style for the public legal pages (privacy, terms, support). Plain HTML, no build step. */
+/*
+ * Shared style for the public pages (legal, privacy, terms, support). Plain HTML, no build step.
+ * CouchPad light brand (docs/brand/identity.md): Cream ground, Ink text, Mocha secondary, Linen lines,
+ * Fredoka headings, Inter body. Fonts and the mark come from packages/design via /brand/ (vite.config.ts).
+ */
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/brand/fredoka-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/brand/inter-latin.woff2') format('woff2');
+}
 :root {
-  color-scheme: dark;
-  --bg: #07090d;
-  --panel: #11151f;
-  --line: #232a3a;
-  --text: #eef2f8;
-  --muted: #9aa4b8;
-  --accent: #ffd166;
-  font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  color-scheme: light;
+  --cream: #fff6e0;
+  --ink: #1c1814;
+  --mocha: #7a6f5e;
+  --linen: #e8dcc0;
+  --yellow: #f7c948;
+  --card: #fffbf0;
+  --display: Fredoka, Nunito, ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.6; font-size: 17px; }
-header { border-bottom: 1px solid var(--line); }
+body { margin: 0; background: var(--cream); color: var(--ink); line-height: 1.6; font-size: 17px; font-weight: 400; }
+header { border-bottom: 1px solid var(--linen); }
 header .wrap { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; padding-top: 1rem; padding-bottom: 1rem; }
-.brand { display: inline-flex; align-items: center; gap: 0.6rem; color: var(--text); text-decoration: none; font-weight: 900; font-size: 1.3rem; }
-.brand img { width: 32px; height: 32px; }
-nav { display: flex; gap: 1.2rem; margin-left: auto; flex-wrap: wrap; }
-nav a { color: var(--muted); text-decoration: none; }
-nav a:hover, nav a[aria-current='page'] { color: var(--accent); }
+/* Horizontal lockup: full mark on Cream + all-Ink wordmark (Pad turns Yellow only on Ink). */
+.brand { display: inline-flex; align-items: center; gap: 0.7rem; color: var(--ink); text-decoration: none; font-family: var(--display); font-weight: 700; font-size: 1.75rem; letter-spacing: -0.01em; line-height: 1; }
+.brand img { width: 56px; height: auto; display: block; }
+nav { display: flex; gap: 1.4rem; margin-left: auto; flex-wrap: wrap; font-weight: 600; }
+nav a { color: var(--mocha); text-decoration: none; padding: 0.2rem 0; border-bottom: 3px solid transparent; }
+nav a:hover { color: var(--ink); }
+nav a[aria-current='page'] { color: var(--ink); border-bottom-color: var(--yellow); }
 .wrap { max-width: 820px; margin: 0 auto; padding: 0 1.25rem; }
 main.wrap { padding-top: 2.5rem; padding-bottom: 4rem; }
-h1 { font-size: 2.2rem; line-height: 1.15; margin: 0 0 0.4rem; }
-h2 { font-size: 1.35rem; margin: 2.4rem 0 0.6rem; }
-h3 { font-size: 1.1rem; margin: 1.6rem 0 0.4rem; }
-.updated { color: var(--muted); margin: 0 0 2rem; }
-a { color: var(--accent); }
-p, li { color: #d9dfea; }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem 1.4rem; margin: 1.2rem 0; }
+h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -0.005em; }
+h1 { font-size: 2.6rem; font-weight: 700; line-height: 1.1; margin: 0 0 0.5rem; }
+h2 { font-size: 1.75rem; line-height: 1.2; margin: 2.4rem 0 0.6rem; }
+h3 { font-size: 1.1rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+.tagline { font-family: var(--display); font-weight: 600; font-size: 1.75rem; line-height: 1.2; margin: 0 0 0.6rem; }
+.updated { color: var(--mocha); margin: 0 0 2rem; }
+a { color: var(--ink); text-decoration-color: var(--yellow); text-decoration-thickness: 2px; text-underline-offset: 0.18em; }
+a:hover { text-decoration-color: var(--ink); }
+a:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; border-radius: 3px; }
+p, li { color: var(--ink); }
+.card { background: var(--card); border: 1px solid var(--linen); border-left: 6px solid var(--yellow); border-radius: 14px; padding: 1.1rem 1.4rem; margin: 1.2rem 0; }
 .card p:first-child { margin-top: 0; }
 .card p:last-child { margin-bottom: 0; }
 table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.95rem; }
-th, td { text-align: left; vertical-align: top; padding: 0.6rem 0.7rem; border-bottom: 1px solid var(--line); }
-th { color: var(--muted); font-weight: 600; }
-code { background: rgba(255, 255, 255, 0.08); padding: 0.1em 0.4em; border-radius: 0.3em; }
-footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; padding: 1.5rem 0 2.5rem; }
-footer a { color: var(--muted); }
+th, td { text-align: left; vertical-align: top; padding: 0.6rem 0.7rem; border-bottom: 1px solid var(--linen); }
+th { color: var(--mocha); font-weight: 600; }
+code { background: var(--linen); padding: 0.1em 0.4em; border-radius: 0.3em; font-size: 0.92em; }
+footer { border-top: 1px solid var(--linen); color: var(--mocha); font-size: 0.9rem; padding: 1.5rem 0 2.5rem; }
+footer a { color: var(--mocha); }
+@media (max-width: 560px) {
+  nav { margin-left: 0; }
+  h1 { font-size: 2.1rem; }
+}

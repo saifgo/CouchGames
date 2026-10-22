@@ -47,7 +47,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 
-private val TV_NAMES = listOf("Living room", "Bedroom", "Game room", "Couch")
+private val TV_NAMES = listOf("Living room", "Bedroom", "Game room", "CouchPad")
 private val TIER_LABELS = listOf("Auto", "1 · 8-bit", "2 · 16-bit", "3 · +PS1", "4 · +N64/PSP/NDS", "5 · +PS2")
 
 @Composable
@@ -86,17 +86,17 @@ fun SettingsScreen(
         }
     }
 
-    Box(Modifier.fillMaxSize().background(Color(0xCC04060A)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color(0xCC1C1814)), contentAlignment = Alignment.Center) {
         LazyColumn(
             Modifier.width(820.dp).clip(RoundedCornerShape(24.dp)).background(Panel).padding(28.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            item(version) { Text("Settings", fontSize = 32.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp)) }
+            item(version) { Text("Settings", fontSize = 32.sp, fontFamily = Fredoka, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp)) }
             item("${version}pro$isPro") {
                 Row2(
-                    "Couch Pro",
+                    "CouchPad Pro",
                     if (isPro) "On" else price ?: "Upgrade",
-                    if (isPro) "Up to 8 players, every console, 4 save slots, Couch server library" else "One purchase: up to 8 players, every console, more save slots, Couch server library",
+                    if (isPro) "Up to 8 players, every console, 4 save slots, CouchPad server library" else "One purchase: up to 8 players, every console, more save slots, CouchPad server library",
                     focus = true,
                 ) { onPro(null) }
             }
@@ -122,11 +122,11 @@ fun SettingsScreen(
             }
             item("${version}server") {
                 Row2(
-                    "Couch server",
+                    "CouchPad server",
                     s.serverUrl.ifEmpty { "Off" },
-                    if (!isPro) "Couch Pro: also show the games of a Couch server (its roms/ folder or S3 bucket)"
-                    else server?.detail ?: "Also show the games of a Couch server (its roms/ folder or S3 bucket). Select to set the address.",
-                ) { if (isPro) editServer = true else onPro("Games from a Couch server need Couch Pro") }
+                    if (!isPro) "CouchPad Pro: also show the games of a CouchPad server (its roms/ folder or S3 bucket)"
+                    else server?.detail ?: "Also show the games of a CouchPad server (its roms/ folder or S3 bucket). Select to set the address.",
+                ) { if (isPro) editServer = true else onPro("Games from a CouchPad server need CouchPad Pro") }
             }
             item("${version}players$isPro") {
                 if (isPro) {
@@ -135,7 +135,7 @@ fun SettingsScreen(
                         app.session.maxPlayers = app.players
                     }
                 } else {
-                    Row2("Players", "${ProRules.FREE_PLAYERS}", "Couch Pro: up to 8") { onPro("More than ${ProRules.FREE_PLAYERS} players need Couch Pro") }
+                    Row2("Players", "${ProRules.FREE_PLAYERS}", "CouchPad Pro: up to 8") { onPro("More than ${ProRules.FREE_PLAYERS} players need CouchPad Pro") }
                 }
             }
             item(version + 3) {
@@ -175,7 +175,7 @@ fun SettingsScreen(
                 Column(Modifier.padding(top = 12.dp)) {
                     Text("About", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Text(
-                        "Couch is free software (GPL-3.0-or-later); the source is available on request. Emulator cores are separate programs from the libretro project, included with the app under their own licences (all allow commercial use). Couch includes no games: play the ones you own. Your ROMs and BIOS files stay on this device.",
+                        "CouchPad is free software (GPL-3.0-or-later); the source is available on request. Emulator cores are separate programs from the libretro project, included with the app under their own licences (all allow commercial use). CouchPad includes no games: play the ones you own. Your ROMs and BIOS files stay on this device.",
                         color = Muted,
                         fontSize = 14.sp,
                     )
@@ -224,12 +224,12 @@ private fun ServerDialog(initial: String, test: suspend (String) -> Result<Strin
     }
     val field = remember { FocusRequester() }
     androidx.activity.compose.BackHandler { onCancel() }
-    Box(Modifier.fillMaxSize().background(Color(0xE004060A)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color(0xE01C1814)), contentAlignment = Alignment.Center) {
         Column(
             Modifier.width(760.dp).clip(RoundedCornerShape(24.dp)).background(Panel).padding(28.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Couch server", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Text("CouchPad server", fontSize = 28.sp, fontFamily = Fredoka, fontWeight = FontWeight.Bold)
             Text(
                 "The address of the TV page you open in a browser, e.g. https://couch.example.com or http://192.168.1.20:8787. " +
                     "Its games (roms/ folder or S3 bucket) appear here and download the first time you play them. Leave empty to turn it off.",

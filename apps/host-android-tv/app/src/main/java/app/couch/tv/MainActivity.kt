@@ -279,7 +279,7 @@ class MainActivity : ComponentActivity() {
         /** Starts a game, or explains what needs Couch Pro / shows the daily Free reminder first. */
         fun start(g: Game, resume: Boolean) {
             if (!ProRules.systemAllowed(isPro, g.system)) {
-                proPrompt = "${Systems.byId(g.system)?.name ?: g.system} games need Couch Pro"
+                proPrompt = "${Systems.byId(g.system)?.name ?: g.system} games need CouchPad Pro"
                 return
             }
             val now = System.currentTimeMillis()
@@ -316,7 +316,7 @@ class MainActivity : ComponentActivity() {
                 val recent = recents.mapNotNull { byId[it] }.take(20)
                 if (recent.isNotEmpty()) add(HomeRow("recent", "Recent", "Recently Played", "Jump back in", Color(0xFF4DD8FF), recent))
                 val fav = playable.filter { it.id in favs }.sortedWith(byTitle)
-                if (fav.isNotEmpty()) add(HomeRow("fav", "Favourites", "Favourites", "${fav.size} games", Color(0xFFFFD166), fav))
+                if (fav.isNotEmpty()) add(HomeRow("fav", "Favourites", "Favourites", "${fav.size} games", Color(0xFFF7C948), fav))
                 for (sys in Systems.all) {
                     val list = playable.filter { it.system == sys.id }.sortedWith(byTitle)
                     val locked = !ProRules.systemAllowed(isPro, sys.id)
@@ -389,7 +389,7 @@ class MainActivity : ComponentActivity() {
             crashed?.let { c ->
                 Notice(
                     title = "The emulator stopped",
-                    text = "Couch closed while playing ${c.title} with the ${c.core} core. That core may not support this game or this device.",
+                    text = "CouchPad closed while playing ${c.title} with the ${c.core} core. That core may not support this game or this device.",
                     primary = "Try another core",
                     onPrimary = {
                         Systems.byId(c.system)?.let { sys ->
@@ -402,7 +402,7 @@ class MainActivity : ComponentActivity() {
             }
             if (crashed == null && onboarding && !showSettings) {
                 Notice(
-                    title = "Welcome to Couch",
+                    title = "Welcome to CouchPad",
                     text = "1 · Put your games in roms/<system>/ folders (for example roms/snes/) on a USB drive, then choose \"Add game folder\" and pick the roms folder.\n" +
                         "2 · Scan the QR code with each phone: it becomes the controller, no app needed. Game controllers paired with this TV join with any button.\n" +
                         "3 · In a game, press Home on your phone for save states, controller swaps and quit. If a player leaves, use Players (bottom bar) or Controllers (in-game menu) to swap or remove them.",
@@ -418,9 +418,9 @@ class MainActivity : ComponentActivity() {
                 Notice(
                     title = "No folder picker on this TV",
                     text = "This TV has no system folder picker. You can still add games:\n" +
-                        "· On a USB drive, put them in Android/data/$packageName/files/roms/<system>/ (Couch creates this folder when the drive is plugged in).\n" +
+                        "· On a USB drive, put them in Android/data/$packageName/files/roms/<system>/ (CouchPad creates this folder when the drive is plugged in).\n" +
                         "· Or copy them over adb into the same folder on this TV.\n" +
-                        "· Or play from a Couch server (Couch Pro).",
+                        "· Or play from a CouchPad server (CouchPad Pro).",
                     primary = "Refresh",
                     onPrimary = { noPicker.value = false; refreshLocal() },
                 ) { noPicker.value = false }
@@ -445,9 +445,9 @@ class MainActivity : ComponentActivity() {
 private fun Notice(title: String, text: String, primary: String, onPrimary: () -> Unit, onClose: () -> Unit) {
     val first = remember { FocusRequester() }
     BackHandler { onClose() }
-    Box(Modifier.fillMaxSize().background(Color(0xC804060A)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color(0xC81C1814)), contentAlignment = Alignment.Center) {
         Column(Modifier.width(760.dp).clip(RoundedCornerShape(24.dp)).background(Panel).padding(30.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text(title, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+            Text(title, fontSize = 30.sp, fontFamily = app.couch.tv.ui.Fredoka, fontWeight = FontWeight.Bold)
             Text(text, color = Muted, fontSize = 17.sp, lineHeight = 26.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(onClick = onPrimary, modifier = Modifier.focusRequester(first)) { Text(primary) }
@@ -463,11 +463,11 @@ private fun GameDetail(game: Game, onlineArt: Boolean, hasAuto: Boolean, locked:
     val sys = Systems.byId(game.system)!!
     val first = remember { FocusRequester() }
     BackHandler { onClose() }
-    Box(Modifier.fillMaxSize().background(Color(0xB804060A)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color(0xB81C1814)), contentAlignment = Alignment.Center) {
         Row(Modifier.width(880.dp).clip(RoundedCornerShape(26.dp)).background(Panel).padding(32.dp), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
             Art(game, onlineArt, Modifier.width(260.dp).padding(0.dp))
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(game.title, fontSize = 38.sp, lineHeight = 44.sp, fontWeight = FontWeight.ExtraBold)
+                Text(game.title, fontSize = 38.sp, lineHeight = 44.sp, fontFamily = app.couch.tv.ui.Fredoka, fontWeight = FontWeight.ExtraBold)
                 Text(
                     buildAnnotatedString {
                         withStyle(SpanStyle(color = lerp(hexColor(sys.accent), Color.White, .3f), fontWeight = FontWeight.Bold)) { append(sys.name) }
@@ -477,7 +477,7 @@ private fun GameDetail(game: Game, onlineArt: Boolean, hasAuto: Boolean, locked:
                 )
                 Text(
                     when {
-                        game.root == SERVER_ROOT -> "From the Couch server ${game.remote?.server} · " + (if (game.file.length() == game.size) "downloaded" else "downloads when you play")
+                        game.root == SERVER_ROOT -> "From the CouchPad server ${game.remote?.server} · " + (if (game.file.length() == game.size) "downloaded" else "downloads when you play")
                         game.folder != null -> "From a game folder · " + (if (game.file.length() == game.size) "ready" else "copied to this TV when you play")
                         else -> game.file.path
                     },
@@ -486,7 +486,7 @@ private fun GameDetail(game: Game, onlineArt: Boolean, hasAuto: Boolean, locked:
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 10.dp)) {
                     if (locked) {
-                        Button(onClick = { onPlay(false) }, modifier = Modifier.focusRequester(first)) { ButtonIcon(Icons.Rounded.Lock); Text("Unlock with Couch Pro", fontSize = 20.sp) }
+                        Button(onClick = { onPlay(false) }, modifier = Modifier.focusRequester(first)) { ButtonIcon(Icons.Rounded.Lock); Text("Unlock with CouchPad Pro", fontSize = 20.sp) }
                     } else {
                         if (hasAuto) Button(onClick = { onPlay(true) }, modifier = Modifier.focusRequester(first)) { ButtonIcon(Icons.Rounded.PlayArrow); Text("Continue", fontSize = 20.sp) }
                         Button(onClick = { onPlay(false) }, modifier = if (hasAuto) Modifier else Modifier.focusRequester(first)) {

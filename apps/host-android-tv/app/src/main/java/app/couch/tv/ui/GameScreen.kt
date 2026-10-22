@@ -139,7 +139,7 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
         val v = view ?: return
         val n = slot.removePrefix("slot").toIntOrNull()
         if (n != null && !ProRules.saveSlotAllowed(app.pro.isPro, n)) {
-            flash("Slots 2–4 need Couch Pro · Couch Free has slot 1")
+            flash("Slots 2–4 need CouchPad Pro · CouchPad Free has slot 1")
             return
         }
         val paused = menu != null
@@ -177,7 +177,7 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
                 app.remote.ensureBios(r.server, sys.id, app.library.systemDir())
             }
             if (got.isFailure) {
-                error = "Could not download ${game.title} from the Couch server ${r.server}: ${got.exceptionOrNull()?.message}. Check that the server is running and this TV is online."
+                error = "Could not download ${game.title} from the CouchPad server ${r.server}: ${got.exceptionOrNull()?.message}. Check that the server is running and this TV is online."
                 return@LaunchedEffect
             }
             downloading = false
@@ -369,11 +369,11 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
         menu?.let { page ->
             val first = remember(page) { FocusRequester() }
             Column(
-                Modifier.fillMaxSize().background(Color(0xD905070B)),
+                Modifier.fillMaxSize().background(Color(0xD91C1814)),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                Text(game.title, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Text(game.title, fontSize = 28.sp, fontFamily = Fredoka, fontWeight = FontWeight.Bold)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 8.dp)) { session.players.forEach { PlayerChip(it) } }
                 Column(Modifier.width(520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     val item: @Composable (String, Boolean, Boolean, () -> Unit) -> Unit = { label, isFirst, enabled, action ->
@@ -415,7 +415,7 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
         toast?.let {
             Text(
                 it,
-                Modifier.align(Alignment.BottomCenter).padding(24.dp).clip(RoundedCornerShape(50)).background(Color(0xE60A0C12)).padding(horizontal = 22.dp, vertical = 10.dp),
+                Modifier.align(Alignment.BottomCenter).padding(24.dp).clip(RoundedCornerShape(50)).background(Color(0xE61C1814)).padding(horizontal = 22.dp, vertical = 10.dp),
                 fontSize = 18.sp,
             )
         }

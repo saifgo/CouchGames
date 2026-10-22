@@ -28,7 +28,7 @@ export function SettingsModal({ settings, onChange, onClose }: { settings: HostS
     <Modal onClose={onClose} className="settings">
       <h1>Settings</h1>
       <div className="settings-grid">
-        {cycle('TV name', ['Living room', 'Bedroom', 'Game room', 'Couch'], s.hostName, (v) => onChange({ hostName: v }), String, 'Shown on phones')}
+        {cycle('TV name', ['Living room', 'Bedroom', 'Game room', 'CouchPad'], s.hostName, (v) => onChange({ hostName: v }), String, 'Shown on phones')}
         {cycle('Players', [4, 8] as (4 | 8)[], s.maxPlayers, (v) => onChange({ maxPlayers: v }))}
         {cycle('Run-ahead', [0, 1, 2] as (0 | 1 | 2)[], s.runAhead, (v) => onChange({ runAhead: v }), (v) => (v ? `${v} frame${v > 1 ? 's' : ''}` : 'Off'), 'Removes game-logic lag on light systems; costs CPU')}
         {toggle('onlineArt', 'Box art from the internet', 'Looks up thumbnails.libretro.com by file name')}

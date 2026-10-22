@@ -98,7 +98,7 @@ export class HostSession extends Emitter<Events> {
   private timers: ReturnType<typeof setInterval>[] = [];
   view: SessionView = { state: 'connecting', room: null, players: [] };
 
-  constructor(server: string, readonly hostName = 'Couch') {
+  constructor(server: string, readonly hostName = 'CouchPad') {
     super();
     const saved = safeSession()?.getItem(SESSION_KEY);
     const prev = saved ? (JSON.parse(saved) as { room: string; secret: string }) : null;

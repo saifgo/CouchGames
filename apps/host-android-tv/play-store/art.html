@@ -2,47 +2,51 @@
 <html>
 <head>
 <meta charset="utf-8" />
-<title>Couch: Play Store art</title>
+<title>CouchPad: Play Store art</title>
 <style>
+  /* CouchPad brand (docs/brand/identity.md). Fonts and marks come from packages/design. */
+  @font-face { font-family: Fredoka; font-weight: 300 700; src: url('../../../packages/design/fonts/fredoka-latin.woff2') format('woff2'); }
+  @font-face { font-family: Inter; font-weight: 100 900; src: url('../../../packages/design/fonts/inter-latin.woff2') format('woff2'); }
   :root {
-    --bg: #07090d;
-    --panel: #11151f;
-    --line: #232a3a;
-    --text: #eef2f8;
-    --muted: #9aa4b8;
-    --accent: #ffd166;
-    --red: #ff4d5e;
-    --blue: #3d9bff;
+    --bg: #1c1814;      /* Ink */
+    --panel: #26211b;   /* Ink panel */
+    --raised: #312a23;
+    --line: #3a332b;
+    --text: #fff6e0;    /* Cream */
+    --muted: #b8ae9c;   /* Sand */
+    --accent: #f7c948;  /* Cozy Yellow */
+    --accent-deep: #d9a520;
+    --coral: #f47c5b;   /* P2 */
+    --teal: #3ebfa5;    /* P3 */
     --img: '../../../docs/img/';
   }
   * { box-sizing: border-box; }
   body { margin: 0; padding: 40px; background: #333; display: flex; flex-direction: column; gap: 40px; align-items: flex-start;
-         font-family: 'Segoe UI', system-ui, sans-serif; color: var(--text); }
+         font-family: Inter, system-ui, sans-serif; font-weight: 500; color: var(--text); }
   .asset { position: relative; overflow: hidden; background: var(--bg); flex: none; }
   .asset img { display: block; }
 
   .glow { position: absolute; inset: 0; pointer-events: none;
           background:
-            radial-gradient(60% 70% at 85% 10%, rgba(255, 77, 94, 0.22), transparent 70%),
-            radial-gradient(55% 65% at 10% 100%, rgba(61, 155, 255, 0.18), transparent 70%),
-            radial-gradient(40% 45% at 50% 50%, rgba(255, 209, 102, 0.06), transparent 70%); }
+            radial-gradient(60% 70% at 85% 10%, rgba(244, 124, 91, 0.16), transparent 70%),
+            radial-gradient(55% 65% at 10% 100%, rgba(62, 191, 165, 0.12), transparent 70%),
+            radial-gradient(40% 45% at 50% 50%, rgba(247, 201, 72, 0.06), transparent 70%); }
   .grain { position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
-           background-image: radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px); background-size: 6px 6px; }
+           background-image: radial-gradient(rgba(255,246,224,0.035) 1px, transparent 1px); background-size: 6px 6px; }
 
-  .mark { display: inline-flex; align-items: flex-end; gap: 0.12em; }
-  .mark .tri { width: 0; height: 0; border-left: 0.5em solid transparent; border-right: 0.5em solid transparent; border-bottom: 0.86em solid var(--accent); }
-  .mark .dot { width: 0.62em; height: 0.62em; border-radius: 50%; background: var(--accent); margin-bottom: 0.02em; }
-  .wordmark { display: inline-flex; align-items: center; gap: 0.32em; font-family: 'Segoe UI Black', 'Segoe UI', sans-serif; font-weight: 900; letter-spacing: -0.02em; line-height: 1; }
-  .wordmark .mark { font-size: 0.78em; transform: translateY(-0.04em); }
+  /* Lockup on Ink: die-cut mark (Cream border) + wordmark, "Pad" in Yellow. Never retyped in another font. */
+  .wordmark { display: inline-flex; align-items: center; gap: 0.3em; font-family: Fredoka, Nunito, sans-serif; font-weight: 700; letter-spacing: -0.01em; line-height: 1; }
+  .wordmark img { height: 1.15em; width: auto; }
+  .wordmark .pad { color: var(--accent); }
 
-  .tv { position: absolute; padding: 1.1%; background: linear-gradient(#141821, #0a0c11); border-radius: 18px;
-        border: 2px solid #262d3d; box-shadow: 0 40px 90px rgba(0,0,0,0.65), 0 0 0 1px rgba(0,0,0,0.6), 0 0 120px rgba(255, 77, 94, 0.12); }
+  .tv { position: absolute; padding: 1.1%; background: linear-gradient(#26211b, #1c1814); border-radius: 18px;
+        border: 2px solid #3a332b; box-shadow: 0 40px 90px rgba(0,0,0,0.65), 0 0 0 1px rgba(0,0,0,0.6), 0 0 120px rgba(247, 201, 72, 0.08); }
   .tv .screen { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; background: #000; }
   .tv .screen img { width: 100%; height: 100%; object-fit: cover; }
   /* Crops tv-ingame.png to the playfield: drops the pillarbox and the latency overlay at the bottom. */
   .tv .screen.ingame img { width: 133.5%; height: auto; margin-left: -16.7%; margin-top: -4%; }
 
-  .phone { position: absolute; background: #0d0f14; border: 2px solid #2b3244; box-shadow: 0 30px 70px rgba(0,0,0,0.7), inset 0 0 0 2px #05060a; }
+  .phone { position: absolute; background: #1c1814; border: 2px solid #3a332b; box-shadow: 0 30px 70px rgba(0,0,0,0.7), inset 0 0 0 2px #120f0c; }
   .phone .screen { width: 100%; height: 100%; overflow: hidden; background: #000; }
   .phone .screen img { width: 100%; height: 100%; object-fit: cover; }
   .phone.land { aspect-ratio: 1688 / 780; padding: 1.6% 2.2%; border-radius: 9% / 19%; }
@@ -51,15 +55,15 @@
   .phone.port .screen { border-radius: 11% / 5%; }
 
   .caption { position: absolute; }
-  .caption h1 { margin: 0; font-family: 'Segoe UI Black', 'Segoe UI', sans-serif; font-weight: 900; letter-spacing: -0.025em; line-height: 1.02; }
+  .caption h1 { margin: 0; font-family: Fredoka, Nunito, sans-serif; font-weight: 700; letter-spacing: -0.01em; line-height: 1.04; }
   .caption h1 em { font-style: normal; color: var(--accent); }
   .caption p { margin: 0; color: var(--muted); line-height: 1.4; font-weight: 500; }
-  .tag { display: inline-flex; align-items: center; gap: 0.5em; padding: 0.35em 0.9em; border-radius: 999px; background: rgba(255,209,102,0.12);
-         color: var(--accent); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .tag { display: inline-flex; align-items: center; gap: 0.5em; padding: 0.35em 0.9em; border-radius: 999px; background: rgba(247,201,72,0.14);
+         color: var(--accent); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
 
-  .chip { display: inline-flex; align-items: center; gap: 0.5em; padding: 0.5em 1em 0.5em 0.5em; border-radius: 999px; background: #161b27;
+  .chip { display: inline-flex; align-items: center; gap: 0.5em; padding: 0.5em 1em 0.5em 0.5em; border-radius: 999px; background: var(--raised);
           border: 1px solid var(--line); font-weight: 700; }
-  .chip i { width: 1.6em; height: 1.6em; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 0.8em; color: #fff; }
+  .chip i { width: 1.6em; height: 1.6em; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 0.8em; color: var(--bg); }
   .chip b { width: 0.55em; height: 0.55em; border-radius: 50%; background: #2fd36b; }
 
   .skins { position: absolute; display: grid; }
@@ -68,8 +72,8 @@
 
   .compare { position: absolute; display: grid; grid-template-columns: 1fr 1fr; }
   .compare .col { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; }
-  .compare .col.pro { border: 2px solid var(--accent); background: linear-gradient(160deg, rgba(255,209,102,0.10), var(--panel) 55%); }
-  .compare h2 { margin: 0; font-family: 'Segoe UI Black', 'Segoe UI', sans-serif; font-weight: 900; }
+  .compare .col.pro { border: 2px solid var(--accent); background: var(--panel); }
+  .compare h2 { margin: 0; font-family: Fredoka, Nunito, sans-serif; font-weight: 600; }
   .compare ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
   .compare li { display: flex; gap: 0.6em; align-items: baseline; color: var(--text); }
   .compare li::before { content: '●'; color: var(--muted); font-size: 0.6em; transform: translateY(-0.2em); }
@@ -79,89 +83,22 @@
 <body>
 
 <!-- 512 x 512, 32-bit PNG. Play rounds the corners itself, so the art fills the square. -->
-<section class="asset" id="icon" style="width:512px;height:512px">
-  <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <radialGradient id="ibg" cx="50%" cy="30%" r="80%">
-        <stop offset="0" stop-color="#1f2638" />
-        <stop offset="0.55" stop-color="#0d1018" />
-        <stop offset="1" stop-color="#07090d" />
-      </radialGradient>
-      <linearGradient id="ipad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#ffe08f" />
-        <stop offset="0.5" stop-color="#ffd166" />
-        <stop offset="1" stop-color="#f2b53c" />
-      </linearGradient>
-      <filter id="ishadow" x="-30%" y="-30%" width="160%" height="170%">
-        <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#000" flood-opacity="0.55" />
-      </filter>
-      <radialGradient id="ihalo" cx="50%" cy="50%" r="50%">
-        <stop offset="0" stop-color="#ffd166" stop-opacity="0.22" />
-        <stop offset="1" stop-color="#ffd166" stop-opacity="0" />
-      </radialGradient>
-    </defs>
-    <rect width="512" height="512" fill="url(#ibg)" />
-    <circle cx="256" cy="270" r="230" fill="url(#ihalo)" />
-    <g transform="translate(256 266) scale(5.3) translate(-53 -60)" filter="url(#ishadow)">
-      <path fill="url(#ipad)" d="M30,46c2,-8 8,-12 16,-12h16c8,0 14,4 16,12l6,26c2,8 -4,14 -10,14 -4,0 -7,-2 -10,-6l-4,-6h-14l-4,6c-3,4 -6,6 -10,6 -6,0 -12,-6 -10,-14z" />
-      <path fill="#07090d" d="M40,52h5v14h-5z M35.5,56.5h14v5h-14z" />
-      <circle cx="68" cy="55" r="3.5" fill="#ff4d5e" />
-      <circle cx="75" cy="62" r="3.5" fill="#3d9bff" />
-    </g>
-  </svg>
+<section class="asset" id="icon" style="width:512px;height:512px;background:var(--accent);display:grid;place-items:center">
+  <img src="../../../packages/design/assets/mark-on-yellow.svg" alt="" style="width:379px;height:auto" />
 </section>
 
-<!-- Couch Pro: same pad in deeper gold, with a PRO badge that still reads at launcher size. -->
-<section class="asset" id="icon-pro" style="width:512px;height:512px">
-  <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <radialGradient id="pbg" cx="50%" cy="28%" r="85%">
-        <stop offset="0" stop-color="#2a2316" />
-        <stop offset="0.5" stop-color="#110f0c" />
-        <stop offset="1" stop-color="#07090d" />
-      </radialGradient>
-      <linearGradient id="ppad" x1="0" y1="0" x2="0.35" y2="1">
-        <stop offset="0" stop-color="#fff0b8" />
-        <stop offset="0.35" stop-color="#ffd166" />
-        <stop offset="0.75" stop-color="#e9a530" />
-        <stop offset="1" stop-color="#c9821c" />
-      </linearGradient>
-      <linearGradient id="pring" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#ffe7a0" />
-        <stop offset="0.5" stop-color="#d9962a" />
-        <stop offset="1" stop-color="#ffd166" />
-      </linearGradient>
-      <radialGradient id="phalo" cx="50%" cy="50%" r="50%">
-        <stop offset="0" stop-color="#ffc24a" stop-opacity="0.32" />
-        <stop offset="1" stop-color="#ffc24a" stop-opacity="0" />
-      </radialGradient>
-      <filter id="pshadow" x="-30%" y="-30%" width="160%" height="170%">
-        <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#000" flood-opacity="0.6" />
-      </filter>
-    </defs>
-    <rect width="512" height="512" fill="url(#pbg)" />
-    <circle cx="256" cy="230" r="240" fill="url(#phalo)" />
-    <circle cx="256" cy="256" r="226" fill="none" stroke="url(#pring)" stroke-width="5" opacity="0.55" />
-    <g transform="translate(256 222) scale(4.7) translate(-53 -60)" filter="url(#pshadow)">
-      <path fill="url(#ppad)" d="M30,46c2,-8 8,-12 16,-12h16c8,0 14,4 16,12l6,26c2,8 -4,14 -10,14 -4,0 -7,-2 -10,-6l-4,-6h-14l-4,6c-3,4 -6,6 -10,6 -6,0 -12,-6 -10,-14z" />
-      <path fill="#07090d" d="M40,52h5v14h-5z M35.5,56.5h14v5h-14z" />
-      <circle cx="68" cy="55" r="3.5" fill="#ff4d5e" />
-      <circle cx="75" cy="62" r="3.5" fill="#3d9bff" />
-    </g>
-    <g filter="url(#pshadow)">
-      <rect x="146" y="360" width="220" height="92" rx="46" fill="#07090d" stroke="url(#pring)" stroke-width="6" />
-      <text x="256" y="425" text-anchor="middle" font-family="Segoe UI Black, Segoe UI, sans-serif" font-weight="900"
-            font-size="66" letter-spacing="6" fill="url(#ppad)">PRO</text>
-    </g>
-  </svg>
+<!-- CouchPad Pro: the same icon with a PRO badge that still reads at launcher size. -->
+<section class="asset" id="icon-pro" style="width:512px;height:512px;background:var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px">
+  <img src="../../../packages/design/assets/mark-on-yellow.svg" alt="" style="width:330px;height:auto" />
+  <div style="padding:10px 44px 14px;border-radius:999px;background:var(--bg);color:var(--accent);font:700 76px/1 Fredoka, Nunito, sans-serif;letter-spacing:0.06em">PRO</div>
 </section>
 
 <!-- 1024 x 500, JPEG (no alpha). -->
 <section class="asset" id="feature" style="width:1024px;height:500px">
   <div class="glow"></div><div class="grain"></div>
   <div class="caption" style="left:64px;top:120px;width:430px">
-    <div class="wordmark" style="font-size:92px">
-      <span class="mark"><span class="tri"></span><span class="dot"></span></span>Couch
+    <div class="wordmark" style="font-size:64px">
+      <img src="../../../packages/design/assets/mark-on-ink.svg" alt="" /><span>Couch<span class="pad">Pad</span></span>
     </div>
     <p style="margin-top:26px;font-size:29px;color:var(--text);font-weight:600;line-height:1.25">Retro games on your TV.<br /><span style="color:var(--accent)">Your phones are the controllers.</span></p>
     <p style="margin-top:18px;font-size:19px">Scan the code, pick a name, play. No app on the phones.</p>
@@ -177,14 +114,12 @@
   </div>
 </section>
 
-<!-- 1280 x 720, Android TV banner. -->
-<section class="asset" id="tv-banner" style="width:1280px;height:720px">
-  <div class="glow"></div><div class="grain"></div>
-  <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px">
-    <div class="wordmark" style="font-size:250px">
-      <span class="mark"><span class="tri"></span><span class="dot"></span></span>Couch
-    </div>
-    <div style="font-size:46px;font-weight:600;color:var(--muted)">Your phones are the controllers</div>
+<!-- 1280 x 720, Android TV banner (same layout as res/drawable-xhdpi/banner.png: Yellow ground, Ink die-cut). -->
+<section class="asset" id="tv-banner" style="width:1280px;height:720px;background:var(--accent);color:var(--bg);display:flex;align-items:center;justify-content:center;gap:68px;padding:0 120px">
+  <img src="../../../packages/design/assets/mark-on-yellow.svg" alt="" style="width:250px;height:auto" />
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="wordmark" style="font-size:160px">CouchPad</div>
+    <div style="font:500 50px/1 Inter, system-ui, sans-serif;opacity:.8">Scan. Sit. Play.</div>
   </div>
 </section>
 
@@ -193,7 +128,7 @@
 <section class="asset shot" id="tv-1" style="width:1920px;height:1080px">
   <div class="glow"></div><div class="grain"></div>
   <div class="caption" style="left:120px;top:150px;width:640px">
-    <div class="wordmark" style="font-size:52px"><span class="mark"><span class="tri"></span><span class="dot"></span></span>Couch</div>
+    <div class="wordmark" style="font-size:52px"><img src="../../../packages/design/assets/mark-on-ink.svg" alt="" /><span>Couch<span class="pad">Pad</span></span></div>
     <h1 style="margin-top:56px;font-size:108px">Your phones are the <em>controllers.</em></h1>
     <p style="margin-top:36px;font-size:36px">Retro games on the big screen. Everyone plays from the couch.</p>
   </div>
@@ -261,7 +196,7 @@
   </div>
   <div class="compare" style="left:300px;top:340px;width:1320px;gap:48px">
     <div class="col" style="padding:56px 60px">
-      <h2 style="font-size:54px">Couch Free</h2>
+      <h2 style="font-size:54px">CouchPad Free</h2>
       <ul style="margin-top:34px;gap:22px;font-size:34px">
         <li>2 players</li>
         <li>8-bit and 16-bit consoles and handhelds</li>
@@ -270,12 +205,12 @@
       </ul>
     </div>
     <div class="col pro" style="padding:56px 60px">
-      <h2 style="font-size:54px;color:var(--accent)">Couch Pro</h2>
+      <h2 style="font-size:54px;color:var(--accent)">CouchPad Pro</h2>
       <ul style="margin-top:34px;gap:22px;font-size:34px">
         <li>Up to 8 players</li>
         <li>Adds 32-bit, 64-bit and newer handhelds</li>
         <li>4 save slots per game</li>
-        <li>Stream games from your Couch server</li>
+        <li>Stream games from your CouchPad server</li>
       </ul>
     </div>
   </div>
@@ -286,7 +221,7 @@
 <section class="asset shot" id="phone-1" style="width:1080px;height:1920px">
   <div class="glow"></div><div class="grain"></div>
   <div class="caption" style="left:90px;top:130px;width:900px">
-    <div class="wordmark" style="font-size:50px"><span class="mark"><span class="tri"></span><span class="dot"></span></span>Couch</div>
+    <div class="wordmark" style="font-size:50px"><img src="../../../packages/design/assets/mark-on-ink.svg" alt="" /><span>Couch<span class="pad">Pad</span></span></div>
     <h1 style="margin-top:56px;font-size:112px">Your phones are the <em>controllers.</em></h1>
     <p style="margin-top:34px;font-size:40px">Retro games on the big screen. Everyone plays from the couch.</p>
   </div>
@@ -354,7 +289,7 @@
   </div>
   <div class="compare" style="left:90px;top:700px;width:900px;grid-template-columns:1fr;gap:48px">
     <div class="col" style="padding:48px 54px">
-      <h2 style="font-size:56px">Couch Free</h2>
+      <h2 style="font-size:56px">CouchPad Free</h2>
       <ul style="margin-top:28px;gap:18px;font-size:38px">
         <li>2 players</li>
         <li>8-bit and 16-bit consoles and handhelds</li>
@@ -362,12 +297,12 @@
       </ul>
     </div>
     <div class="col pro" style="padding:48px 54px">
-      <h2 style="font-size:56px;color:var(--accent)">Couch Pro</h2>
+      <h2 style="font-size:56px;color:var(--accent)">CouchPad Pro</h2>
       <ul style="margin-top:28px;gap:18px;font-size:38px">
         <li>Up to 8 players</li>
         <li>Adds 32-bit, 64-bit and newer handhelds</li>
         <li>4 save slots per game</li>
-        <li>Stream games from your Couch server</li>
+        <li>Stream games from your CouchPad server</li>
       </ul>
     </div>
   </div>

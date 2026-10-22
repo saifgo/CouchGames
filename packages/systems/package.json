@@ -19,6 +19,7 @@
     "@couch/protocol": "workspace:*"
   },
   "devDependencies": {
+    "@couch/design": "workspace:*",
     "@types/node": "22",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",

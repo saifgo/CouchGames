@@ -1,12 +1,15 @@
-# Couch: brand foundations
+# CouchPad: brand foundations
 
 Step 1 of the design system (plan and progress: `README.md` in this folder).
-This file says **who Couch is**. Colors, type and components come later and must follow it.
+This file says **who CouchPad is**. The name, logo, palette and type were set by the brand kit
+(Step 3, `identity.md`); where this file still says otherwise, `identity.md` wins. Colors, type and components come later and must follow it.
 
 ## The name
 
-**Couch.** Always one word with a capital C. Not "COUCH", not "Couch Emulation", not "the Couch app".
-In a sentence it works like a place: "Join on Couch", "Couch is ready".
+**CouchPad.** One word, capital C and P. Not "CouchPad Pad", "Couchpad", "COUCHPAD" or "the CouchPad app".
+In a sentence it works like a place: "Join on CouchPad", "CouchPad is ready". (Was "CouchPad" until 2026-10-21.)
+
+Tagline: **Scan. Sit. Play.**
 
 ## The idea in one line
 
@@ -41,23 +44,23 @@ Retro is not allowed in:
 
 ## Signature color
 
-**Couch Yellow, `#FFD166`**, the color of a warm lamp. It's the one color people should remember.
+**Cozy Yellow, `#F7C948`** (was Couch Yellow `#FFD166`), the color of a warm lamp. It's the one color people should remember.
 - Used for: focus, the main action on a screen, the logo mark, "you are here".
 - Used sparingly: if everything is yellow, nothing is focused.
-- Always on dark. Text on yellow is near-black (`#1A1405`), never white.
+- Always next to Ink `#1C1814`. Text on yellow is Ink, never white. Never yellow text on Cream.
 
 The final palette (dark surfaces, player colors, console colors, status colors, themes) is
 defined in Step 3 around this yellow.
 
-## The logo, as it is today
+## The logo
 
-The mark is a **triangle and a circle**, like two controller buttons, next to the word "Couch"
-(`apps/host-web/src/ui/common.tsx`, `Logo`). Step 3 decides whether to keep, refine or redraw it.
-The idea to keep: *controller buttons = play together*.
+The **CouchPad mark**: an upside-down gamepad is the seat, two landscape phones lying on top are the
+back cushions. *A couch made of controllers = play together.* It replaced the old triangle + circle
+on 2026-10-21. Variants, sizes and do's and don'ts: `identity.md` and the brand kit.
 
-## Voice: how Couch talks
+## Voice: how CouchPad talks
 
-Couch talks like the friend who owns the console and is setting it up for you.
+CouchPad talks like the friend who owns the console and is setting it up for you.
 
 1. **Short.** TV text is read from 3 m away by people holding drinks. One idea per line.
 2. **Plain words.** "Scan to join", not "Pair your device via QR". No jargon (WebRTC, core, latency) on
@@ -89,7 +92,7 @@ Formatting rules:
 | ------- | --------------- | ---- |
 | **TV** (host-web, Android TV) | 3 m away, remote or phone D-pad | Big, calm, cinematic. Focus is always obvious. |
 | **Phone controller** | In hand, eyes on the TV | Thumb-sized, high contrast, works without looking. Haptics over visuals. |
-| **Couch server pages** | Setup, rarely seen | Same colors and type, plainer. |
+| **CouchPad server pages** | Setup, rarely seen | Same colors and type, plainer. |
 
 All three share the name, the yellow, the type and the voice. Sizes and density change per screen.
 
@@ -99,11 +102,12 @@ All three share the name, the yellow, the type and the voice. Sizes and density 
 2. **Focus is sacred.** On TV, it's always clear what's selected, from across the room.
 3. **Games first.** Box art and the game image are the hero; our UI frames them.
 4. **Never slow the game.** No visual feature is worth a frame or a millisecond of input.
-5. **One warm room.** Every new feature should look like it was always part of Couch.
+5. **One warm room.** Every new feature should look like it was always part of CouchPad.
 
-## Still open (to settle in Step 3)
+## Settled in Step 3 (`identity.md`)
 
-- References: apps, consoles or brands we like or dislike (not given yet).
-- Typeface (must be free to ship, licence logged in `docs/LICENSES.md`).
-- Whether the triangle and circle mark stays as is.
-- Whether the "sunset" and "arcade" themes stay, and how far they may move from Couch Yellow.
+- Typeface: Fredoka (display) + Inter (body), both SIL OFL 1.1, logged in `docs/LICENSES.md`.
+- Mark: redrawn (see above).
+- Themes: Sunset, Arcade Pixel Art and Neon Arcade stay as options; the default is the CouchPad look.
+
+Still open: icons, motion and sound.

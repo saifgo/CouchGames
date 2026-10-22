@@ -35,11 +35,11 @@ import app.couch.tv.CouchApp
 import app.couch.tv.ProRules
 
 private val PRO_FEATURES = listOf(
-    "Up to 8 players" to "Couch Free has ${ProRules.FREE_PLAYERS} phone or controller slots",
+    "Up to 8 players" to "CouchPad Free has ${ProRules.FREE_PLAYERS} phone or controller slots",
     "Every console" to "Adds Game Boy Advance, PlayStation, Nintendo 64, PSP, Nintendo DS and PS2 (where this TV can run them)",
-    "4 save-state slots per game" to "Couch Free has ${ProRules.FREE_SAVE_SLOTS}, plus the automatic save when you quit",
-    "Games from a Couch server" to "Play the library on your own server or S3 bucket",
-    "No reminders" to "No Couch Free badge or upgrade card",
+    "4 save-state slots per game" to "CouchPad Free has ${ProRules.FREE_SAVE_SLOTS}, plus the automatic save when you quit",
+    "Games from a CouchPad server" to "Play the library on your own server or S3 bucket",
+    "No reminders" to "No CouchPad Free badge or upgrade card",
 )
 
 /**
@@ -56,14 +56,14 @@ fun ProDialog(reason: String?, onClose: () -> Unit) {
     val first = remember { FocusRequester() }
     BackHandler { onClose() }
     LaunchedEffect(Unit) { app.pro.refresh() }
-    Box(Modifier.fillMaxSize().background(Color(0xE004060A)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color(0xE01C1814)), contentAlignment = Alignment.Center) {
         Column(
             Modifier.width(820.dp).clip(RoundedCornerShape(24.dp)).background(Panel).padding(32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(if (active) "Couch Pro is on" else "Couch Pro", fontSize = 32.sp, fontWeight = FontWeight.Bold)
+            Text(if (active) "CouchPad Pro is on" else "CouchPad Pro", fontSize = 32.sp, fontFamily = Fredoka, fontWeight = FontWeight.Bold)
             when {
-                active -> Text("Thanks for supporting Couch. Everything below is unlocked on this TV.", color = Muted, fontSize = 17.sp)
+                active -> Text("Thanks for supporting CouchPad. Everything below is unlocked on this TV.", color = Muted, fontSize = 17.sp)
                 reason != null -> Text(reason, color = Accent, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 else -> Text("One purchase, yours for good. No subscription, no ads.", color = Muted, fontSize = 17.sp)
             }
@@ -100,18 +100,18 @@ fun ProDialog(reason: String?, onClose: () -> Unit) {
 fun FreeReminder(onPlay: () -> Unit, onSeePro: () -> Unit) {
     val first = remember { FocusRequester() }
     BackHandler { onPlay() }
-    Box(Modifier.fillMaxSize().background(Color(0xC804060A)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color(0xC81C1814)), contentAlignment = Alignment.Center) {
         Column(Modifier.width(700.dp).clip(RoundedCornerShape(24.dp)).background(Panel).padding(30.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("You're playing Couch Free", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Text("You're playing CouchPad Free", fontSize = 28.sp, fontFamily = Fredoka, fontWeight = FontWeight.Bold)
             Text(
-                "Couch Pro opens up to 8 players, every console, more save slots and your Couch server library. One purchase, no subscription.",
+                "CouchPad Pro opens up to 8 players, every console, more save slots and your CouchPad server library. One purchase, no subscription.",
                 color = Muted,
                 fontSize = 17.sp,
                 lineHeight = 26.sp,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(onClick = onPlay, modifier = Modifier.focusRequester(first)) { androidx.tv.material3.Icon(androidx.compose.material.icons.Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.padding(end = 8.dp).size(20.dp)); Text("Play") }
-                Button(onClick = onSeePro) { Text("See Couch Pro") }
+                Button(onClick = onSeePro) { Text("See CouchPad Pro") }
             }
         }
     }

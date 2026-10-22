@@ -2,7 +2,7 @@
 
 ## Public pages
 
-Static pages in `apps/host-web/public/`, served by the Couch server (the Coolify deploy, see `DEPLOY.md`):
+Static pages in `apps/host-web/public/`, served by the CouchPad server (the Coolify deploy, see `DEPLOY.md`):
 
 | Play Console field | URL |
 |---|---|
@@ -40,6 +40,6 @@ Based on the code as of 2026-10-19:
    download is about 40 MB (armeabi-v7a) to 47 MB (arm64-v8a).
 2. ~~**`MANAGE_EXTERNAL_STORAGE`.**~~ Fixed: removed. Android 11+ uses the system folder picker ("Add game folder");
    `READ_EXTERNAL_STORAGE` is limited to Android 8–10 (`maxSdkVersion=29`). No permission declaration form is needed.
-   Some Android TV builds have no folder picker: Couch then explains the no-permission app folder on USB drives.
-3. **Cleartext traffic.** Allowed, but the LAN WebSocket and `http://` Couch servers are not encrypted. The privacy
+   Some Android TV builds have no folder picker: CouchPad then explains the no-permission app folder on USB drives.
+3. **Cleartext traffic.** Allowed, but the LAN WebSocket and `http://` CouchPad servers are not encrypted. The privacy
    policy doesn't claim otherwise.

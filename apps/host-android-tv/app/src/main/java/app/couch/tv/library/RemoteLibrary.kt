@@ -263,7 +263,7 @@ class RemoteLibrary(context: Context, private val cacheLimitBytes: Long = 8L shl
                 is javax.net.ssl.SSLException, is java.security.cert.CertificateException ->
                     "This TV box does not trust the HTTPS certificate of $hostPort (older Android versions miss newer certificates). Update the box, or use the server's http:// LAN address."
                 is HttpStatus ->
-                    if (e.code == 404) "$hostPort answers, but it is not a Couch server. Check the address."
+                    if (e.code == 404) "$hostPort answers, but it is not a CouchPad server. Check the address."
                     else "$hostPort answered with HTTP ${e.code}."
                 else -> e.message ?: e.javaClass.simpleName
             }

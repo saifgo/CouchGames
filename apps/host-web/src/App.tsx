@@ -34,6 +34,7 @@ function Splash({ onStart }: { onStart: () => void }) {
   return (
     <button className="splash" onClick={onStart} autoFocus>
       <Logo className="huge" />
+      <div className="splash-tagline">Scan. Sit. Play.</div>
       <div className="splash-hint">Press any key or click to switch on</div>
     </button>
   );
@@ -207,7 +208,7 @@ function Onboarding({ joinUrl, onDone }: { joinUrl: string | null; onDone: () =>
   ];
   return (
     <Modal onClose={onDone} className="onboarding">
-      <h1>Welcome to Couch</h1>
+      <h1>Welcome to CouchPad</h1>
       <div className="onboarding-steps">
         {steps.map(([title, text], i) => (
           <div key={title} className="onboarding-step">

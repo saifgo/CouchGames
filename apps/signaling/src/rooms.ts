@@ -134,7 +134,7 @@ export class Rooms {
     room = {
       code,
       secret: randomBytes(16).toString('hex'),
-      name: (msg.name ?? 'Couch').slice(0, 40),
+      name: (msg.name ?? 'CouchPad').slice(0, 40),
       host: ws,
       peers: new Map(),
       nextPeer: 1,
