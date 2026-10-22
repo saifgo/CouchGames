@@ -40,3 +40,7 @@ e2e/test-results/
 test-results/
 packages/systems/dist/
 .cache/
+
+# Design-skill working files
+.taste-skill/
+apps/site/.astro/

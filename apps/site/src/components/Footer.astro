@@ -1,0 +1,44 @@
+---
+import Wordmark from './Wordmark.astro';
+import Icon from './Icon.astro';
+import { SITE } from '../site';
+const year = 2026;
+---
+<footer class="foot" data-tone="cream">
+  <div class="foot__board">
+    <div class="ftile ftile--say">
+      <p>Your phones are the controllers.</p>
+      <p class="t-small">
+        © {year} {SITE.developer}. CouchPad is not affiliated with Nintendo, Sony, Sega, Atari or NEC.
+        Console names only describe compatibility. CouchPad includes no games.
+        Games shown are free homebrew: Horizontal Shooter (retrobrews) and the 240p Test Suite.
+      </p>
+    </div>
+    <nav class="ftile ftile--nav" aria-label="Footer">
+      <ul>
+        <li><a href="/#how">How it works</a></li>
+        <li><a href="/pro">CouchPad Pro</a></li>
+        <li><a href={SITE.appUrl}>Play in a browser</a></li>
+        <li><a href="/support">Support</a></li>
+        <li><a href="/privacy">Privacy</a></li>
+        <li><a href="/terms">Terms</a></li>
+      </ul>
+    </nav>
+    <div class="ftile ftile--src">
+      <p><strong>Free software.</strong> GPL-3.0, built on open-source libretro emulators.</p>
+      <a class="link t-small" href={`mailto:${SITE.email}?subject=CouchPad%20source%20code`}>Ask for the source</a>
+    </div>
+    <div class="ftile ftile--mail">
+      <p class="t-small">Questions, bugs, a game that won’t start:</p>
+      <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
+    </div>
+    <div class="ftile ftile--mark">
+      <Wordmark onInk label="CouchPad, back to the top" href="/#top" />
+      <p class="t-small">{SITE.tagline}</p>
+    </div>
+    <a class="ftile ftile--go" href={SITE.playUrl} rel="noopener">
+      <span>Get it on Google Play</span>
+      <Icon name="arrow-up-right" />
+    </a>
+  </div>
+</footer>

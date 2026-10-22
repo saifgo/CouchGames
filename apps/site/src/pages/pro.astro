@@ -1,0 +1,123 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import { Image } from 'astro:assets';
+import { SITE } from '../site';
+import n64 from '../assets/skins/n64.png';
+import psx from '../assets/skins/psx.png';
+import nds from '../assets/skins/nds.png';
+import ps2 from '../assets/skins/ps2.png';
+
+const PICS = [
+  { src: n64, alt: 'The three-prong N64-style pad on a phone, with C buttons and Z', cap: 'N64: three-prong pad, C buttons and Z.' },
+  { src: psx, alt: 'The twin-stick PS1-style pad on a phone', cap: 'PS1: twin sticks and four shoulder buttons.' },
+  { src: nds, alt: 'The dual-screen handheld pad on a phone', cap: 'NDS: the dual-screen handheld layout.' },
+  { src: ps2, alt: 'The twin-stick PS2-style pad on a phone, with L3 and R3', cap: 'PS2: twin sticks with L3 and R3, on fast TV boxes.' },
+];
+
+const ROWS: [string, string, string][] = [
+  ['Players', '2', '4, or 8 for party games'],
+  ['Consoles', 'NES, SNES, Genesis, Master System, Game Gear, Game Boy, Game Boy Color, Atari 2600, PC Engine', 'All of Free, plus GBA, PS1, N64, PSP, NDS and PS2 (on TV boxes fast enough to run them)'],
+  ['Save slots', 'Slot 1, plus auto-save when you quit', '4 slots per game'],
+  ['Game library', 'Folders and USB drives on the TV', 'Also your own CouchPad server or S3 bucket, shared by every TV'],
+  ['Reminders', 'A “Go Pro” card before a game, at most once a day', 'None'],
+  ['Input speed', 'Same: 5 ms typical on 5 GHz Wi-Fi', 'Same: 5 ms typical on 5 GHz Wi-Fi'],
+  ['Ads and time limits', 'None', 'None'],
+  ['Price', 'Free', `${SITE.proPrice}, once`],
+];
+
+const QA = [
+  { q: 'Is it a subscription?', a: 'No. One purchase, yours for as long as you use that Google account.' },
+  { q: 'I bought Pro. Where did it go?', a: 'Sign in to the TV with the Google account you bought it with and reopen CouchPad. Pro is checked every time the app starts, and works offline after that.' },
+  { q: 'Will my TV box run PS2?', a: 'Maybe. CouchPad measures your device and only shows the consoles it can run well. PS2 needs a fast box, in the class of an NVIDIA Shield. Most systems run on any recent Android TV.' },
+  { q: 'Can I get a refund?', a: 'Refunds go through Google Play. If a purchase is refunded, Pro turns off.' },
+];
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: 'CouchPad Pro',
+    description: 'One-time upgrade for CouchPad for Android TV: 4 or 8 players, GBA, PS1, N64, PSP, NDS and PS2, 4 save slots and your own game server.',
+    brand: { '@type': 'Brand', name: 'CouchPad' },
+    offers: { '@type': 'Offer', price: '5.99', priceCurrency: 'USD', url: SITE.playUrl, availability: 'https://schema.org/PreOrder' },
+  },
+];
+---
+<Base
+  title="CouchPad Pro: more seats, bigger consoles, one price"
+  description={`CouchPad Pro is a one-time ${SITE.proPrice} upgrade for CouchPad on Android TV: 4 or 8 players, GBA, PS1, N64, PSP, NDS and PS2, 4 save slots, no subscription.`}
+  barTone="yellow"
+  jsonLd={jsonLd}
+>
+  <section class="field field--yellow pro-hero wrap grid" data-tone="yellow" aria-labelledby="pro-title">
+    <h1 id="pro-title" class="t-display" data-rise>More seats. Bigger consoles.</h1>
+    <div class="pro-hero__copy">
+      <p class="lead" data-rise>CouchPad Pro is one purchase that opens up the whole couch: four or eight players, the 32- and 64-bit era, and more saves.</p>
+      <p data-rise><a class="btn btn--ink" href={SITE.playUrl} rel="noopener"><Icon name="play" />Get CouchPad, then unlock Pro</a></p>
+    </div>
+    <div class="pro-hero__price" data-rise>
+      <p class="plan__name">CouchPad Pro</p>
+      <p class="plan__price">{SITE.proPrice}</p>
+      <p>Once. No subscription. Bought inside the Android TV app through Google Play; prices can differ by country.</p>
+    </div>
+  </section>
+
+  <section class="field field--linen compare wrap" data-tone="linen" aria-labelledby="compare-title">
+    <div class="grid">
+      <h2 id="compare-title" class="t-title" data-rise>Free and Pro, side by side.</h2>
+      <div class="compare__table" data-rise>
+        <table>
+          <caption class="sr-only">What CouchPad Free and CouchPad Pro include</caption>
+          <thead><tr><th scope="col"><span class="sr-only">Feature</span></th><th scope="col">Free</th><th scope="col">Pro</th></tr></thead>
+          <tbody>
+            {ROWS.map(([k, f, p]) => <tr><th scope="row">{k}</th><td data-label="Free">{f}</td><td data-label="Pro">{p}</td></tr>)}
+          </tbody>
+        </table>
+      </div>
+      <div class="compare__pics">
+        {PICS.map((p) => (
+          <figure data-rise>
+            <Image src={p.src} alt={p.alt} widths={[640, 1000]} sizes="(max-width: 720px) 92vw, 46vw" format="webp" />
+            <figcaption>{p.cap} The phone switches to it when the game starts.</figcaption>
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="field field--cream steps wrap" data-tone="cream" aria-labelledby="steps-title">
+    <div class="grid">
+      <h2 id="steps-title" class="t-title" data-rise>Unlock it in a minute.</h2>
+      <ol>
+        <li data-rise><strong>Install CouchPad Free.</strong><p>From Google Play on your Android TV. Play as long as you like first.</p></li>
+        <li data-rise><strong>Open Settings → CouchPad Pro.</strong><p>Or try to add a third player: CouchPad offers Pro right there.</p></li>
+        <li data-rise><strong>Pay once with Google Play.</strong><p>Pro turns on straight away, on every TV signed in to that Google account.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section aria-labelledby="proq-title">
+    <div class="field field--deep faq__head wrap" data-tone="deep">
+      <h2 id="proq-title" class="t-display" data-rise>Before you buy.</h2>
+    </div>
+    <div>
+      {QA.map((f, i) => (
+        <div class="band wrap" data-tone={i % 2 ? 'linen' : 'cream'}>
+          <div class="grid">
+            <h3 data-rise>{f.q}</h3>
+            <div class="band__a"><p data-rise>{f.a}</p></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="field field--ink close wrap" data-tone="ink" aria-labelledby="close-title">
+    <h2 id="close-title" class="t-display" data-rise>Start free. Go Pro later.</h2>
+    <div class="close__foot">
+      <p data-rise>Free has no time limit and no ads, and plays exactly as fast as Pro.</p>
+      <a class="btn" href={SITE.playUrl} rel="noopener" data-rise><Icon name="play" />Get it on Google Play</a>
+    </div>
+  </section>
+</Base>

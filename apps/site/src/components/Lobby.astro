@@ -1,0 +1,45 @@
+---
+/**
+ * The TV app's join card (QR, 4-letter room code, four seats), rebuilt in HTML so it stays sharp
+ * and can come alive. Same look as the real lobby in apps/host-web and the Android TV app.
+ */
+import { qrSvg } from '../lib/qr';
+import { SITE } from '../site';
+
+interface Seat { name?: string }
+interface Props {
+  id?: string;
+  code?: string;
+  seats?: Seat[];
+  toast?: string;
+  hint?: string;
+  qr?: boolean;
+  label?: string;
+}
+const {
+  id,
+  code = 'SOFA',
+  seats = [{}, {}, {}, {}],
+  toast = '',
+  hint,
+  qr = true,
+  label = 'The CouchPad join card on the TV',
+} = Astro.props;
+const svg = qr ? await qrSvg(SITE.url) : '';
+---
+<div class="lobby" id={id} data-ui role="group" aria-label={label}>
+  <p class="lobby__title">Scan to join</p>
+  {qr && <div class="lobby__qr" set:html={svg} />}
+  <p class="lobby__code" aria-label={`Room code ${code.split('').join(' ')}`}>{code}</p>
+  <p class="lobby__addr">couchpad.tv</p>
+  <ul class="lobby__seats" aria-label="Seats">
+    {seats.map((s, i) => (
+      <li class:list={['lseat', { 'is-in': !!s.name }]} data-p={i + 1}>
+        <span class="lseat__dot" aria-hidden="true">{i + 1}</span>
+        <span class="lseat__name">{s.name ?? `P${i + 1}`}</span>
+      </li>
+    ))}
+  </ul>
+  <p class="lobby__toast" aria-live="polite">{toast}</p>
+  {hint && <p class="lobby__hint">{hint}</p>}
+</div>

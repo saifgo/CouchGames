@@ -1,0 +1,55 @@
+---
+/** privacy, terms, support: written in Markdown (src/content/legal), rendered here. */
+import { getCollection, render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { SITE } from '../site';
+
+export async function getStaticPaths() {
+  const pages = await getCollection('legal');
+  return pages.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const { Content, headings } = await render(entry);
+const all = (await getCollection('legal')).sort((a, b) => a.data.order - b.data.order);
+const toc = headings.filter((h) => h.depth === 2);
+---
+<Base title={`${entry.data.title} · CouchPad`} description={entry.data.description} barTone="cream">
+  <section class="field field--linen page-head wrap" data-tone="linen" aria-labelledby="page-title">
+    <div class="grid">
+      <h1 id="page-title" class="t-display" data-rise>{entry.data.title}</h1>
+      <p class="lead" data-rise>{entry.data.summary}</p>
+      <ul class="page-facts" data-rise aria-label="In short">
+        {entry.data.facts.map((f, i) => <li><span class="chip" data-p={i + 2}>{`P${i + 2}`}</span>{f}</li>)}
+      </ul>
+    </div>
+  </section>
+
+  <section class="field field--cream page-body wrap" data-tone="cream" aria-label={entry.data.title}>
+    <div class="grid">
+      <article class="prose" data-rise>
+        <Content />
+      </article>
+      <aside class="aside" aria-label="More">
+        {toc.length > 0 && (
+          <nav class="aside__box" data-rise aria-labelledby="toc-title">
+            <h2 id="toc-title">On this page</h2>
+            <ul>{toc.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}</ul>
+          </nav>
+        )}
+        <nav class="aside__box" data-rise aria-labelledby="legal-title">
+          <h2 id="legal-title">Help and legal</h2>
+          <ul>
+            {all.map((p) => (
+              <li><a href={`/${p.id}`} aria-current={p.id === entry.id ? 'page' : undefined}>{p.data.title}</a></li>
+            ))}
+          </ul>
+        </nav>
+        <div class="aside__box aside__box--yellow" data-rise>
+          <h2>Still stuck?</h2>
+          <p>Write to <a class="link" href={`mailto:${SITE.email}`}>{SITE.email}</a> with your TV model and what happened.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+</Base>

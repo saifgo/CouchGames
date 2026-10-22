@@ -1,0 +1,25 @@
+{
+  "name": "@couch/site",
+  "private": true,
+  "version": "0.1.0",
+  "description": "couchpad.tv: the CouchPad marketing site, legal pages and support (Astro, static)",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/markdown-remark": "7.2.0",
+    "@astrojs/sitemap": "^3.7.4",
+    "astro": "^6.4.8"
+  },
+  "devDependencies": {
+    "@astrojs/check": "latest",
+    "@types/qrcode": "^1.5.6",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.35.5",
+    "typescript": "^5.9.3"
+  }
+}
