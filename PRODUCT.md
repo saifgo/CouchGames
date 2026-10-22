@@ -12,8 +12,8 @@ is a free secondary way to run the TV side.
 
 ## Users
 
-Both groups, casual first. An enthusiast usually sets Couch up: owns their games, puts them in
-`roms/<system>/` or a Couch server library, and installs the TV app. The people who pick up phones
+Both groups, casual first. An enthusiast usually sets CouchPad up: owns their games, puts them in
+`roms/<system>/` or a CouchPad server library, and installs the TV app. The people who pick up phones
 are casual guests on a sofa (friends, family) who are not technical, have never seen the app, and
 want to be playing within seconds of scanning a QR code.
 
@@ -30,7 +30,7 @@ The phone-as-controller layer is the original part: no app install on the phone,
 controller skin that switches automatically with the game on the TV (SNES pad, N64 pad with C
 buttons, DualShock), haptics and gyro, and measured low latency (Galaxy S21 on 5 GHz Wi-Fi: one-way
 p50 5 ms, p95 9.5 ms, against a p95 budget of 20 ms). Emulation itself uses existing open-source
-libretro cores; Couch does not write emulators.
+libretro cores; CouchPad does not write emulators.
 
 ## Operating Context
 
@@ -40,16 +40,16 @@ libretro cores; Couch does not write emulators.
   per-player ping shown on the TV.
 - Phones and TV must share the same Wi-Fi. On Android TV the app is its own server; no computer or
   internet is needed while playing.
-- Games come from the user: a picked folder, USB drives, the app folder, or a Couch server library
+- Games come from the user: a picked folder, USB drives, the app folder, or a CouchPad server library
   (local `roms/` or S3).
 
 ## Capabilities and Constraints
 
 - Systems: NES, SNES, Genesis/SMS/GG, GB/GBC, GBA, Atari 2600, PC Engine everywhere; PS1, N64, PSP,
   NDS and PS2 depend on the device's measured performance tier, which decides what is shown.
-- Couch Free / Couch Pro (ADR-005): free install, one-time in-app purchase (about $5.99), no
+- CouchPad Free / CouchPad Pro (ADR-005): free install, one-time in-app purchase (about $5.99), no
   subscription. Free: 2 players, the lighter systems, save slot 1 plus auto-save. Pro: 4 or 8
-  players, heavier systems, save slots 1 to 4, Couch server library. Free shows a "Couch Free" line
+  players, heavier systems, save slots 1 to 4, CouchPad server library. Free shows a "CouchPad Free" line
   in the lobby and a "Go Pro" card before a game at most once every 20 hours, with Play as the
   focused default.
 - The input hot path stays allocation-free; any change there needs before/after latency numbers.
@@ -62,7 +62,7 @@ libretro cores; Couch does not write emulators.
 
 ## Brand Commitments
 
-- Name: Couch. Paid tier: Couch Pro. Developer name on the store: Tuni Solutions (to be confirmed).
+- Name: CouchPad. Paid tier: CouchPad Pro. Developer name on the store: Tuni Solutions (to be confirmed).
 - Voice is plain and direct, as in the README and store notes.
 - Existing assets: store icons, feature graphic, TV banner and screenshots in
   `apps/host-android-tv/play-store/out/`; legal pages in `apps/host-web/public/`.

@@ -1,0 +1,27 @@
+{
+  "name": "@couch/design",
+  "version": "1.0.0",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "description": "CouchPad brand: logo geometry, colours, fonts and generated logo files",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./tokens.css",
+    "./fonts/*": "./fonts/*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "assets": "tsx scripts/build-assets.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "22",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  }
+}

@@ -33,7 +33,7 @@ async function fetchReport(fresh: boolean): Promise<State> {
     if (!res.ok) return { status: 'failed', message: `The server answered HTTP ${res.status}` };
     return { status: 'done', report: (await res.json()) as StorageReport };
   } catch {
-    return { status: 'failed', message: "Can't reach the couch server" };
+    return { status: 'failed', message: "Can't reach the CouchPad server" };
   }
 }
 

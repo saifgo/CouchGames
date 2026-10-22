@@ -11,6 +11,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@couch/design": "workspace:*",
     "@couch/net": "workspace:*",
     "@couch/protocol": "workspace:*",
     "@couch/systems": "workspace:*",

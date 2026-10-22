@@ -101,7 +101,7 @@ class Pro(private val context: Context, private val settings: Settings) : Purcha
             details = result.productDetailsList.firstOrNull()
             _price.value = details?.oneTimePurchaseOfferDetails?.formattedPrice
             if (r.responseCode == BillingClient.BillingResponseCode.OK && details == null) {
-                _status.value = "Couch Pro isn't on sale in this store yet."
+                _status.value = "CouchPad Pro isn't on sale in this store yet."
             }
         }
     }
@@ -110,7 +110,7 @@ class Pro(private val context: Context, private val settings: Settings) : Purcha
     fun buy(activity: Activity) {
         val d = details
         if (!ready || d == null) {
-            if (_status.value == null) _status.value = "Google Play isn't reachable. Couch Pro is sold through Google Play on this TV."
+            if (_status.value == null) _status.value = "Google Play isn't reachable. CouchPad Pro is sold through Google Play on this TV."
             return refresh()
         }
         val params = BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(d).build()
@@ -154,6 +154,6 @@ class Pro(private val context: Context, private val settings: Settings) : Purcha
 
     private fun unavailable(result: BillingResult) {
         Log.i("Couch", "billing unavailable: ${result.responseCode} ${result.debugMessage}")
-        _status.value = "Google Play isn't available on this device. Couch Pro is sold through Google Play."
+        _status.value = "Google Play isn't available on this device. CouchPad Pro is sold through Google Play."
     }
 }

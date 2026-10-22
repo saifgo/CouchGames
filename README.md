@@ -1,4 +1,4 @@
-# Couch: a retro console where phones are the controllers
+# CouchPad: a retro console where phones are the controllers
 
 The TV shows your game library and a QR code. Everyone scans it and their phone becomes a controller
 for the game on the TV: a SNES pad for SNES games, a DualShock for PS1, an N64 pad with C-buttons. No app to
@@ -64,7 +64,7 @@ internet and PSP works on any TV browser. See [`docs/DEPLOY.md`](docs/DEPLOY.md)
 | `apps/controller-web` | Phone controller (Preact, framework-free input hot path, SVG skins, haptics, gyro) |
 | `apps/host-web` | TV app in the browser (React, Nostalgist.js + RetroArch/EmulatorJS WASM cores) |
 | `apps/host-android-tv` | TV app for Android TV (Kotlin, Compose for TV, LibretroDroid, Ktor, libwebrtc) |
-| `apps/signaling` | Couch server: rooms, WebRTC signaling, WebSocket relay, ROM library + metadata, static hosting |
+| `apps/signaling` | CouchPad server: rooms, WebRTC signaling, WebSocket relay, ROM library + metadata, static hosting |
 | `packages/protocol` | Binary wire protocol, clock sync, link stats, golden vectors shared with Kotlin |
 | `packages/net` | Browser transport: WebSocket first, WebRTC DataChannel upgrade |
 | `packages/skins` | Controller layouts per console |
@@ -87,6 +87,6 @@ cd apps/host-android-tv && ./gradlew :app:testDebugUnitTest   # Kotlin codec vs 
 ## Licence
 
 GPL-3.0-or-later. Emulator cores are separate programs with their own licences ([docs/LICENSES.md](docs/LICENSES.md)).
-The Android TV app is sold as Couch Free + a one-time Couch Pro unlock ([ADR-005](docs/decisions/ADR-005-couch-pro.md)),
+The Android TV app is sold as CouchPad Free + a one-time CouchPad Pro unlock ([ADR-005](docs/decisions/ADR-005-couch-pro.md)),
 so it only uses cores that allow commercial use. snes9x and Genesis Plus GX (**non-commercial**) remain on the free web host only
 ([ADR-004](docs/decisions/ADR-004-core-licensing.md)). No ROMs or BIOS files are included or downloaded, except freely distributable homebrew on request.

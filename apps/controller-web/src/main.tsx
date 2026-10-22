@@ -1,6 +1,7 @@
 import { render } from 'preact';
 import { installCrashReporter } from '@couch/net';
 import { App } from './App.js';
+import '@couch/design/tokens.css';
 import './styles.css';
 
 installCrashReporter('controller-web');

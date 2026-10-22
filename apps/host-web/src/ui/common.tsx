@@ -1,6 +1,7 @@
 import QRCode from 'qrcode';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { getSystem } from '@couch/systems';
+import { DRAWINGS, MARK_ON, markSvgBody } from '@couch/design';
 import { TransportKind, TransportLabel } from '@couch/protocol';
 import { onNav } from '../focus/focus.js';
 import type { Game } from '../library/library.js';
@@ -33,7 +34,7 @@ export function thumbnailUrl(g: Game, kind: 'Named_Boxarts' | 'Named_Snaps' | 'N
 
 const failed = new Set<string>();
 
-/** Default Couch covers, one per console (packages/systems/covers, made by `pnpm covers`), by system id. */
+/** Default CouchPad covers, one per console (packages/systems/covers, made by `pnpm covers`), by system id. */
 const COVERS: Record<string, string> = Object.fromEntries(
   Object.entries(import.meta.glob<string>('../../../../packages/systems/covers/*.svg', { eager: true, query: '?url', import: 'default' })).map(([path, url]) => [
     path.slice(path.lastIndexOf('/') + 1, -4),
@@ -42,7 +43,7 @@ const COVERS: Record<string, string> = Object.fromEntries(
 );
 
 /**
- * Box art: online thumbnail when allowed and found, else the console's default Couch cover.
+ * Box art: online thumbnail when allowed and found, else the console's default CouchPad cover.
  * Screenshot slots (4:3) show the cover whole, centred on the cover's own background.
  */
 export function Art({
@@ -93,7 +94,7 @@ export function QR({ text, size }: { text: string; size?: number }) {
   const [svg, setSvg] = useState('');
   useEffect(() => {
     let alive = true;
-    void QRCode.toString(text, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#07090d', light: '#ffffff' } }).then(
+    void QRCode.toString(text, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#1c1814', light: '#ffffff' } }).then(
       (s) => alive && setSvg(s),
     );
     return () => {
@@ -227,15 +228,20 @@ export function Icon({ name, className }: { name: IconName; className?: string }
   );
 }
 
-/** The Couch mark: a triangle and a circle, the A and B of a pad. */
+const MARK_VIEWBOX = DRAWINGS.cut.viewBox.join(' ');
+const MARK_BODY = markSvgBody('cut', MARK_ON.ink);
+
+/**
+ * The CouchPad lockup for dark grounds (docs/brand/identity.md): the die-cut mark with a Cream
+ * border, then the wordmark in Fredoka with "Pad" in Yellow. Themes may restyle the wordmark.
+ */
 export function Logo({ className }: { className?: string }) {
   return (
-    <div className={`logo ${className ?? ''}`}>
-      <svg className="logo-mark" viewBox="0 0 44 20" aria-hidden>
-        <path d="M10 2.5 19 18H1z" fill="currentColor" />
-        <circle cx="33" cy="10.5" r="7.5" fill="currentColor" />
-      </svg>
-      Couch
+    <div className={`logo ${className ?? ''}`} role="img" aria-label="CouchPad">
+      <svg className="logo-mark" viewBox={MARK_VIEWBOX} aria-hidden dangerouslySetInnerHTML={{ __html: MARK_BODY }} />
+      <span className="logo-word" aria-hidden>
+        Couch<span className="logo-pad">Pad</span>
+      </span>
     </div>
   );
 }

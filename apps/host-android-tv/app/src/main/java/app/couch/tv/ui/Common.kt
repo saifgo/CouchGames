@@ -46,26 +46,26 @@ import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 
-val Accent = Color(0xFFFFD166)
-val Bg = Color(0xFF07090D)
-val Panel = Color(0xFF12161F)
-val Muted = Color(0xFF95A0B4)
+val Accent = Color(0xFFF7C948)
+val Bg = Color(0xFF1C1814)
+val Panel = Color(0xFF26211B)
+val Muted = Color(0xFFB8AE9C)
 val Good = Color(0xFF2ED47A)
 val Ok = Color(0xFFFFC83D)
 val Bad = Color(0xFFFF5D6C)
 
 private val scheme: ColorScheme = darkColorScheme(
     primary = Accent,
-    onPrimary = Color(0xFF1A1405),
+    onPrimary = Color(0xFF1C1814),
     background = Bg,
     surface = Panel,
-    onSurface = Color(0xFFEEF2F8),
+    onSurface = Color(0xFFFFF6E0),
     border = Accent,
 )
 
 @Composable
-fun CouchTheme(content: @Composable () -> Unit) = MaterialTheme(colorScheme = scheme) {
-    CompositionLocalProvider(LocalContentColor provides Color(0xFFEEF2F8), content = content)
+fun CouchTheme(content: @Composable () -> Unit) = MaterialTheme(colorScheme = scheme, typography = BrandTypography) {
+    CompositionLocalProvider(LocalContentColor provides Color(0xFFFFF6E0), content = content)
 }
 
 /** True when the system "Remove animations" setting is on (animator duration scale 0). */
@@ -82,12 +82,12 @@ fun hexColor(s: String): Color = runCatching { Color(android.graphics.Color.pars
 fun qrBitmap(text: String, size: Int = 512): ImageBitmap {
     val m = QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, size, size, mapOf(EncodeHintType.MARGIN to 1, EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.M))
     val bmp = Bitmap.createBitmap(m.width, m.height, Bitmap.Config.ARGB_8888)
-    for (y in 0 until m.height) for (x in 0 until m.width) bmp.setPixel(x, y, if (m[x, y]) 0xFF07090D.toInt() else 0xFFFFFFFF.toInt())
+    for (y in 0 until m.height) for (x in 0 until m.width) bmp.setPixel(x, y, if (m[x, y]) 0xFF1C1814.toInt() else 0xFFFFFFFF.toInt())
     return bmp.asImageBitmap()
 }
 
 /** Background of the default covers (packages/systems/scripts/build-covers.ts COVER_BG). */
-val CoverBg = Color(0xFF11151D)
+val CoverBg = Color(0xFF26211B)
 
 /**
  * The console's default Couch cover (res/drawable-nodpi/cover_<system>.png, made by `pnpm covers`),
@@ -133,7 +133,7 @@ fun deviceLabel(p: PlayerView): String = when {
 }
 
 @Composable
-fun DeviceIcon(p: PlayerView, size: Dp, tint: Color = Color.White) {
+fun DeviceIcon(p: PlayerView, size: Dp, tint: Color = Color(0xFF1C1814)) {
     Icon(deviceIcon(p), contentDescription = deviceLabel(p), tint = tint, modifier = Modifier.size(size))
 }
 
@@ -165,19 +165,11 @@ fun PlayerChip(p: PlayerView, detailed: Boolean = false) {
     }
 }
 
-/** The Couch mark (a triangle and a circle, as on the web host and the store icon) and the word. */
+/** The CouchPad mark (die-cut, on Ink) and the wordmark, as on the web host and the store icon. */
 @Composable
 fun Logo(height: Dp = 22.dp, modifier: Modifier = Modifier) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(height * .4f)) {
-        // 44 x 20 viewbox, same geometry as the web logo's SVG.
-        Canvas(Modifier.size(width = height * 2.2f, height = height)) {
-            val u = size.height / 20f
-            val tri = androidx.compose.ui.graphics.Path().apply {
-                moveTo(10f * u, 2.5f * u); lineTo(19f * u, 18f * u); lineTo(1f * u, 18f * u); close()
-            }
-            drawPath(tri, Accent)
-            drawCircle(Accent, radius = 7.5f * u, center = androidx.compose.ui.geometry.Offset(33f * u, 10.5f * u))
-        }
-        Text("Couch", fontWeight = FontWeight.ExtraBold, fontSize = (height.value * .9f).sp)
+        BrandMark(height)
+        BrandWord(fontSize = (height.value * .9f).sp)
     }
 }

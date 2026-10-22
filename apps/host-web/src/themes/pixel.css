@@ -38,6 +38,7 @@
   --px-frame: inset 0 0 0 0.25rem #0e0c1c, inset 0 0 0 0.5rem var(--line);
   --px-screen: 0 0 0 0.25rem #000, 0 0 0 0.5rem var(--line);
   --px-backdrop: radial-gradient(circle at 1px 1px, #1c1838 1px, transparent 1.5px) 0 0 / 1.2rem 1.2rem, var(--bg);
+  --font-display: var(--px-body), 'Segoe UI', system-ui, sans-serif;
   font-family: var(--px-body), 'Segoe UI', system-ui, sans-serif;
 }
 :root[data-theme='pixel'] button { border-radius: 0; }
@@ -62,7 +63,7 @@
 /* bars */
 [data-theme='pixel'] .home .topbar { background: var(--px-bar); color: var(--px-bar-ink); box-shadow: 0 0.25rem 0 var(--line); }
 [data-theme='pixel'] .home .topbar .clock, [data-theme='pixel'] .home .topbar .logo { color: var(--px-bar-ink); }
-[data-theme='pixel'] .home .logo-mark { color: var(--accent); }
+[data-theme='pixel'] .home .logo-pad { color: inherit; }
 [data-theme='pixel'] .home .icon-btn { border-radius: 0; background: transparent; color: var(--px-bar-ink); }
 [data-theme='pixel'] .home .icon-btn:focus { background: var(--focus); color: var(--on-accent); }
 [data-theme='pixel'] .home .hints { background: var(--px-bar); color: var(--px-bar-ink); border-top-color: var(--line); box-shadow: 0 -0.25rem 0 var(--line); }

@@ -1,4 +1,6 @@
 <resources>
-    <color name="bg">#FF07090D</color>
-    <color name="accent">#FFFFD166</color>
+    <color name="bg">#FF1C1814</color>
+    <color name="accent">#FFF7C948</color>
+    <!-- Adaptive launcher icon background: Cozy Yellow (the die-cut mark sits on it). -->
+    <color name="launcher_bg">#FFF7C948</color>
 </resources>

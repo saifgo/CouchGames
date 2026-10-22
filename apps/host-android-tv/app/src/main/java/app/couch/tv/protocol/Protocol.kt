@@ -78,7 +78,7 @@ object TransportKind {
     }
 }
 
-val PLAYER_COLORS = listOf("#ff4d5e", "#3d9bff", "#2ed47a", "#ffc83d", "#b06bff", "#ff8a3d", "#2fd6d0", "#ff6bcb")
+val PLAYER_COLORS = listOf("#f7c948", "#f47c5b", "#3ebfa5", "#9b8cf5", "#5aa9f0", "#8ccb5e", "#f28ac0", "#e8dcc0")
 
 const val INPUT_PACKET_SIZE = 18
 const val INPUT_PACKET_SIZE_GYRO = 24

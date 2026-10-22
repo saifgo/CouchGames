@@ -164,7 +164,7 @@ fun PlayersDialog(
     onClose: () -> Unit,
 ) {
     BackHandler { onClose() }
-    Box(Modifier.fillMaxSize().background(Color(0xD904060A)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color(0xD91C1814)), contentAlignment = Alignment.Center) {
         Column(
             Modifier.width(560.dp).clip(RoundedCornerShape(24.dp)).background(Panel).padding(26.dp)
                 // Keep the remote's focus inside the dialog (the home screen is still behind it).
@@ -173,7 +173,7 @@ fun PlayersDialog(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Players", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Text("Players", fontSize = 28.sp, fontFamily = Fredoka, fontWeight = FontWeight.Bold)
             PlayerManager(view, maxPlayers, onSwap, onRemove, onTidy)
             ManagerButton(onClick = onClose) { Text("Close", fontSize = 17.sp) }
         }

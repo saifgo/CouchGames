@@ -1,4 +1,4 @@
-# Deploying Couch (Docker / Coolify): public HTTPS mode
+# Deploying CouchPad (Docker / Coolify): public HTTPS mode
 
 One container serves everything on port 8787:
 
@@ -73,7 +73,7 @@ the "games hidden" hint links to it. With several APKs it offers the release bui
 version. Or set `APK_URL` to an external link (e.g. a GitHub release). Without either, the button
 is hidden. Local runs from the repo pick up `apps/host-android-tv/app/build/outputs/apk/release/`.
 
-**On the Android TV app.** In the app, open *Settings → Couch server* and enter the address of the
+**On the Android TV app.** In the app, open *Settings → CouchPad server* and enter the address of the
 TV page (e.g. `https://couchpad.tv`). The server's games (folder or S3) then show up next to
 the ones on the TV box, and a status chip in the hint bar shows the connection. A game downloads
 through the server into the app's cache the first time it's played (up to 8 GB are kept; the
@@ -81,7 +81,7 @@ least recently played are removed first), and the system's BIOS files from `bios
 The TV never gets the S3 keys. Instead of typing on the remote, set the address over adb:
 `adb shell am start -a android.intent.action.VIEW -d "couch://server?url=https://couchpad.tv"`.
 
-The TV still loads `/roms/...` from the Couch server, which proxies the bytes (Range requests
+The TV still loads `/roms/...` from the CouchPad server, which proxies the bytes (Range requests
 included). The bucket can stay **private** and needs no CORS rules. Every ROM load costs the server
 the egress from S3 to itself and from itself to the TV. A bucket in the same region as the server
 keeps that fast and cheap; R2 has no egress fees.
