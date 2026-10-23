@@ -1,4 +1,4 @@
-// Replaces {{email}}, {{developer}}, {{updated}} and {{price}} in Markdown text and links with the
+// Replaces {{email}}, {{developer}}, {{updated}}, {{price}}, {{play}} and {{testing}} in Markdown text and links with the
 // values in site.ts, so the legal pages never hold a second copy of them.
 import { SITE } from './site';
 
@@ -7,6 +7,8 @@ const TOKENS: Record<string, string> = {
   developer: SITE.developer,
   updated: SITE.legalUpdated,
   price: SITE.proPrice,
+  play: SITE.playUrl,
+  testing: SITE.testingUrl,
 };
 
 const sub = (s: string) => s.replace(/\{\{(\w+)\}\}/g, (m, k: string) => TOKENS[k] ?? m);

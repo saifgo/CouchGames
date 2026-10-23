@@ -29,7 +29,7 @@ class CouchApp : Application() {
     /** Bluetooth/USB game controllers paired with the TV. */
     val gamepads by lazy { Gamepads(session) }
 
-    /** Player slots open right now: the Settings choice, or 2 on Couch Free. */
+    /** Player slots open right now: the Settings choice, or 1 on Couch Free. */
     val players get() = ProRules.players(pro.isPro, settings.maxPlayers)
 
     override fun onCreate() {
@@ -41,7 +41,7 @@ class CouchApp : Application() {
         session = HostSession(this, settings.hostName)
         session.roomFullText = {
             if (pro.isPro) "All ${session.maxPlayers} player slots are taken"
-            else "CouchPad Free has ${ProRules.FREE_PLAYERS} player slots. CouchPad Pro on the TV opens up to 8."
+            else "CouchPad Free has 1 player slot. CouchPad Pro on the TV opens 2 to 8."
         }
         session.maxPlayers = players
         CoroutineScope(SupervisorJob() + Dispatchers.Main).launch { pro.active.collect { session.maxPlayers = players } }

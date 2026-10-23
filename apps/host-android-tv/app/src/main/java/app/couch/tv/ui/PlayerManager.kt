@@ -148,7 +148,7 @@ private fun ManagerButton(
     Button(
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier.fillMaxWidth().then(if (focus != null) Modifier.focusRequester(focus) else Modifier),
+        modifier = Modifier.fillMaxWidth().then(if (focus != null) Modifier.focusRequester(focus) else Modifier).tappable(enabled, onClick),
         shape = ButtonDefaults.shape(RoundedCornerShape(12.dp)),
     ) { content() }
 }
@@ -164,7 +164,7 @@ fun PlayersDialog(
     onClose: () -> Unit,
 ) {
     BackHandler { onClose() }
-    Box(Modifier.fillMaxSize().background(Color(0xD91C1814)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color(0xD91C1814)).blockTaps(), contentAlignment = Alignment.Center) {
         Column(
             Modifier.width(560.dp).clip(RoundedCornerShape(24.dp)).background(Panel).padding(26.dp)
                 // Keep the remote's focus inside the dialog (the home screen is still behind it).

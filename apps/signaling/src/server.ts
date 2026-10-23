@@ -235,9 +235,12 @@ export async function startCouchServer(opts: CouchServerOptions): Promise<CouchS
       if (path === '/api/library') {
         const fresh = url.searchParams.has('fresh');
         const system = url.searchParams.get('system');
-        if (system === null) return json(res, { roms: await getLibrary(fresh) });
+        // ?source=homebrew: the web host asks for homebrew only and never sees the roms/ folder or S3 games.
+        const source = url.searchParams.get('source');
+        const only = (roms: RomEntry[]) => (source ? roms.filter((r) => r.source === source) : roms);
+        if (system === null) return json(res, { roms: only(await getLibrary(fresh)) });
         if (!getSystem(system as ConsoleId)) return notFound(res);
-        return json(res, { system, roms: await getSystemLibrary(system as ConsoleId, fresh) });
+        return json(res, { system, roms: only(await getSystemLibrary(system as ConsoleId, fresh)) });
       }
       if (path === '/api/apk') {
         const found = opts.apk ? await findApk(opts.apk) : null;

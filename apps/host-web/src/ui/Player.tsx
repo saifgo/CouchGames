@@ -3,7 +3,7 @@ import { MenuAction, TransportLabel } from '@couch/protocol';
 import { getSystem } from '@couch/systems';
 import { Engine } from '../engine/engine.js';
 import { onNav } from '../focus/focus.js';
-import { coreFor, type HostSettings } from '../host-settings.js';
+import { coreFor, WEB_PLAYERS, type HostSettings } from '../host-settings.js';
 import { biosFiles, gameFiles, listSaves, type DownloadProgress, readSave, touchRecent, writeSave, type Game, type SaveSlot } from '../library/library.js';
 import type { HostSession, SessionView } from '../net/host-session.js';
 import { PlayerChip } from './common.js';
@@ -25,7 +25,7 @@ export function Player({ game, resume, settings, session, view, onExit, setNavEn
   const engineRef = useRef<Engine | null>(null);
   const [status, setStatus] = useState<'loading' | 'running' | 'error'>('loading');
   const [error, setError] = useState('');
-  /** Server game download (roms/ folder or S3); null when not downloading. */
+  /** Server game download (homebrew); null when not downloading. */
   const [download, setDownload] = useState<DownloadProgress | null>(null);
   const [menu, setMenu] = useState<MenuPage | null>(null);
   const [saves, setSaves] = useState<SaveSlot[]>([]);
@@ -76,7 +76,7 @@ export function Player({ game, resume, settings, session, view, onExit, setNavEn
           files,
           bios,
           stage: stageRef.current!,
-          players: settings.maxPlayers,
+          players: WEB_PLAYERS,
           runAhead: settings.runAhead,
           onRumble: (port, strong, weak, ms) => session.rumble(port, strong, weak, ms),
           ...(auto ? { state: auto.state } : {}),
@@ -277,7 +277,7 @@ export function Player({ game, resume, settings, session, view, onExit, setNavEn
         <div className="loading error" data-nav-scope>
           <h2>Couldn’t start this game</h2>
           <p>{error}</p>
-          <p className="hint">Check the core download (pnpm cores) and the file in roms/{game.system}/.</p>
+          <p className="hint">Check the core download (pnpm cores) and the game file.</p>
           <button className="primary" data-nav data-nav-default onClick={onExit} autoFocus>
             Back to library
           </button>
@@ -363,7 +363,7 @@ export function Player({ game, resume, settings, session, view, onExit, setNavEn
           {menu === 'players' && (
             <div className="menu-list">
               <p className="hint">{swapFrom === null ? 'Pick a player, then the slot to swap with (or remove them).' : `Swap P${swapFrom + 1} with…`}</p>
-              {Array.from({ length: settings.maxPlayers }, (_, i) => {
+              {Array.from({ length: WEB_PLAYERS }, (_, i) => {
                 const p = view.players.find((x) => x.slot === i);
                 return (
                   <button

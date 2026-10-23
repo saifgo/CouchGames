@@ -10,11 +10,15 @@ and a one-time in-app purchase (`couch_pro`, about $5.99) unlocks **Couch Pro**.
 
 | | Couch Free | Couch Pro |
 |---|---|---|
-| Players (phones + TV controllers) | 2 | 4 or 8 (Settings) |
+| Players (phones + TV controllers) | 1 | 2 to 8 (4 or 8 seats in Settings) |
 | Systems | NES, SNES, GB, GBC, Genesis/SMS/GG, Atari 2600, PC Engine | + GBA, PS1, N64, PSP, NDS, PS2 (still device-tier gated) |
 | Save states | slot 1 + automatic save on quit (older saves in other slots still load) | slots 1–4 |
-| Couch server library (roms/ or S3) | no | yes |
+| Couch server library (roms/ or S3) | no | yes (a server link given to Pro users) |
 | Reminders | "Couch Free" line under the lobby, a "Go Pro" card before a game at most once every 20 h (Play is the focused default) | none |
+
+Update 2026-10-22 (owner): Free is single-player (was 2). The web host follows the Free limits too:
+1 player, and it never reads the server library (roms/ folder or S3). It asks `/api/library?source=homebrew`
+for the free test ROMs only. The server keeps the library API so Pro users can be given a library link later.
 
 Rule: limit how far Free goes, never how well it plays. No time limits, ads or added latency.
 The rules live in `ProRules` (`apps/host-android-tv/.../Pro.kt`) with a unit test.

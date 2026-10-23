@@ -1,9 +1,14 @@
 import { SYSTEMS, type SystemDef } from '@couch/systems';
 import type { ConsoleId } from '@couch/protocol';
 
+/**
+ * The web host is CouchPad Free: one player. Multiplayer (2 to 8) is CouchPad Pro on the
+ * Android TV app (ADR-005).
+ */
+export const WEB_PLAYERS = 1;
+
 export interface HostSettings {
   hostName: string;
-  maxPlayers: 4 | 8;
   /** Show systems measured too heavy for this device (ADR-001). */
   showAllSystems: boolean;
   /** Enable PSP (EmulatorJS pthread build, needs cross-origin isolation). */
@@ -25,7 +30,6 @@ export interface HostSettings {
 
 const DEFAULTS: HostSettings = {
   hostName: 'Living room',
-  maxPlayers: 4,
   showAllSystems: false,
   experimentalPsp: false,
   runAhead: 0,
@@ -49,6 +53,8 @@ export function loadHostSettings(): HostSettings {
     // 'arcade' (a green recolour) was replaced by Arcade Pixel Art.
     if (saved.theme === 'arcade') saved.theme = 'pixel';
     if (saved.theme && !THEMES.includes(saved.theme as HostSettings['theme'])) delete saved.theme;
+    // Older versions stored a player count (4 or 8); the web host is single-player now.
+    delete (saved as { maxPlayers?: unknown }).maxPlayers;
     return { ...DEFAULTS, ...(saved as Partial<HostSettings>) };
   } catch {
     return { ...DEFAULTS };

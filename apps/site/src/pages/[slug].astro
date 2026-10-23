@@ -1,5 +1,5 @@
 ---
-/** privacy, terms, support: written in Markdown (src/content/legal), rendered here. */
+/** privacy, terms, support, testing: written in Markdown (src/content/legal), rendered here. */
 import { getCollection, render } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import { SITE } from '../site';
@@ -11,7 +11,7 @@ export async function getStaticPaths() {
 
 const { entry } = Astro.props;
 const { Content, headings } = await render(entry);
-const all = (await getCollection('legal')).sort((a, b) => a.data.order - b.data.order);
+const all = (await getCollection('legal')).filter((p) => p.data.listed).sort((a, b) => a.data.order - b.data.order);
 const toc = headings.filter((h) => h.depth === 2);
 ---
 <Base title={`${entry.data.title} · CouchPad`} description={entry.data.description} barTone="cream">

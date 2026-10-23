@@ -11,7 +11,7 @@ Static pages in `apps/host-web/public/`, served by the CouchPad server (the Cool
 | Terms (optional, linked from the listing) | `https://couchpad.tv/terms.html` |
 | Support / data deletion info | `https://couchpad.tv/support.html` (`#delete-data`) |
 
-Before publishing, replace `YOUR_EMAIL@example.com` in `privacy.html`, `terms.html` and `support.html`, and check the
+The support address is `contact@couchpad.tv` (`apps/site/src/site.ts`, and the `host-web/public` pages). Check the
 developer name "Tuni Solutions" (taken from the package id). If the app's data handling changes, update
 `privacy.html` and its "Last updated" date in the same commit.
 

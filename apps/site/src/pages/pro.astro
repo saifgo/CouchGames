@@ -16,7 +16,7 @@ const PICS = [
 ];
 
 const ROWS: [string, string, string][] = [
-  ['Players', '2', '4, or 8 for party games'],
+  ['Players', '1', '2 to 8 (multiplayer)'],
   ['Consoles', 'NES, SNES, Genesis, Master System, Game Gear, Game Boy, Game Boy Color, Atari 2600, PC Engine', 'All of Free, plus GBA, PS1, N64, PSP, NDS and PS2 (on TV boxes fast enough to run them)'],
   ['Save slots', 'Slot 1, plus auto-save when you quit', '4 slots per game'],
   ['Game library', 'Folders and USB drives on the TV', 'Also your own CouchPad server or S3 bucket, shared by every TV'],
@@ -38,7 +38,7 @@ const jsonLd = [
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: 'CouchPad Pro',
-    description: 'One-time upgrade for CouchPad for Android TV: 4 or 8 players, GBA, PS1, N64, PSP, NDS and PS2, 4 save slots and your own game server.',
+    description: 'One-time upgrade for CouchPad for Android TV: 2 to 8 players, GBA, PS1, N64, PSP, NDS and PS2, 4 save slots and your own game server.',
     brand: { '@type': 'Brand', name: 'CouchPad' },
     offers: { '@type': 'Offer', price: '5.99', priceCurrency: 'USD', url: SITE.playUrl, availability: 'https://schema.org/PreOrder' },
   },
@@ -46,14 +46,14 @@ const jsonLd = [
 ---
 <Base
   title="CouchPad Pro: more seats, bigger consoles, one price"
-  description={`CouchPad Pro is a one-time ${SITE.proPrice} upgrade for CouchPad on Android TV: 4 or 8 players, GBA, PS1, N64, PSP, NDS and PS2, 4 save slots, no subscription.`}
+  description={`CouchPad Pro is a one-time ${SITE.proPrice} upgrade for CouchPad on Android TV: 2 to 8 players, GBA, PS1, N64, PSP, NDS and PS2, 4 save slots, no subscription.`}
   barTone="yellow"
   jsonLd={jsonLd}
 >
   <section class="field field--yellow pro-hero wrap grid" data-tone="yellow" aria-labelledby="pro-title">
     <h1 id="pro-title" class="t-display" data-rise>More seats. Bigger consoles.</h1>
     <div class="pro-hero__copy">
-      <p class="lead" data-rise>CouchPad Pro is one purchase that opens up the whole couch: four or eight players, the 32- and 64-bit era, and more saves.</p>
+      <p class="lead" data-rise>CouchPad Pro is one purchase that opens up the whole couch: two to eight players, the 32- and 64-bit era, and more saves.</p>
       <p data-rise><a class="btn btn--ink" href={SITE.playUrl} rel="noopener"><Icon name="play" />Get CouchPad, then unlock Pro</a></p>
     </div>
     <div class="pro-hero__price" data-rise>
@@ -91,7 +91,7 @@ const jsonLd = [
       <h2 id="steps-title" class="t-title" data-rise>Unlock it in a minute.</h2>
       <ol>
         <li data-rise><strong>Install CouchPad Free.</strong><p>From Google Play on your Android TV. Play as long as you like first.</p></li>
-        <li data-rise><strong>Open Settings → CouchPad Pro.</strong><p>Or try to add a third player: CouchPad offers Pro right there.</p></li>
+        <li data-rise><strong>Open Settings → CouchPad Pro.</strong><p>Or try to add a second player: CouchPad offers Pro right there.</p></li>
         <li data-rise><strong>Pay once with Google Play.</strong><p>Pro turns on straight away, on every TV signed in to that Google account.</p></li>
       </ol>
     </div>

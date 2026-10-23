@@ -1,6 +1,9 @@
 /**
- * Game library: ROMs from the couch server (roms/ + test-roms/) plus files the
+ * Game library: free homebrew from the couch server (test-roms/) plus files the
  * user dropped onto the TV page (kept in IndexedDB, never uploaded anywhere).
+ *
+ * The web host never reads the server's own library (its roms/ folder or S3 bucket): that
+ * library is for CouchPad Pro on Android TV (ADR-005). It asks the server for homebrew only.
  * Also recents, favourites and save states.
  */
 import { createStore, del, entries, get, set } from 'idb-keyval';
@@ -34,7 +37,9 @@ export interface LibraryProgress {
   failed: ConsoleId[];
 }
 
-const SERVER_CACHE = 'couch.serverLibrary.v1';
+/** v2: homebrew only. v1 could hold games from the server's roms/ folder or S3 bucket. */
+const SERVER_CACHE = 'couch.serverLibrary.v2';
+const OLD_CACHE = 'couch.serverLibrary.v1';
 interface ServerCache {
   at: number;
   roms: Game[];
@@ -46,15 +51,16 @@ interface ServerCache {
  */
 export function cachedServerLibrary(): ServerCache | null {
   try {
+    localStorage.removeItem(OLD_CACHE);
     const c = JSON.parse(localStorage.getItem(SERVER_CACHE) ?? 'null') as ServerCache | null;
-    return c && Array.isArray(c.roms) ? { at: c.at, roms: c.roms.filter((g) => getSystem(g.system)) } : null;
+    return c && Array.isArray(c.roms) ? { at: c.at, roms: c.roms.filter((g) => g.source === 'homebrew' && getSystem(g.system)) } : null;
   } catch {
     return null;
   }
 }
 
 /**
- * Loads the server's games console by console (a few requests at a time), so each row
+ * Loads the server's homebrew console by console (a few requests at a time), so each row
  * appears as soon as it is ready and the screen shows what is happening. `fresh` makes
  * the server list its storage again instead of using its own copy. Saved for next time
  * when every console loaded.
@@ -78,11 +84,11 @@ export async function loadServerLibrary(opts: {
       p.loading.push(id);
       report();
       try {
-        const res = await fetch(`/api/library?system=${id}${opts.fresh ? '&fresh' : ''}`);
+        const res = await fetch(`/api/library?system=${id}&source=homebrew${opts.fresh ? '&fresh' : ''}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const { roms } = (await res.json()) as { roms: Game[] };
-        // An older server ignores ?system= and sends everything: keep this console's games.
-        bySystem.set(id, roms.filter((g) => g.system === id));
+        // An older server ignores ?system= and ?source= and sends everything: keep this console's homebrew.
+        bySystem.set(id, roms.filter((g) => g.system === id && g.source === 'homebrew'));
         opts.onGames?.(collect());
       } catch {
         p.failed.push(id);
@@ -139,8 +145,7 @@ export interface DownloadProgress {
 }
 
 /**
- * Files to hand to the emulator for a game. Server games (roms/ folder or S3, streamed by
- * the server) are downloaded here rather than by the emulator, so [onProgress] can drive
+ * Files to hand to the emulator for a game. Server games (homebrew) are downloaded here rather than by the emulator, so [onProgress] can drive
  * a progress bar.
  */
 export async function gameFiles(g: Game, onProgress?: (p: DownloadProgress) => void, signal?: AbortSignal): Promise<{ name: string; data: Blob | string }[]> {

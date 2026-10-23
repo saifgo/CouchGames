@@ -306,7 +306,7 @@ export class HostSession extends Emitter<Events> {
       if (stale) slot = stale.i;
     }
     if (slot < 0) {
-      this.link.sendCtrl(peerId, encodeControl({ type: MsgType.ERROR, code: 'room-full', message: `All ${this.maxPlayers} player slots are taken` }));
+      this.link.sendCtrl(peerId, encodeControl({ type: MsgType.ERROR, code: 'room-full', message: this.maxPlayers === 1 ? 'This TV has 1 player slot and someone is in it. More players: CouchPad Pro on Android TV' : `All ${this.maxPlayers} player slots are taken` }));
       return;
     }
     let p = this.players[slot];

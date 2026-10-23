@@ -72,7 +72,7 @@ fun SettingsScreen(
     fun Row2(label: String, value: String, hint: String? = null, focus: Boolean = false, onClick: () -> Unit) {
         Button(
             onClick = { onClick(); version++ },
-            modifier = Modifier.fillMaxWidth().then(if (focus) Modifier.focusRequester(first) else Modifier),
+            modifier = Modifier.fillMaxWidth().then(if (focus) Modifier.focusRequester(first) else Modifier).tappable { onClick(); version++ },
             shape = ButtonDefaults.shape(RoundedCornerShape(12.dp)),
             colors = ButtonDefaults.colors(containerColor = Color.White.copy(alpha = .06f), contentColor = Color.White),
         ) {
@@ -86,7 +86,7 @@ fun SettingsScreen(
         }
     }
 
-    Box(Modifier.fillMaxSize().background(Color(0xCC1C1814)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color(0xCC1C1814)).blockTaps(), contentAlignment = Alignment.Center) {
         LazyColumn(
             Modifier.width(820.dp).clip(RoundedCornerShape(24.dp)).background(Panel).padding(28.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -135,7 +135,7 @@ fun SettingsScreen(
                         app.session.maxPlayers = app.players
                     }
                 } else {
-                    Row2("Players", "${ProRules.FREE_PLAYERS}", "CouchPad Pro: up to 8") { onPro("More than ${ProRules.FREE_PLAYERS} players need CouchPad Pro") }
+                    Row2("Players", "${ProRules.FREE_PLAYERS}", "CouchPad Pro: 2 to 8") { onPro("A second player needs CouchPad Pro") }
                 }
             }
             item(version + 3) {
@@ -183,7 +183,7 @@ fun SettingsScreen(
                 }
             }
             item(version + 100) {
-                Button(onClick = onClose, modifier = Modifier.padding(top = 8.dp)) { Text("Done") }
+                Button(onClick = onClose, modifier = Modifier.padding(top = 8.dp).tappable(onClick = onClose)) { Text("Done") }
             }
         }
     }
@@ -224,7 +224,7 @@ private fun ServerDialog(initial: String, test: suspend (String) -> Result<Strin
     }
     val field = remember { FocusRequester() }
     androidx.activity.compose.BackHandler { onCancel() }
-    Box(Modifier.fillMaxSize().background(Color(0xE01C1814)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color(0xE01C1814)).blockTaps(), contentAlignment = Alignment.Center) {
         Column(
             Modifier.width(760.dp).clip(RoundedCornerShape(24.dp)).background(Panel).padding(28.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -254,10 +254,10 @@ private fun ServerDialog(initial: String, test: suspend (String) -> Result<Strin
             )
             problem?.let { Text(it, color = Color(0xFFFF9B9B), fontSize = 15.sp) }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = { if (!testing) connect() }) { Text(if (testing) "Connecting…" else "Save & connect") }
-                if (problem != null) Button(onClick = { onSave(RemoteLibrary.normalizeServer(text)) }) { Text("Save anyway") }
-                Button(onClick = { onSave("") }) { Text("Turn off") }
-                Button(onClick = onCancel) { Text("Cancel") }
+                Button(onClick = { if (!testing) connect() }, modifier = Modifier.tappable { if (!testing) connect() }) { Text(if (testing) "Connecting…" else "Save & connect") }
+                if (problem != null) Button(onClick = { onSave(RemoteLibrary.normalizeServer(text)) }, modifier = Modifier.tappable { onSave(RemoteLibrary.normalizeServer(text)) }) { Text("Save anyway") }
+                Button(onClick = { onSave("") }, modifier = Modifier.tappable { onSave("") }) { Text("Turn off") }
+                Button(onClick = onCancel, modifier = Modifier.tappable(onClick = onCancel)) { Text("Cancel") }
             }
         }
     }

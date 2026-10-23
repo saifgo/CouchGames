@@ -2,311 +2,314 @@
 <html>
 <head>
 <meta charset="utf-8" />
-<title>CouchPad: Play Store art</title>
+<title>CouchPad: Google Play art</title>
+<!--
+  Every Google Play asset for CouchPad for Android TV, built from the brand kit:
+  marks from packages/design/assets (generated from mark.ts), bundled Fredoka + Inter,
+  and the CouchPad screen captures in docs/brand/shots + apps/site/src/assets.
+  Open in a browser to review; `node apps/host-android-tv/play-store/render.mjs` writes out/.
+
+  Screenshots are authored at three base sizes and scaled at render time:
+    tv      1920 x 1080  (Android TV, required)
+    phone   1080 x 1920  (phone, required for every listing)
+    tablet  1920 x 1200  (7" as is, 10" rendered at 4/3 scale = 2560 x 1600)
+
+  Console logos stay out of the art (Play reviews emulator listings for third-party marks):
+  TV home captures are cropped to the game info and "Scan to join" panels.
+-->
 <style>
-  /* CouchPad brand (docs/brand/identity.md). Fonts and marks come from packages/design. */
   @font-face { font-family: Fredoka; font-weight: 300 700; src: url('../../../packages/design/fonts/fredoka-latin.woff2') format('woff2'); }
   @font-face { font-family: Inter; font-weight: 100 900; src: url('../../../packages/design/fonts/inter-latin.woff2') format('woff2'); }
   :root {
-    --bg: #1c1814;      /* Ink */
-    --panel: #26211b;   /* Ink panel */
-    --raised: #312a23;
-    --line: #3a332b;
-    --text: #fff6e0;    /* Cream */
-    --muted: #b8ae9c;   /* Sand */
-    --accent: #f7c948;  /* Cozy Yellow */
-    --accent-deep: #d9a520;
-    --coral: #f47c5b;   /* P2 */
-    --teal: #3ebfa5;    /* P3 */
-    --img: '../../../docs/img/';
+    --yellow: #f7c948; --yellow-deep: #d9a520; --ink: #1c1814; --cream: #fff6e0;
+    --mocha: #7a6f5e; --sand: #b8ae9c; --linen: #e8dcc0;
+    --panel: #26211b; --raised: #312a23; --line: #3a332b;
+    --p1: #f7c948; --p2: #f47c5b; --p3: #3ebfa5; --p4: #9b8cf5; --p5: #5aa9f0; --p6: #8ccb5e; --p7: #f28ac0; --p8: #e8dcc0;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; padding: 40px; background: #333; display: flex; flex-direction: column; gap: 40px; align-items: flex-start;
-         font-family: Inter, system-ui, sans-serif; font-weight: 500; color: var(--text); }
-  .asset { position: relative; overflow: hidden; background: var(--bg); flex: none; }
-  .asset img { display: block; }
+  body { margin: 0; padding: 40px; background: #444; display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start;
+         font-family: Inter, system-ui, sans-serif; font-weight: 500; }
+  img { display: block; }
+  .asset { position: relative; overflow: hidden; flex: none; }
 
-  .glow { position: absolute; inset: 0; pointer-events: none;
-          background:
-            radial-gradient(60% 70% at 85% 10%, rgba(244, 124, 91, 0.16), transparent 70%),
-            radial-gradient(55% 65% at 10% 100%, rgba(62, 191, 165, 0.12), transparent 70%),
-            radial-gradient(40% 45% at 50% 50%, rgba(247, 201, 72, 0.06), transparent 70%); }
-  .grain { position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
-           background-image: radial-gradient(rgba(255,246,224,0.035) 1px, transparent 1px); background-size: 6px 6px; }
+  /* Grounds. Yellow and Cream carry Ink text; Ink carries Cream text with Yellow accents. */
+  .g-yellow { background: var(--yellow); color: var(--ink); --sub: rgba(28,24,20,.78); --hl: var(--cream); --shadow: rgba(28,24,20,.28); }
+  .g-cream  { background: var(--cream);  color: var(--ink); --sub: var(--mocha); --hl: var(--yellow); --shadow: rgba(28,24,20,.22); }
+  .g-ink    { background: var(--ink);    color: var(--cream); --sub: var(--sand); --shadow: rgba(0,0,0,.55); }
+  .g-ink em { font-style: normal; color: var(--yellow); }
+  .g-yellow em, .g-cream em { font-style: normal; padding: 0 .08em; margin: 0 -.08em; border-radius: .12em;
+    background: linear-gradient(transparent 56%, var(--hl) 56%, var(--hl) 94%, transparent 94%); }
+  /* Flat ground with a faint dot grain, so large fields don't look like a blank slide. */
+  .grain::before { content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image: radial-gradient(currentColor 1.2px, transparent 1.4px); background-size: 22px 22px; opacity: .045; }
 
-  /* Lockup on Ink: die-cut mark (Cream border) + wordmark, "Pad" in Yellow. Never retyped in another font. */
-  .wordmark { display: inline-flex; align-items: center; gap: 0.3em; font-family: Fredoka, Nunito, sans-serif; font-weight: 700; letter-spacing: -0.01em; line-height: 1; }
-  .wordmark img { height: 1.15em; width: auto; }
-  .wordmark .pad { color: var(--accent); }
+  /* Lockup: mark + wordmark in Fredoka. "Pad" turns Yellow on Ink only. */
+  .lockup { display: inline-flex; align-items: center; gap: .32em; font: 700 1em/1 Fredoka, Nunito, sans-serif; letter-spacing: -0.01em; }
+  .lockup img { height: 1.22em; width: auto; }
+  .g-ink .lockup .pad { color: var(--yellow); }
 
-  .tv { position: absolute; padding: 1.1%; background: linear-gradient(#26211b, #1c1814); border-radius: 18px;
-        border: 2px solid #3a332b; box-shadow: 0 40px 90px rgba(0,0,0,0.65), 0 0 0 1px rgba(0,0,0,0.6), 0 0 120px rgba(247, 201, 72, 0.08); }
-  .tv .screen { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; background: #000; }
-  .tv .screen img { width: 100%; height: 100%; object-fit: cover; }
-  /* Crops tv-ingame.png to the playfield: drops the pillarbox and the latency overlay at the bottom. */
-  .tv .screen.ingame img { width: 133.5%; height: auto; margin-left: -16.7%; margin-top: -4%; }
+  .eyebrow { display: inline-flex; align-items: center; gap: .5em; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+             padding: .42em 1em; border-radius: 999px; }
+  .g-ink .eyebrow { background: rgba(247,201,72,.14); color: var(--yellow); }
+  .g-yellow .eyebrow { background: var(--ink); color: var(--yellow); }
+  .g-cream .eyebrow { background: var(--ink); color: var(--cream); }
 
-  .phone { position: absolute; background: #1c1814; border: 2px solid #3a332b; box-shadow: 0 30px 70px rgba(0,0,0,0.7), inset 0 0 0 2px #120f0c; }
-  .phone .screen { width: 100%; height: 100%; overflow: hidden; background: #000; }
-  .phone .screen img { width: 100%; height: 100%; object-fit: cover; }
-  .phone.land { aspect-ratio: 1688 / 780; padding: 1.6% 2.2%; border-radius: 9% / 19%; }
-  .phone.land .screen { border-radius: 6% / 13%; }
-  .phone.port { aspect-ratio: 780 / 1688; padding: 4% 3.4%; border-radius: 15% / 7%; }
-  .phone.port .screen { border-radius: 11% / 5%; }
+  h1 { margin: 0; font: 700 1em/1.04 Fredoka, Nunito, sans-serif; letter-spacing: -0.012em; text-wrap: balance; }
+  .sub { margin: 0; color: var(--sub); line-height: 1.38; text-wrap: pretty; }
 
-  .caption { position: absolute; }
-  .caption h1 { margin: 0; font-family: Fredoka, Nunito, sans-serif; font-weight: 700; letter-spacing: -0.01em; line-height: 1.04; }
-  .caption h1 em { font-style: normal; color: var(--accent); }
-  .caption p { margin: 0; color: var(--muted); line-height: 1.4; font-weight: 500; }
-  .tag { display: inline-flex; align-items: center; gap: 0.5em; padding: 0.35em 0.9em; border-radius: 999px; background: rgba(247,201,72,0.14);
-         color: var(--accent); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  /* ---- Screenshot layouts ---- */
+  .shot { display: grid; }
+  .copy { display: flex; flex-direction: column; align-items: flex-start; }
+  .stage { position: relative; min-height: 0; min-width: 0; }
+  .stage > .box { position: absolute; left: 50%; top: 50%; translate: -50% -50%; }
 
-  .chip { display: inline-flex; align-items: center; gap: 0.5em; padding: 0.5em 1em 0.5em 0.5em; border-radius: 999px; background: var(--raised);
-          border: 1px solid var(--line); font-weight: 700; }
-  .chip i { width: 1.6em; height: 1.6em; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 0.8em; color: var(--bg); }
-  .chip b { width: 0.55em; height: 0.55em; border-radius: 50%; background: #2fd36b; }
+  /* Landscape split: copy left, picture right. */
+  .shot.land.split { grid-template-columns: 600px 1fr; column-gap: 64px; padding: 96px 96px 96px 112px; }
+  .shot.land.split .copy { justify-content: center; }
+  .shot.land .copy h1 { font-size: 92px; }
+  .shot.land .copy .sub { font-size: 34px; margin-top: 32px; }
+  .shot.land .copy .eyebrow { font-size: 22px; margin-bottom: 36px; }
+  .shot.land .copy .lockup { font-size: 50px; margin-bottom: 52px; }
+  /* Landscape top: centred title, wide picture below. */
+  .shot.land.top { grid-template-rows: auto 1fr; padding: 84px 96px 72px; row-gap: 40px; }
+  .shot.land.top .copy { align-items: center; text-align: center; }
+  .shot.land.top .copy h1 { font-size: 84px; }
+  .shot.land.top .copy .sub { margin-top: 20px; }
+  /* Portrait: copy on top, picture below. */
+  .shot.port { grid-template-rows: auto 1fr; padding: 120px 84px 84px; row-gap: 56px; }
+  .shot.port .copy h1 { font-size: 104px; }
+  .shot.port .copy .sub { font-size: 40px; margin-top: 32px; }
+  .shot.port .copy .eyebrow { font-size: 27px; margin-bottom: 40px; }
+  .shot.port .copy .lockup { font-size: 54px; margin-bottom: 56px; }
 
-  .skins { position: absolute; display: grid; }
-  .skins .phone { position: relative; width: 100%; }
-  .skins figure { margin: 0; display: flex; flex-direction: column; gap: 14px; }
+  /* ---- Devices ---- */
+  .tv { position: absolute; padding: 1.15%; border-radius: 18px; background: #14110e;
+        box-shadow: 0 0 0 3px #3a332b, 0 40px 80px var(--shadow); }
+  .g-yellow .tv, .g-cream .tv { box-shadow: 0 0 0 3px var(--ink), 0 40px 80px var(--shadow); }
+  .tv .screen { position: relative; aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; background: #000; }
+  .tv .screen > img { width: 100%; height: 100%; object-fit: cover; }
+  .pixel { image-rendering: pixelated; }
 
-  .compare { position: absolute; display: grid; grid-template-columns: 1fr 1fr; }
-  .compare .col { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; }
-  .compare .col.pro { border: 2px solid var(--accent); background: var(--panel); }
-  .compare h2 { margin: 0; font-family: Fredoka, Nunito, sans-serif; font-weight: 600; }
-  .compare ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-  .compare li { display: flex; gap: 0.6em; align-items: baseline; color: var(--text); }
-  .compare li::before { content: '●'; color: var(--muted); font-size: 0.6em; transform: translateY(-0.2em); }
-  .compare .pro li::before { color: var(--accent); }
+  .ph { position: absolute; background: #14110e; padding: 1.7% 2.4%; border-radius: 7% / 16%;
+        box-shadow: 0 0 0 3px #3a332b, 0 30px 60px var(--shadow); }
+  .g-yellow .ph, .g-cream .ph { box-shadow: 0 0 0 3px var(--ink), 0 30px 60px var(--shadow); }
+  .ph > img, .ph > .crop { width: 100%; border-radius: 4.6% / 11%; }
+  .ph.port { padding: 3.6% 3.2%; border-radius: 13% / 6.2%; }
+  .ph.port > img { border-radius: 10% / 4.6%; }
+
+  /* Shows region (x, y, w, h) of an image of natural size (iw, ih). */
+  .crop { position: relative; overflow: hidden; }
+  .crop > img { position: absolute; max-width: none; }
+
+  .chip { display: inline-flex; align-items: center; gap: 14px; padding: 10px 26px 10px 10px; border-radius: 999px;
+          background: var(--ink); color: var(--cream); font: 600 30px/1 Inter, sans-serif; }
+  .chip i { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font: 700 26px/1 Inter; font-style: normal; color: var(--ink); }
+
+  .card { position: absolute; border-radius: 28px; overflow: hidden; }
+  .label { font: 600 26px/1.2 Inter, sans-serif; }
 </style>
 </head>
 <body>
+<script>
+// ---------------------------------------------------------------------------------------------
+// Sources
+const R = '../../../';
+const MARK = { yellow: R + 'packages/design/assets/mark-on-yellow.svg', ink: R + 'packages/design/assets/mark-on-ink.svg', cream: R + 'packages/design/assets/mark.svg' };
+const SHOT = (n) => R + 'docs/brand/shots/' + n + '.png';
+const SITE = (n) => R + 'apps/site/src/assets/' + n + '.png';
+const IMG = {
+  shooter: SITE('shots/game-shooter'),         // homebrew, 968 x 512
+  test240: SITE('shots/game-240p'),            // 240p Test Suite (GPL homebrew), 1400 x 1080
+  padSnes: SHOT('phone-ingame'),               // 1688 x 780
+  padModern: SHOT('phone-connected'),
+  padModernP2: SHOT('phone-connected-p2'),
+  padMenu: SHOT('phone-menu'),
+  padSettings: SHOT('phone-settings'),
+  join: SHOT('phone-join'),                    // 780 x 1688
+  skin: (s) => SITE('skins/' + s),             // 2265 x 945
+};
+// TV home crop: game info + "Scan to join" panels, no console logos. Same geometry in every theme.
+const HOME_PANELS = { iw: 1920, ih: 1080, x: 1004, y: 78, w: 886, h: 506 };
+const HOME_QR = { iw: 1920, ih: 1080, x: 1506, y: 78, w: 384, h: 506 };
 
-<!-- 512 x 512, 32-bit PNG. Play rounds the corners itself, so the art fills the square. -->
-<section class="asset" id="icon" style="width:512px;height:512px;background:var(--accent);display:grid;place-items:center">
-  <img src="../../../packages/design/assets/mark-on-yellow.svg" alt="" style="width:379px;height:auto" />
+// ---------------------------------------------------------------------------------------------
+// Helpers
+const lockup = (g) => `<span class="lockup"><img src="${MARK[g]}" alt="" /><span>Couch<span class="pad">Pad</span></span></span>`;
+const crop = (src, c, style = '') =>
+  `<div class="crop" style="aspect-ratio:${c.w}/${c.h};${style}"><img src="${src}" style="width:${(c.iw / c.w) * 100}%;left:${(-c.x / c.w) * 100}%;top:${(-c.y / c.h) * 100}%" /></div>`;
+const tv = (inner, s, aspect = '16 / 9') => `<div class="tv" style="${s}"><div class="screen" style="aspect-ratio:${aspect}">${inner}</div></div>`;
+const tvImg = (src, s, cls = '') => tv(`<img class="${cls}" src="${src}" />`, s);
+const tvCrop = (src, c, s) => tv(crop(src, c, 'width:100%;height:100%'), s, `${c.w} / ${c.h}`);
+const ph = (src, s) => `<div class="ph" style="${s}"><img src="${src}" /></div>`;
+const phPort = (src, s) => `<div class="ph port" style="${s}"><img src="${src}" /></div>`;
+const PCOL = ['--p1', '--p2', '--p3', '--p4', '--p5', '--p6', '--p7', '--p8'];
+const chip = (n, name) => `<span class="chip"><i style="background:var(${PCOL[n - 1]})">${n}</i>${name ?? 'P' + n}</span>`;
+
+// ---------------------------------------------------------------------------------------------
+// Scenes. Each has copy and a picture per orientation, drawn in a fixed box centred in the stage.
+//   land box: 1064 x 888 (split) or 1728 x 640 (top).  port box: 912 x 1100.
+const SCENES = [
+  {
+    id: 'hero', ground: 'yellow', land: 'split',
+    copy: (g) => `${lockup(g)}<h1>Your phones are the <em>controllers.</em></h1><p class="sub">Retro games on the big screen. Everyone plays from the couch, and nobody installs an app.</p>`,
+    landBox: [1064, 888], land_: () =>
+      tvImg(IMG.shooter, 'left:0;top:40px;width:1064px', 'pixel') +
+      ph(IMG.padSnes, 'left:-40px;top:540px;width:540px;rotate:-5deg') +
+      ph(IMG.padModern, 'left:530px;top:575px;width:540px;rotate:4deg'),
+    portBox: [912, 1100], port_: () =>
+      tvImg(IMG.shooter, 'left:0;top:20px;width:912px', 'pixel') +
+      ph(IMG.padSnes, 'left:-20px;top:560px;width:640px;rotate:-5deg') +
+      ph(IMG.padModern, 'left:290px;top:800px;width:640px;rotate:4deg'),
+  },
+  {
+    id: 'scan', ground: 'ink', land: 'split',
+    copy: () => `<span class="eyebrow">No app to install</span><h1>Scan. Sit. <em>Play.</em></h1><p class="sub">Point a phone camera at the TV, type a name, and you're in. About ten seconds, no manual.</p>`,
+    landBox: [1064, 888], land_: () =>
+      tvCrop(SHOT('tv-home'), HOME_PANELS, 'left:0;top:110px;width:800px') +
+      phPort(IMG.join, 'left:800px;top:230px;width:260px;rotate:5deg'),
+    portBox: [912, 1100], port_: () =>
+      tvCrop(SHOT('tv-home'), HOME_PANELS, 'left:0;top:40px;width:912px') +
+      phPort(IMG.join, 'left:60px;top:430px;width:320px;rotate:-5deg'),
+  },
+  {
+    id: 'seats', ground: 'cream', land: 'split',
+    copy: () => `<span class="eyebrow">Up to 8 players</span><h1>Everyone gets <em>a seat.</em></h1><p class="sub">Each phone gets its own colour and player number. Friends can jump in mid-game.</p>`,
+    landBox: [1064, 888], land_: () =>
+      ph(IMG.padModern, 'left:0;top:60px;width:760px;rotate:-3deg') +
+      ph(IMG.padModernP2, 'left:300px;top:390px;width:760px;rotate:3deg') +
+      `<div style="position:absolute;left:0;top:770px;width:1064px;display:flex;flex-wrap:wrap;gap:14px;justify-content:center">${[1, 2, 3, 4, 5, 6, 7, 8].map((n) => chip(n)).join('')}</div>`,
+    portBox: [912, 1100], port_: () =>
+      ph(IMG.padModern, 'left:0;top:30px;width:820px;rotate:-3deg') +
+      ph(IMG.padModernP2, 'left:92px;top:420px;width:820px;rotate:3deg') +
+      `<div style="position:absolute;left:0;top:860px;width:912px;display:grid;grid-template-columns:repeat(4,auto);gap:18px;justify-content:center">${[1, 2, 3, 4, 5, 6, 7, 8].map((n) => chip(n)).join('')}</div>`,
+  },
+  {
+    id: 'pads', ground: 'ink', land: 'top',
+    copy: () => `<h1>A real pad for <em>every console.</em></h1><p class="sub">The pad on each phone switches by itself when the game on the TV changes.</p>`,
+    landBox: [1728, 640], land_: () => skinGrid(['nes', 'snes', 'genesis', 'gba', 'n64', 'psx'], 3, 1728, 44, 54),
+    portBox: [912, 1100], port_: () => skinZigzag(['nes', 'genesis', 'n64', 'psx']),
+  },
+  {
+    id: 'menu', ground: 'yellow', land: 'split',
+    copy: () => `<span class="eyebrow">No remote needed</span><h1>Pause and save <em>from your phone.</em></h1><p class="sub">Press Home on the pad to save, load, reset or quit. The TV remote can stay in the drawer.</p>`,
+    landBox: [1064, 888], land_: () =>
+      tvImg(IMG.test240, 'left:120px;top:40px;width:944px', 'pixel') +
+      ph(IMG.padMenu, 'left:0;top:430px;width:900px;rotate:-3deg'),
+    portBox: [912, 1100], port_: () =>
+      tvImg(IMG.test240, 'left:40px;top:30px;width:872px', 'pixel') +
+      ph(IMG.padMenu, 'left:0;top:560px;width:912px;rotate:-3deg'),
+  },
+  {
+    id: 'themes', ground: 'ink', land: 'top',
+    copy: () => `<h1>Make the TV <em>yours.</em></h1><p class="sub">Four looks for the library. Same buttons in the same places, whichever you pick.</p>`,
+    landBox: [1728, 640], land_: () => themeGrid(4, 400, 56),
+    portBox: [912, 1100], port_: () => themeGrid(2, 370, 48),
+  },
+  {
+    id: 'pro', ground: 'cream', land: 'top',
+    copy: () => `<h1>Free to start. <em>Pro once.</em></h1><p class="sub">One purchase, no subscription. No ads, no timers and no added lag, in Free or Pro.</p>`,
+    landBox: [1728, 560], land_: () => `<div style="position:absolute;left:144px;top:0">${compare(1440, 'row')}</div>`,
+    portBox: [912, 1100], port_: () => compare(912, 'column'),
+  },
+];
+
+function skinGrid(skins, cols, width, gap, labelGap) {
+  const names = { nes: '8-bit pad', snes: '16-bit pad', genesis: '6-button pad', gba: 'Handheld', n64: '64-bit three-prong', psx: 'Twin-stick' };
+  const w = (width - gap * (cols - 1)) / cols;
+  return `<div style="position:absolute;left:0;top:0;width:${width}px;display:grid;grid-template-columns:repeat(${cols},1fr);gap:${labelGap}px ${gap}px">${skins
+    .map((s) => `<figure style="margin:0;display:flex;flex-direction:column;align-items:center;gap:18px">
+      <div class="ph" style="position:relative;width:${w}px"><img src="${IMG.skin(s)}" /></div>
+      <span class="label" style="color:var(--sand)">${names[s]}</span></figure>`)
+    .join('')}</div>`;
+}
+
+function skinZigzag(skins) {
+  const names = { nes: '8-bit pad', snes: '16-bit pad', genesis: '6-button pad', gba: 'Handheld', n64: '64-bit pad', psx: 'Twin-stick' };
+  return skins.map((k, i) => {
+    const left = i % 2 ? 252 : 0, top = i * 272;
+    return ph(IMG.skin(k), `left:${left}px;top:${top}px;width:660px;rotate:${i % 2 ? 2.5 : -2.5}deg`) +
+      `<span class="label" style="position:absolute;top:${top + 120}px;${i % 2 ? 'left:0;width:220px;text-align:right' : 'left:692px;width:220px'};font-size:30px;color:var(--sand)">${names[k]}</span>`;
+  }).join('');
+}
+
+function themeGrid(cols, cardW, gap) {
+  const themes = [['tv-home', 'CouchPad'], ['tv-home-sunset', 'Sunset'], ['tv-home-neon', 'Neon Arcade'], ['tv-home-pixel', 'Arcade Pixel Art']];
+  const width = cols * cardW + (cols - 1) * gap;
+  return `<div style="position:absolute;left:50%;translate:-50% 0;top:0;width:${width}px;display:grid;grid-template-columns:repeat(${cols},${cardW}px);gap:${gap}px">${themes
+    .map(([f, name]) => `<figure style="margin:0;display:flex;flex-direction:column;align-items:center;gap:18px">
+      <div style="width:100%;border-radius:22px;overflow:hidden;box-shadow:0 0 0 3px var(--line),0 30px 60px var(--shadow)">${crop(SHOT(f), HOME_QR, 'width:100%')}</div>
+      <span class="label" style="color:var(--sand)">${name}</span></figure>`)
+    .join('')}</div>`;
+}
+
+function compare(width, dir) {
+  const free = ['1 player', 'Classic 8- and 16-bit consoles', 'A save slot, plus auto-save on quit', 'Games from folders and USB drives'];
+  const pro = ['2 to 8 players', 'Adds 32-bit, 64-bit and handheld consoles', '4 save slots per game', 'Stream games from your own CouchPad server'];
+  const fs = dir === 'row' ? 38 : 36;
+  const col = (title, items, isPro) => `<div style="flex:1;border-radius:28px;padding:48px 52px 52px;${isPro ? 'background:var(--ink);color:var(--cream)' : 'background:#fff;color:var(--ink);box-shadow:inset 0 0 0 3px var(--linen)'}">
+      <div style="display:flex;align-items:center;gap:16px;font:700 54px/1 Fredoka, Nunito, sans-serif">${isPro ? `<span>Couch<span style="color:var(--yellow)">Pad</span> Pro</span>` : 'CouchPad Free'}</div>
+      <ul style="list-style:none;margin:32px 0 0;padding:0;display:flex;flex-direction:column;gap:20px;font-size:${fs}px;line-height:1.25">
+        ${items.map((t) => `<li style="display:flex;gap:18px;align-items:baseline"><span style="flex:none;width:16px;height:16px;border-radius:50%;translate:0 -3px;background:${isPro ? 'var(--yellow)' : 'var(--mocha)'}"></span>${t}</li>`).join('')}
+      </ul></div>`;
+  return `<div style="position:absolute;left:0;top:0;width:${width}px;display:flex;flex-direction:${dir};gap:40px">${col('Free', free)}${col('Pro', pro, true)}</div>`;
+}
+
+// Fixed box centred in the stage: keeps the picture identical whatever the stage size.
+const box = ([w, h], html, align = 'center') =>
+  `<div class="box" style="width:${w}px;height:${h}px;${align === 'top' ? 'top:0;translate:-50% 0' : ''}">${html}</div>`;
+
+const FORMATS = {
+  tv: { w: 1920, h: 1080, orient: 'land' },
+  tablet: { w: 1920, h: 1200, orient: 'land' },
+  phone: { w: 1080, h: 1920, orient: 'port' },
+};
+
+function shot(fmt, scene, i) {
+  const f = FORMATS[fmt];
+  const layout = f.orient === 'port' ? 'port' : `land ${scene.land}`;
+  const pic = f.orient === 'port' ? box(scene.portBox, scene.port_(), 'top') : box(scene.landBox, scene.land_());
+  return `<section class="asset shot grain g-${scene.ground} ${layout}" id="${fmt}-${i + 1}" data-fmt="${fmt}" style="width:${f.w}px;height:${f.h}px">
+    <div class="copy">${scene.copy(scene.ground)}</div><div class="stage">${pic}</div></section>`;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Brand assets
+const brand = `
+<!-- 512 x 512, 32-bit PNG. Play rounds the corners itself, so the art fills the square
+     (same layout as packages/design/assets/play-icon-512.png: die-cut mark at 74 %). -->
+<section class="asset" id="icon" style="width:512px;height:512px;background:var(--yellow);display:grid;place-items:center">
+  <img src="${MARK.yellow}" alt="" style="width:379px;height:auto" />
 </section>
 
-<!-- CouchPad Pro: the same icon with a PRO badge that still reads at launcher size. -->
-<section class="asset" id="icon-pro" style="width:512px;height:512px;background:var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px">
-  <img src="../../../packages/design/assets/mark-on-yellow.svg" alt="" style="width:330px;height:auto" />
-  <div style="padding:10px 44px 14px;border-radius:999px;background:var(--bg);color:var(--accent);font:700 76px/1 Fredoka, Nunito, sans-serif;letter-spacing:0.06em">PRO</div>
+<!-- Pro badge variant (in-app purchase art, promos). -->
+<section class="asset" id="icon-pro" style="width:512px;height:512px;background:var(--yellow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px">
+  <img src="${MARK.yellow}" alt="" style="width:330px;height:auto" />
+  <div style="padding:10px 44px 14px;border-radius:999px;background:var(--ink);color:var(--yellow);font:700 76px/1 Fredoka, Nunito, sans-serif;letter-spacing:0.06em">PRO</div>
 </section>
 
-<!-- 1024 x 500, JPEG (no alpha). -->
-<section class="asset" id="feature" style="width:1024px;height:500px">
-  <div class="glow"></div><div class="grain"></div>
-  <div class="caption" style="left:64px;top:120px;width:430px">
-    <div class="wordmark" style="font-size:64px">
-      <img src="../../../packages/design/assets/mark-on-ink.svg" alt="" /><span>Couch<span class="pad">Pad</span></span>
-    </div>
-    <p style="margin-top:26px;font-size:29px;color:var(--text);font-weight:600;line-height:1.25">Retro games on your TV.<br /><span style="color:var(--accent)">Your phones are the controllers.</span></p>
-    <p style="margin-top:18px;font-size:19px">Scan the code, pick a name, play. No app on the phones.</p>
+<!-- 1024 x 500 feature graphic, JPEG. Key content kept clear of the edges. -->
+<section class="asset grain g-yellow" id="feature" style="width:1024px;height:500px">
+  <div style="position:absolute;left:72px;top:0;bottom:0;width:440px;display:flex;flex-direction:column;justify-content:center">
+    <div style="font-size:60px">${lockup('yellow')}</div>
+    <h1 style="margin-top:34px;font-size:46px;line-height:1.08">Your phones are the <em>controllers.</em></h1>
+    <p class="sub" style="margin-top:18px;font-size:21px">Scan the code on the TV. Sit. Play.</p>
   </div>
-  <div class="tv" style="left:540px;top:56px;width:440px">
-    <div class="screen ingame"><img src="../../../docs/img/tv-ingame.png" /></div>
-  </div>
-  <div class="phone land" style="left:530px;top:322px;width:240px;transform:rotate(-6deg)">
-    <div class="screen"><img src="../../../docs/img/phone-ingame.png" /></div>
-  </div>
-  <div class="phone land" style="left:770px;top:334px;width:240px;transform:rotate(5deg)">
-    <div class="screen"><img src="../../../docs/img/skins/genesis.png" /></div>
-  </div>
+  ${tvImg(IMG.shooter, 'left:548px;top:64px;width:420px', 'pixel')}
+  ${ph(IMG.padSnes, 'left:530px;top:292px;width:250px;rotate:-6deg;padding:5px 7px')}
+  ${ph(IMG.padModern, 'left:752px;top:308px;width:250px;rotate:5deg;padding:5px 7px')}
 </section>
 
-<!-- 1280 x 720, Android TV banner (same layout as res/drawable-xhdpi/banner.png: Yellow ground, Ink die-cut). -->
-<section class="asset" id="tv-banner" style="width:1280px;height:720px;background:var(--accent);color:var(--bg);display:flex;align-items:center;justify-content:center;gap:68px;padding:0 120px">
-  <img src="../../../packages/design/assets/mark-on-yellow.svg" alt="" style="width:250px;height:auto" />
+<!-- 1280 x 720 Android TV banner (same layout as res/drawable-xhdpi/banner.png). -->
+<section class="asset" id="tv-banner" style="width:1280px;height:720px;background:var(--yellow);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:68px;padding:0 120px">
+  <img src="${MARK.yellow}" alt="" style="width:250px;height:auto" />
   <div style="display:flex;flex-direction:column;gap:16px">
-    <div class="wordmark" style="font-size:160px">CouchPad</div>
+    <div style="font:700 160px/1 Fredoka, Nunito, sans-serif;letter-spacing:-0.01em">CouchPad</div>
     <div style="font:500 50px/1 Inter, system-ui, sans-serif;opacity:.8">Scan. Sit. Play.</div>
   </div>
-</section>
+</section>`;
 
-<!-- TV screenshots, 1920 x 1080 -->
-
-<section class="asset shot" id="tv-1" style="width:1920px;height:1080px">
-  <div class="glow"></div><div class="grain"></div>
-  <div class="caption" style="left:120px;top:150px;width:640px">
-    <div class="wordmark" style="font-size:52px"><img src="../../../packages/design/assets/mark-on-ink.svg" alt="" /><span>Couch<span class="pad">Pad</span></span></div>
-    <h1 style="margin-top:56px;font-size:108px">Your phones are the <em>controllers.</em></h1>
-    <p style="margin-top:36px;font-size:36px">Retro games on the big screen. Everyone plays from the couch.</p>
-  </div>
-  <div class="tv" style="left:820px;top:120px;width:1020px">
-    <div class="screen ingame"><img src="../../../docs/img/tv-ingame.png" /></div>
-  </div>
-  <div class="phone land" style="left:780px;top:690px;width:540px;transform:rotate(-5deg)">
-    <div class="screen"><img src="../../../docs/img/phone-ingame.png" /></div>
-  </div>
-  <div class="phone land" style="left:1340px;top:710px;width:540px;transform:rotate(4deg)">
-    <div class="screen"><img src="../../../docs/img/skins/psx.png" /></div>
-  </div>
-</section>
-
-<section class="asset shot" id="tv-2" style="width:1920px;height:1080px">
-  <div class="glow"></div><div class="grain"></div>
-  <div class="caption" style="left:120px;top:190px;width:600px">
-    <span class="tag" style="font-size:24px">No app to install</span>
-    <h1 style="margin-top:36px;font-size:104px">Scan the code. <em>Play.</em></h1>
-    <p style="margin-top:36px;font-size:36px">Point a phone camera at the TV, type your name, and you're in. Friends can join mid-game.</p>
-  </div>
-  <div class="tv" style="left:760px;top:150px;width:1060px">
-    <div class="screen"><img src="../../../docs/img/tv-home.png" /></div>
-  </div>
-  <div class="phone port" style="left:1640px;top:545px;width:225px;transform:rotate(4deg)">
-    <div class="screen"><img src="../../../docs/img/phone-join.png" /></div>
-  </div>
-</section>
-
-<section class="asset shot" id="tv-3" style="width:1920px;height:1080px">
-  <div class="glow"></div><div class="grain"></div>
-  <div class="caption" style="left:120px;top:110px;width:1680px;text-align:center">
-    <h1 style="font-size:96px">The right controller for <em>every game.</em></h1>
-    <p style="margin-top:24px;font-size:36px">The pad on each phone changes by itself when the game on the TV changes.</p>
-  </div>
-  <div class="skins" style="left:150px;top:420px;width:1620px;grid-template-columns:repeat(3,1fr);gap:56px 60px">
-    <div class="phone land"><div class="screen"><img src="../../../docs/img/skins/nes.png" /></div></div>
-    <div class="phone land"><div class="screen"><img src="../../../docs/img/skins/snes.png" /></div></div>
-    <div class="phone land"><div class="screen"><img src="../../../docs/img/skins/genesis.png" /></div></div>
-    <div class="phone land"><div class="screen"><img src="../../../docs/img/skins/gba.png" /></div></div>
-    <div class="phone land"><div class="screen"><img src="../../../docs/img/skins/psx.png" /></div></div>
-    <div class="phone land"><div class="screen"><img src="../../../docs/img/skins/n64.png" /></div></div>
-  </div>
-</section>
-
-<section class="asset shot" id="tv-4" style="width:1920px;height:1080px">
-  <div class="glow"></div><div class="grain"></div>
-  <div class="caption" style="left:120px;top:200px;width:620px">
-    <h1 style="font-size:100px">Pause and save <em>from your phone.</em></h1>
-    <p style="margin-top:36px;font-size:36px">Press Home on the pad for save states, controller swaps and quit. No remote needed.</p>
-  </div>
-  <div class="tv" style="left:800px;top:110px;width:1020px">
-    <div class="screen"><img src="../../../docs/img/tv-menu.png" /></div>
-  </div>
-  <div class="phone land" style="left:1010px;top:660px;width:640px;transform:rotate(-3deg)">
-    <div class="screen"><img src="../../../docs/img/phone-tvmenu.png" /></div>
-  </div>
-</section>
-
-<section class="asset shot" id="tv-5" style="width:1920px;height:1080px">
-  <div class="glow"></div><div class="grain"></div>
-  <div class="caption" style="left:120px;top:110px;width:1680px;text-align:center">
-    <h1 style="font-size:96px">Free to play. <em>Go Pro</em> for more.</h1>
-    <p style="margin-top:24px;font-size:36px">One-time purchase. No ads, no subscription, no time limits.</p>
-  </div>
-  <div class="compare" style="left:300px;top:340px;width:1320px;gap:48px">
-    <div class="col" style="padding:56px 60px">
-      <h2 style="font-size:54px">CouchPad Free</h2>
-      <ul style="margin-top:34px;gap:22px;font-size:34px">
-        <li>2 players</li>
-        <li>8-bit and 16-bit consoles and handhelds</li>
-        <li>Quick save + auto-save on quit</li>
-        <li>Your games from USB or storage</li>
-      </ul>
-    </div>
-    <div class="col pro" style="padding:56px 60px">
-      <h2 style="font-size:54px;color:var(--accent)">CouchPad Pro</h2>
-      <ul style="margin-top:34px;gap:22px;font-size:34px">
-        <li>Up to 8 players</li>
-        <li>Adds 32-bit, 64-bit and newer handhelds</li>
-        <li>4 save slots per game</li>
-        <li>Stream games from your CouchPad server</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- Phone screenshots, 1080 x 1920 -->
-
-<section class="asset shot" id="phone-1" style="width:1080px;height:1920px">
-  <div class="glow"></div><div class="grain"></div>
-  <div class="caption" style="left:90px;top:130px;width:900px">
-    <div class="wordmark" style="font-size:50px"><img src="../../../packages/design/assets/mark-on-ink.svg" alt="" /><span>Couch<span class="pad">Pad</span></span></div>
-    <h1 style="margin-top:56px;font-size:112px">Your phones are the <em>controllers.</em></h1>
-    <p style="margin-top:34px;font-size:40px">Retro games on the big screen. Everyone plays from the couch.</p>
-  </div>
-  <div class="tv" style="left:60px;top:780px;width:960px">
-    <div class="screen ingame"><img src="../../../docs/img/tv-ingame.png" /></div>
-  </div>
-  <div class="phone land" style="left:40px;top:1360px;width:580px;transform:rotate(-5deg)">
-    <div class="screen"><img src="../../../docs/img/phone-ingame.png" /></div>
-  </div>
-  <div class="phone land" style="left:480px;top:1430px;width:580px;transform:rotate(4deg)">
-    <div class="screen"><img src="../../../docs/img/skins/psx.png" /></div>
-  </div>
-</section>
-
-<section class="asset shot" id="phone-2" style="width:1080px;height:1920px">
-  <div class="glow"></div><div class="grain"></div>
-  <div class="caption" style="left:90px;top:130px;width:900px">
-    <span class="tag" style="font-size:28px">No app to install</span>
-    <h1 style="margin-top:40px;font-size:112px">Scan the code. <em>Play.</em></h1>
-    <p style="margin-top:34px;font-size:40px">Point a phone camera at the TV, type your name, and you're in.</p>
-  </div>
-  <div class="tv" style="left:60px;top:700px;width:960px">
-    <div class="screen"><img src="../../../docs/img/tv-home.png" /></div>
-  </div>
-  <div class="phone port" style="left:620px;top:1110px;width:340px;transform:rotate(4deg)">
-    <div class="screen"><img src="../../../docs/img/phone-join.png" /></div>
-  </div>
-</section>
-
-<section class="asset shot" id="phone-3" style="width:1080px;height:1920px">
-  <div class="glow"></div><div class="grain"></div>
-  <div class="caption" style="left:90px;top:130px;width:900px">
-    <h1 style="font-size:104px">The right controller for <em>every game.</em></h1>
-    <p style="margin-top:34px;font-size:40px">The pad changes by itself when the game on the TV changes.</p>
-  </div>
-  <div class="skins" style="left:90px;top:760px;width:900px;grid-template-columns:repeat(2,1fr);gap:90px 40px">
-    <div class="phone land"><div class="screen"><img src="../../../docs/img/skins/nes.png" /></div></div>
-    <div class="phone land"><div class="screen"><img src="../../../docs/img/skins/snes.png" /></div></div>
-    <div class="phone land"><div class="screen"><img src="../../../docs/img/skins/genesis.png" /></div></div>
-    <div class="phone land"><div class="screen"><img src="../../../docs/img/skins/gba.png" /></div></div>
-    <div class="phone land"><div class="screen"><img src="../../../docs/img/skins/psx.png" /></div></div>
-    <div class="phone land"><div class="screen"><img src="../../../docs/img/skins/n64.png" /></div></div>
-  </div>
-</section>
-
-<section class="asset shot" id="phone-4" style="width:1080px;height:1920px">
-  <div class="glow"></div><div class="grain"></div>
-  <div class="caption" style="left:90px;top:130px;width:900px">
-    <h1 style="font-size:104px">Pause and save <em>from your phone.</em></h1>
-    <p style="margin-top:34px;font-size:40px">Save states, controller swaps and quit, all from the pad.</p>
-  </div>
-  <div class="tv" style="left:60px;top:720px;width:960px">
-    <div class="screen"><img src="../../../docs/img/tv-menu.png" /></div>
-  </div>
-  <div class="phone land" style="left:100px;top:1300px;width:880px;transform:rotate(-3deg)">
-    <div class="screen"><img src="../../../docs/img/phone-tvmenu.png" /></div>
-  </div>
-</section>
-
-<section class="asset shot" id="phone-5" style="width:1080px;height:1920px">
-  <div class="glow"></div><div class="grain"></div>
-  <div class="caption" style="left:90px;top:130px;width:900px">
-    <h1 style="font-size:104px">Free to play. <em>Go Pro</em> for more.</h1>
-    <p style="margin-top:34px;font-size:40px">One-time purchase. No ads, no subscription, no time limits.</p>
-  </div>
-  <div class="compare" style="left:90px;top:700px;width:900px;grid-template-columns:1fr;gap:48px">
-    <div class="col" style="padding:48px 54px">
-      <h2 style="font-size:56px">CouchPad Free</h2>
-      <ul style="margin-top:28px;gap:18px;font-size:38px">
-        <li>2 players</li>
-        <li>8-bit and 16-bit consoles and handhelds</li>
-        <li>Quick save + auto-save on quit</li>
-      </ul>
-    </div>
-    <div class="col pro" style="padding:48px 54px">
-      <h2 style="font-size:56px;color:var(--accent)">CouchPad Pro</h2>
-      <ul style="margin-top:28px;gap:18px;font-size:38px">
-        <li>Up to 8 players</li>
-        <li>Adds 32-bit, 64-bit and newer handhelds</li>
-        <li>4 save slots per game</li>
-        <li>Stream games from your CouchPad server</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
+document.body.innerHTML = brand + ['tv', 'phone', 'tablet'].map((fmt) => SCENES.map((s, i) => shot(fmt, s, i)).join('')).join('');
+document.body.dataset.ready = '1';
+</script>
 </body>
 </html>

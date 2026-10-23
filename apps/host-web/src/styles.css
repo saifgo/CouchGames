@@ -260,23 +260,6 @@ div.art.default-cover { display: flex; align-items: center; justify-content: cen
 .onboarding-step h2 { margin: 0.8rem 0 0.6rem; font-size: 1.5rem; line-height: 1.2; }
 .onboarding-step p { margin: 0; font-size: 1.15rem; color: var(--muted); line-height: 1.5; overflow-wrap: anywhere; }
 
-/* ROM storage status (footer chip + panel) */
-.storage-chip { display: inline-flex; align-items: center; gap: 0.5rem; }
-.storage-chip .dot, .storage-status .dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: #888; flex: none; }
-.storage-chip.good .dot, .storage-status.good .dot { background: var(--good); }
-.storage-chip.warn .dot { background: var(--ok); }
-.storage-chip.bad .dot, .storage-status.bad .dot { background: var(--danger); }
-.storage-chip.wait .dot { animation: pulse 1.2s ease-in-out infinite; }
-.modal.storage { width: min(46rem, 92vw); max-height: 86vh; overflow: auto; }
-.storage-status { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; font-size: 1.3rem; font-weight: 700; }
-.storage-error { flex-basis: 100%; font-size: 1rem; font-weight: 400; color: #ff9b9b; }
-.storage-facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1.2rem; margin: 1rem 0; }
-.storage-facts dt { color: var(--muted); }
-.storage-facts dd { margin: 0; word-break: break-all; }
-.storage-misplaced h2 { font-size: 1.05rem; color: var(--ok); margin: 0.6rem 0 0.4rem; }
-.storage-misplaced ul { margin: 0; padding-left: 1.2rem; font-size: 0.95rem; line-height: 1.5; }
-.storage-misplaced code { margin-right: 0.4rem; }
-.storage-actions { display: flex; gap: 0.8rem; justify-content: flex-end; margin-top: 1.2rem; }
 
 /* Android TV app (CouchPad for Android TV APK) button + panel */
 .hint-link { background: none; border: 0; padding: 0; text-decoration: underline; text-decoration-color: rgba(255, 246, 224, 0.35); text-underline-offset: 0.2em; cursor: pointer; text-align: left; }

@@ -347,7 +347,7 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
             Column(Modifier.align(Alignment.Center).width(700.dp).clip(RoundedCornerShape(20.dp)).background(Panel).padding(28.dp)) {
                 Text("Couldn’t start ${game.title}", fontSize = 26.sp, fontWeight = FontWeight.Bold)
                 Text(msg, color = Muted, modifier = Modifier.padding(vertical = 12.dp))
-                Button(onClick = onExit, modifier = Modifier.focusRequester(focus)) { Text("Back to library") }
+                Button(onClick = onExit, modifier = Modifier.focusRequester(focus).tappable(onClick = onExit)) { Text("Back to library") }
             }
             LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
         }
@@ -369,7 +369,7 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
         menu?.let { page ->
             val first = remember(page) { FocusRequester() }
             Column(
-                Modifier.fillMaxSize().background(Color(0xD91C1814)),
+                Modifier.fillMaxSize().background(Color(0xD91C1814)).blockTaps(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
@@ -380,7 +380,7 @@ fun GameScreen(game: Game, resume: Boolean, navigator: PhoneNavigator, onExit: (
                         Button(
                             onClick = action,
                             enabled = enabled,
-                            modifier = Modifier.fillMaxWidth().then(if (isFirst) Modifier.focusRequester(first) else Modifier),
+                            modifier = Modifier.fillMaxWidth().then(if (isFirst) Modifier.focusRequester(first) else Modifier).tappable(enabled, action),
                             shape = ButtonDefaults.shape(RoundedCornerShape(12.dp)),
                         ) { Text(label, fontSize = 18.sp) }
                     }

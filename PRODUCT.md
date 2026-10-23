@@ -48,7 +48,7 @@ libretro cores; CouchPad does not write emulators.
 - Systems: NES, SNES, Genesis/SMS/GG, GB/GBC, GBA, Atari 2600, PC Engine everywhere; PS1, N64, PSP,
   NDS and PS2 depend on the device's measured performance tier, which decides what is shown.
 - CouchPad Free / CouchPad Pro (ADR-005): free install, one-time in-app purchase (about $5.99), no
-  subscription. Free: 2 players, the lighter systems, save slot 1 plus auto-save. Pro: 4 or 8
+  subscription. Free: 1 player, the lighter systems, save slot 1 plus auto-save. Pro: 2 to 8
   players, heavier systems, save slots 1 to 4, CouchPad server library. Free shows a "CouchPad Free" line
   in the lobby and a "Go Pro" card before a game at most once every 20 hours, with Play as the
   focused default.

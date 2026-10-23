@@ -8,9 +8,11 @@ export const SITE = {
   /** The web version (TV host in a browser + phone controller). */
   appUrl: 'https://app.couchpad.tv',
   playUrl: 'https://play.google.com/store/apps/details?id=com.tunisolutions.couch',
+  /** Closed-test opt-in page on Google Play (the /testing page links it). */
+  testingUrl: 'https://play.google.com/apps/testing/com.tunisolutions.couch',
   developer: 'Tuni Solutions',
-  /** TODO(owner): the real support address. Also used inside the Markdown pages as {{email}}. */
-  email: 'YOUR_EMAIL@example.com',
+  /** Support address. Also used inside the Markdown pages as {{email}}. */
+  email: 'contact@couchpad.tv',
   proPrice: '$5.99',
   legalUpdated: '19 October 2026',
 } as const;

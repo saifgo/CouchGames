@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import { SYSTEMS } from '@couch/systems';
 import type { HostSettings } from '../host-settings.js';
-import { isDesktopClass, THEMES, THEME_NAMES } from '../host-settings.js';
+import { isDesktopClass, THEMES, THEME_NAMES, WEB_PLAYERS } from '../host-settings.js';
 import { Modal } from './common.js';
 
 export function SettingsModal({ settings, onChange, onClose }: { settings: HostSettings; onChange: (s: Partial<HostSettings>) => void; onClose: () => void }) {
@@ -29,7 +29,13 @@ export function SettingsModal({ settings, onChange, onClose }: { settings: HostS
       <h1>Settings</h1>
       <div className="settings-grid">
         {cycle('TV name', ['Living room', 'Bedroom', 'Game room', 'CouchPad'], s.hostName, (v) => onChange({ hostName: v }), String, 'Shown on phones')}
-        {cycle('Players', [4, 8] as (4 | 8)[], s.maxPlayers, (v) => onChange({ maxPlayers: v }))}
+        <div className="setting">
+          <span>
+            Players
+            <small>More players: CouchPad Pro on Android TV</small>
+          </span>
+          <b>{WEB_PLAYERS}</b>
+        </div>
         {cycle('Run-ahead', [0, 1, 2] as (0 | 1 | 2)[], s.runAhead, (v) => onChange({ runAhead: v }), (v) => (v ? `${v} frame${v > 1 ? 's' : ''}` : 'Off'), 'Removes game-logic lag on light systems; costs CPU')}
         {toggle('onlineArt', 'Box art from the internet', 'Looks up thumbnails.libretro.com by file name')}
         {cycle('Theme', THEMES, s.theme, (v) => onChange({ theme: v }), (v) => THEME_NAMES[v], s.theme === 'pixel' || s.theme === 'neon' ? 'Restyles itself for each console' : undefined)}

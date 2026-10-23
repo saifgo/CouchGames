@@ -41,14 +41,20 @@ async function press(phone: Page, id: string, ms = 120) {
   await phone.mouse.up();
 }
 
-test('phones pair with the TV, get slots, and see the lobby skin', async ({ browser }) => {
+test('a phone pairs with the TV, gets P1, and sees the lobby skin; the web TV has one seat', async ({ browser }) => {
   const { host, room } = await openHost(browser);
   const p1 = await openPhone(browser, room, 'Alice');
-  const p2 = await openPhone(browser, room, 'Bob');
   await expect(p1.locator('.badge')).toHaveText('P1');
-  await expect(p2.locator('.badge')).toHaveText('P2');
   await expect(host.locator('.lobby .slots')).toContainText('Alice');
-  await expect(host.locator('.lobby .slots')).toContainText('Bob');
+
+  // The web host is CouchPad Free (1 player): a second phone is turned away.
+  const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+  const p2 = await ctx.newPage();
+  await p2.goto(`/c/?r=${room}`);
+  await p2.locator('input').nth(1).fill('Bob');
+  await p2.getByRole('button', { name: 'Join' }).click();
+  await expect(p2.locator('.banner.error')).toContainText('player slot', { timeout: 20_000 });
+  await expect(host.locator('.lobby .slots')).not.toContainText('Bob');
   await expect(p1.locator('svg.pad-svg')).toHaveAttribute('data-skin', 'modern');
 
   // Reconnect keeps the slot: reload phone 1 (same clientId in localStorage).

@@ -24,7 +24,8 @@ import kotlinx.coroutines.flow.StateFlow
  * no ads, no added lag.
  */
 object ProRules {
-    const val FREE_PLAYERS = 2
+    /** Couch Free is single-player: one phone or controller. Multiplayer is Pro. */
+    const val FREE_PLAYERS = 1
     /** Seats with Couch Pro (the host maximum). */
     const val PRO_PLAYERS = 8
     const val FREE_SAVE_SLOTS = 1

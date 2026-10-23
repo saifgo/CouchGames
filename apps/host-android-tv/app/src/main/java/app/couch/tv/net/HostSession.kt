@@ -114,7 +114,7 @@ class PhonePeer(val id: Int, private val ws: WebSocketSession, val remote: Strin
 class HostSession(private val context: Context, var hostName: String) {
     val room: String = generateRoomCode()
     var maxPlayers = 4
-    /** What a phone sees when every slot is taken (Couch Free explains the 2-player limit). */
+    /** What a phone sees when every slot is taken (Couch Free explains the 1-player limit). */
     @Volatile var roomFullText: () -> String = { "All $maxPlayers player slots are taken" }
     val players = arrayOfNulls<Player>(8)
     private val peers = HashMap<Int, PhonePeer>()

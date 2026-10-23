@@ -35,7 +35,7 @@ import app.couch.tv.CouchApp
 import app.couch.tv.ProRules
 
 private val PRO_FEATURES = listOf(
-    "Up to 8 players" to "CouchPad Free has ${ProRules.FREE_PLAYERS} phone or controller slots",
+    "Multiplayer, up to 8 players" to "CouchPad Free has 1 phone or controller slot",
     "Every console" to "Adds Game Boy Advance, PlayStation, Nintendo 64, PSP, Nintendo DS and PS2 (where this TV can run them)",
     "4 save-state slots per game" to "CouchPad Free has ${ProRules.FREE_SAVE_SLOTS}, plus the automatic save when you quit",
     "Games from a CouchPad server" to "Play the library on your own server or S3 bucket",
@@ -56,7 +56,7 @@ fun ProDialog(reason: String?, onClose: () -> Unit) {
     val first = remember { FocusRequester() }
     BackHandler { onClose() }
     LaunchedEffect(Unit) { app.pro.refresh() }
-    Box(Modifier.fillMaxSize().background(Color(0xE01C1814)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color(0xE01C1814)).blockTaps(), contentAlignment = Alignment.Center) {
         Column(
             Modifier.width(820.dp).clip(RoundedCornerShape(24.dp)).background(Panel).padding(32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -81,13 +81,13 @@ fun ProDialog(reason: String?, onClose: () -> Unit) {
             status?.takeIf { !active }?.let { Text(it, color = Color(0xFFFFC37A), fontSize = 15.sp) }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (active) {
-                    Button(onClick = onClose, modifier = Modifier.focusRequester(first)) { Text("Let's play") }
+                    Button(onClick = onClose, modifier = Modifier.focusRequester(first).tappable(onClick = onClose)) { Text("Let's play") }
                 } else {
-                    Button(onClick = { activity?.let { app.pro.buy(it) } }, modifier = Modifier.focusRequester(first)) {
+                    Button(onClick = { activity?.let { app.pro.buy(it) } }, modifier = Modifier.focusRequester(first).tappable { activity?.let { app.pro.buy(it) } }) {
                         Text(price?.let { "Unlock Pro · $it" } ?: "Unlock Pro", fontSize = 18.sp)
                     }
-                    Button(onClick = { app.pro.refresh() }) { Text("Restore purchase") }
-                    Button(onClick = onClose) { Text("Not now") }
+                    Button(onClick = { app.pro.refresh() }, modifier = Modifier.tappable { app.pro.refresh() }) { Text("Restore purchase") }
+                    Button(onClick = onClose, modifier = Modifier.tappable(onClick = onClose)) { Text("Not now") }
                 }
             }
         }
@@ -100,7 +100,7 @@ fun ProDialog(reason: String?, onClose: () -> Unit) {
 fun FreeReminder(onPlay: () -> Unit, onSeePro: () -> Unit) {
     val first = remember { FocusRequester() }
     BackHandler { onPlay() }
-    Box(Modifier.fillMaxSize().background(Color(0xC81C1814)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color(0xC81C1814)).blockTaps(), contentAlignment = Alignment.Center) {
         Column(Modifier.width(700.dp).clip(RoundedCornerShape(24.dp)).background(Panel).padding(30.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text("You're playing CouchPad Free", fontSize = 28.sp, fontFamily = Fredoka, fontWeight = FontWeight.Bold)
             Text(
@@ -110,8 +110,8 @@ fun FreeReminder(onPlay: () -> Unit, onSeePro: () -> Unit) {
                 lineHeight = 26.sp,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = onPlay, modifier = Modifier.focusRequester(first)) { androidx.tv.material3.Icon(androidx.compose.material.icons.Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.padding(end = 8.dp).size(20.dp)); Text("Play") }
-                Button(onClick = onSeePro) { Text("See CouchPad Pro") }
+                Button(onClick = onPlay, modifier = Modifier.focusRequester(first).tappable(onClick = onPlay)) { androidx.tv.material3.Icon(androidx.compose.material.icons.Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.padding(end = 8.dp).size(20.dp)); Text("Play") }
+                Button(onClick = onSeePro, modifier = Modifier.tappable(onClick = onSeePro)) { Text("See CouchPad Pro") }
             }
         }
     }

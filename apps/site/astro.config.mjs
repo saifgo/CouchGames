@@ -10,7 +10,7 @@ export default defineConfig({
   // privacy.html, terms.html…: the Play Console already points at these URLs (docs/PLAY-STORE.md).
   build: { format: 'file' },
   trailingSlash: 'never',
-  integrations: [sitemap({ filter: (page) => !page.includes('/404') })],
+  integrations: [sitemap({ filter: (page) => !page.includes('/404') && !page.includes('/testing') })],
   markdown: { processor: unified({ remarkPlugins: [remarkSiteTokens] }) },
   devToolbar: { enabled: false },
 });

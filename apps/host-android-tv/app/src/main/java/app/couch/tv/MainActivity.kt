@@ -67,6 +67,8 @@ import app.couch.tv.ui.HomeScreen
 import app.couch.tv.ui.Muted
 import app.couch.tv.ui.Panel
 import app.couch.tv.ui.PhoneNavigator
+import app.couch.tv.ui.blockTaps
+import app.couch.tv.ui.tappable
 import app.couch.tv.ui.PlayersDialog
 import app.couch.tv.ui.ProDialog
 import app.couch.tv.ui.SettingsScreen
@@ -445,13 +447,13 @@ class MainActivity : ComponentActivity() {
 private fun Notice(title: String, text: String, primary: String, onPrimary: () -> Unit, onClose: () -> Unit) {
     val first = remember { FocusRequester() }
     BackHandler { onClose() }
-    Box(Modifier.fillMaxSize().background(Color(0xC81C1814)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color(0xC81C1814)).blockTaps(), contentAlignment = Alignment.Center) {
         Column(Modifier.width(760.dp).clip(RoundedCornerShape(24.dp)).background(Panel).padding(30.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text(title, fontSize = 30.sp, fontFamily = app.couch.tv.ui.Fredoka, fontWeight = FontWeight.Bold)
             Text(text, color = Muted, fontSize = 17.sp, lineHeight = 26.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = onPrimary, modifier = Modifier.focusRequester(first)) { Text(primary) }
-                Button(onClick = onClose) { Text("Close") }
+                Button(onClick = onPrimary, modifier = Modifier.focusRequester(first).tappable(onClick = onPrimary)) { Text(primary) }
+                Button(onClick = onClose, modifier = Modifier.tappable(onClick = onClose)) { Text("Close") }
             }
         }
     }
@@ -463,7 +465,7 @@ private fun GameDetail(game: Game, onlineArt: Boolean, hasAuto: Boolean, locked:
     val sys = Systems.byId(game.system)!!
     val first = remember { FocusRequester() }
     BackHandler { onClose() }
-    Box(Modifier.fillMaxSize().background(Color(0xB81C1814)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color(0xB81C1814)).blockTaps(), contentAlignment = Alignment.Center) {
         Row(Modifier.width(880.dp).clip(RoundedCornerShape(26.dp)).background(Panel).padding(32.dp), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
             Art(game, onlineArt, Modifier.width(260.dp).padding(0.dp))
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -486,19 +488,19 @@ private fun GameDetail(game: Game, onlineArt: Boolean, hasAuto: Boolean, locked:
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 10.dp)) {
                     if (locked) {
-                        Button(onClick = { onPlay(false) }, modifier = Modifier.focusRequester(first)) { ButtonIcon(Icons.Rounded.Lock); Text("Unlock with CouchPad Pro", fontSize = 20.sp) }
+                        Button(onClick = { onPlay(false) }, modifier = Modifier.focusRequester(first).tappable { onPlay(false) }) { ButtonIcon(Icons.Rounded.Lock); Text("Unlock with CouchPad Pro", fontSize = 20.sp) }
                     } else {
-                        if (hasAuto) Button(onClick = { onPlay(true) }, modifier = Modifier.focusRequester(first)) { ButtonIcon(Icons.Rounded.PlayArrow); Text("Continue", fontSize = 20.sp) }
-                        Button(onClick = { onPlay(false) }, modifier = if (hasAuto) Modifier else Modifier.focusRequester(first)) {
+                        if (hasAuto) Button(onClick = { onPlay(true) }, modifier = Modifier.focusRequester(first).tappable { onPlay(true) }) { ButtonIcon(Icons.Rounded.PlayArrow); Text("Continue", fontSize = 20.sp) }
+                        Button(onClick = { onPlay(false) }, modifier = (if (hasAuto) Modifier else Modifier.focusRequester(first)).tappable { onPlay(false) }) {
                             if (!hasAuto) ButtonIcon(Icons.Rounded.PlayArrow)
                             Text(if (hasAuto) "Start over" else "Play", fontSize = 20.sp)
                         }
                     }
-                    Button(onClick = onFav) {
+                    Button(onClick = onFav, modifier = Modifier.tappable(onClick = onFav)) {
                         ButtonIcon(if (favourite) Icons.Rounded.Star else Icons.Rounded.StarBorder)
                         Text("Favourite")
                     }
-                    Button(onClick = onClose) { Text("Back") }
+                    Button(onClick = onClose, modifier = Modifier.tappable(onClick = onClose)) { Text("Back") }
                 }
             }
         }

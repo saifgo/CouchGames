@@ -144,6 +144,14 @@ describe('library API', () => {
     expect((await nes('&fresh')).roms.map((r) => r.title)).toEqual(['Cool Game', 'New Game']);
     expect((await (await fetch(`${srv.url}/api/library`)).json() as Lib).roms).toHaveLength(3);
   });
+
+  it('?source= keeps the roms/ (user) library out of a homebrew-only request', async () => {
+    type Lib = { roms: { source: string }[] };
+    const home = (await (await fetch(`${srv.url}/api/library?system=nes&source=homebrew`)).json()) as Lib;
+    expect(home.roms).toEqual([]);
+    const all = (await (await fetch(`${srv.url}/api/library?source=homebrew`)).json()) as Lib;
+    expect(all.roms.every((r) => r.source === 'homebrew')).toBe(true);
+  });
 });
 
 describe('static pages', () => {

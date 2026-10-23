@@ -11,7 +11,7 @@ plugins {
 }
 
 val repoRoot = rootDir.resolve("../..")
-val appVersion = "0.4.1"
+val appVersion = "0.4.2"
 
 // APK file name: CoucheTV-<version>-<debug|release>.apk
 base { archivesName.set("CoucheTV-$appVersion") }
@@ -24,7 +24,7 @@ android {
         applicationId = "com.tunisolutions.couch"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
+        versionCode = 4
         versionName = appVersion
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
     }

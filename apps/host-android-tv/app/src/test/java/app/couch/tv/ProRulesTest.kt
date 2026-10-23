@@ -10,7 +10,8 @@ import java.io.File
 class ProRulesTest {
     @Test
     fun freeIsLimitedProIsNot() {
-        assertEquals(2, ProRules.players(pro = false, chosen = 8))
+        assertEquals(1, ProRules.players(pro = false, chosen = 8))
+        assertEquals(1, ProRules.players(pro = false, chosen = 4))
         assertEquals(8, ProRules.players(pro = true, chosen = 8))
         assertTrue(ProRules.systemAllowed(false, "snes"))
         assertFalse(ProRules.systemAllowed(false, "n64"))

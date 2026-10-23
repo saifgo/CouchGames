@@ -5,6 +5,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,7 +31,17 @@ import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.PhoneIphone
 import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.composed
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalDensity
 import androidx.tv.material3.ColorScheme
 import androidx.tv.material3.Icon
 import androidx.tv.material3.LocalContentColor
@@ -63,10 +74,48 @@ private val scheme: ColorScheme = darkColorScheme(
     border = Accent,
 )
 
+/** The UI is laid out for the Android TV canvas: every TV, 1080p or 4K, reports 960x540dp. */
+private const val CanvasW = 960f
+private const val CanvasH = 540f
+
 @Composable
 fun CouchTheme(content: @Composable () -> Unit) = MaterialTheme(colorScheme = scheme, typography = BrandTypography) {
-    CompositionLocalProvider(LocalContentColor provides Color(0xFFFFF6E0), content = content)
+    CompositionLocalProvider(LocalContentColor provides Color(0xFFFFF6E0)) { FitToCanvas(content) }
 }
+
+/**
+ * Scales the TV layout to the screen so phones and tablets get the same picture, smaller or
+ * larger, instead of clipped panels. The scale fits the short side of the canvas, so the layout
+ * always has at least 960x540dp and the longer side just gets extra room. TVs get scale 1.
+ */
+@Composable
+private fun FitToCanvas(content: @Composable () -> Unit) = BoxWithConstraints(Modifier.fillMaxSize()) {
+    val scale = minOf(maxWidth.value / CanvasW, maxHeight.value / CanvasH)
+    val density = LocalDensity.current
+    if (scale.isNaN() || scale <= 0f || kotlin.math.abs(scale - 1f) < 0.02f) {
+        content()
+    } else {
+        CompositionLocalProvider(
+            LocalDensity provides Density(density.density * scale, density.fontScale),
+            content = content,
+        )
+    }
+}
+
+/**
+ * TV Material buttons only answer the remote's OK key. This lets a finger tap focus and click
+ * them too, for when the app runs on a phone or tablet. Pass the same action as `onClick`.
+ */
+fun Modifier.tappable(enabled: Boolean = true, onClick: () -> Unit): Modifier = composed {
+    val focus = remember { FocusRequester() }
+    val click by rememberUpdatedState(onClick)
+    focusRequester(focus).pointerInput(enabled) {
+        if (enabled) detectTapGestures { runCatching { focus.requestFocus() }; click() }
+    }
+}
+
+/** For dialog backdrops: swallows taps so they don't reach the screen underneath. */
+fun Modifier.blockTaps(): Modifier = pointerInput(Unit) { detectTapGestures { } }
 
 /** True when the system "Remove animations" setting is on (animator duration scale 0). */
 @Composable

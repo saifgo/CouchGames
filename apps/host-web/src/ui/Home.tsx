@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getSystem, SYSTEMS } from '@couch/systems';
-import { systemAvailability, type HostSettings } from '../host-settings.js';
+import { systemAvailability, WEB_PLAYERS, type HostSettings } from '../host-settings.js';
 import { favourites, recents, type Game, type LibraryProgress } from '../library/library.js';
 import { LibraryLoading, RefreshButton } from './LibraryLoad.js';
 import type { SessionView } from '../net/host-session.js';
 import { Art, Icon, Logo, useClock } from './common.js';
 import { Lobby } from './Lobby.js';
-import { StorageChip } from './Storage.js';
 import { TvAppButton, TvAppPanel, useApk } from './TvApp.js';
 import { hasPixelIcon, PixelIcon } from '../themes/pixel-art.js';
 import { NeonMarquee, NeonMotifs } from '../themes/neon-art.js';
@@ -287,15 +286,15 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
           <div className="details-game">
             <h1 className="details-title">Welcome</h1>
             <p className="facts-text">
-              Put your own ROM files in the <code>roms/&lt;system&gt;/</code> folders next to the server (for example <code>roms/snes/</code>), then refresh. Or
-              drop files anywhere on this screen. Want something to try right now? Run <code>pnpm test-roms</code>.
+              Drop your own game files anywhere on this screen (or press Add games). They stay in this browser. Want something to try right now? Run{' '}
+              <code>pnpm test-roms</code>.
             </p>
           </div>
         )}
       </aside>
 
       <aside className="players-panel">
-        <Lobby view={view} joinUrl={joinUrl} maxPlayers={settings.maxPlayers} />
+        <Lobby view={view} joinUrl={joinUrl} maxPlayers={WEB_PLAYERS} />
       </aside>
 
       <footer className="hints">
@@ -324,7 +323,6 @@ export function Home({ games, settings, view, joinUrl, onOpen, onSettings, onImp
         <span className="grow" />
         {apk && <TvAppButton apk={apk} onOpen={() => setShowApp(true)} />}
         {apk && showApp && <TvAppPanel apk={apk} onClose={() => setShowApp(false)} />}
-        <StorageChip />
         <button className="add" data-nav onClick={() => fileRef.current?.click()}>
           <Icon name="plus" /> Add games
         </button>

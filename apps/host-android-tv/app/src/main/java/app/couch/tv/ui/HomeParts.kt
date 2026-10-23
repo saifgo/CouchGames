@@ -206,7 +206,7 @@ fun TopBar(onSettings: () -> Unit) {
         Logo()
         Spacer(Modifier.weight(1f))
         Text(clock, fontSize = Body, style = Tabular)
-        IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, contentDescription = "Settings") }
+        IconButton(onClick = onSettings, modifier = Modifier.tappable(onClick = onSettings)) { Icon(Icons.Default.Settings, contentDescription = "Settings") }
     }
 }
 
@@ -589,7 +589,7 @@ private fun PlatformItem(r: HomeRow, active: Boolean, modifier: Modifier, onPick
     val c = r.accent ?: Color.White
     Surface(
         onClick = onPick,
-        modifier = modifier.onFocusChanged {
+        modifier = modifier.tappable(onClick = onPick).onFocusChanged {
             focused = it.isFocused
             if (it.isFocused) onPick()
         },
@@ -748,6 +748,7 @@ private fun CoverCard(
         Card(
             onClick = { onOpen(g) },
             modifier = modifier
+                .tappable { onOpen(g) }
                 .width(width)
                 .aspectRatio(3f / 4f)
                 .graphicsLayer {
@@ -819,7 +820,7 @@ private fun EmptyCard(label: String, width: Dp, modifier: Modifier, onClick: () 
     Column(Modifier.width(width), horizontalAlignment = Alignment.CenterHorizontally) {
         Surface(
             onClick = onClick,
-            modifier = modifier.width(width).aspectRatio(3f / 4f),
+            modifier = modifier.tappable(onClick = onClick).width(width).aspectRatio(3f / 4f),
             shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
             colors = ClickableSurfaceDefaults.colors(
                 containerColor = Color.Transparent, contentColor = Color.White,
@@ -964,6 +965,7 @@ private fun Pill(label: String, accent: Color, onClick: () -> Unit, dot: Color? 
     val shape = RoundedCornerShape(50)
     Surface(
         onClick = onClick,
+        modifier = Modifier.tappable(onClick = onClick),
         shape = ClickableSurfaceDefaults.shape(shape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = Color.White.copy(alpha = .06f), contentColor = Color.White,

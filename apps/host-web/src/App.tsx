@@ -3,7 +3,7 @@ import { getSystem } from '@couch/systems';
 import type { ConsoleId } from '@couch/protocol';
 import { startAmbient, stopAmbient } from './ambient.js';
 import { onNav, PhoneNavigator } from './focus/focus.js';
-import { loadHostSettings, saveHostSettings, systemAvailability, type HostSettings } from './host-settings.js';
+import { loadHostSettings, saveHostSettings, systemAvailability, WEB_PLAYERS, type HostSettings } from './host-settings.js';
 import { cachedServerLibrary, importLocalFiles, loadLocalGames, loadServerLibrary, type Game, type LibraryProgress } from './library/library.js';
 import { HostSession, type SessionView } from './net/host-session.js';
 import { Logo, Modal } from './ui/common.js';
@@ -45,7 +45,7 @@ function Console() {
   const session = useMemo(() => new HostSession(location.origin, settings.hostName), []);
   const navigator = useMemo(() => new PhoneNavigator(), []);
   const [view, setView] = useState<SessionView>(session.view);
-  // Server games come from the saved copy until Refresh; local games are the ones dropped on this page.
+  // Server games (free homebrew only) come from the saved copy until Refresh; local games are the ones dropped on this page.
   const [cached] = useState(cachedServerLibrary);
   const [serverGames, setServerGames] = useState<Game[]>(cached?.roms ?? []);
   const [libraryAt, setLibraryAt] = useState<number | null>(cached?.at ?? null);
@@ -75,7 +75,7 @@ function Console() {
 
   useEffect(() => {
     (window as unknown as { __couch: unknown }).__couch = { session, version: 1 };
-    session.maxPlayers = settings.maxPlayers;
+    session.maxPlayers = WEB_PLAYERS;
     session.start();
     const off = session.on('change', setView);
     const offIn = session.on('input', (p) => navigator.feed(p.slot, p.input));
@@ -89,7 +89,7 @@ function Console() {
   }, []);
 
   useEffect(() => {
-    session.maxPlayers = settings.maxPlayers;
+    session.maxPlayers = WEB_PLAYERS;
     saveHostSettings(settings);
     document.documentElement.dataset.theme = settings.theme;
   }, [settings]);
@@ -202,8 +202,8 @@ function Console() {
 /** First-run tips (M6 onboarding). */
 function Onboarding({ joinUrl, onDone }: { joinUrl: string | null; onDone: () => void }) {
   const steps = [
-    ['Add your games', 'Put your own ROM files in roms/<system>/ next to the server (e.g. roms/snes/), or drop files on this screen. Run pnpm test-roms for free homebrew.'],
-    ['Phones are the controllers', `Scan the QR code with each phone — no app to install. Up to 4 players (8 in Settings).${joinUrl ? ` Or open ${joinUrl.replace(/\?r=.*/, '')}` : ''}`],
+    ['Add your games', 'Drop your own game files on this screen, or press Add games. They stay in this browser. Run pnpm test-roms for free homebrew.'],
+    ['Phones are the controllers', `Scan the QR code with your phone — no app to install. The web TV is single-player; CouchPad Pro on Android TV adds players 2 to 8.${joinUrl ? ` Or open ${joinUrl.replace(/\?r=.*/, '')}` : ''}`],
     ['Home opens the menu', 'In a game, press Home on your phone for save states, controller swaps and quit. Triple-tap your player badge on the phone for latency stats.'],
   ];
   return (
